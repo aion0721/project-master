@@ -1,6 +1,5 @@
-import type { Member, Phase, Project, ProjectEvent } from '../types/project'
+import type { Phase, Project, ProjectEvent } from '../types/project'
 import { getProjectWeekSlots, isDateInWeekSlot } from '../utils/projectUtils'
-import { EventRow } from './EventRow'
 import { PhaseRow } from './PhaseRow'
 import styles from './PhaseTimeline.module.css'
 
@@ -8,14 +7,12 @@ interface PhaseTimelineProps {
   project: Project
   phases: Phase[]
   events?: ProjectEvent[]
-  members?: Member[]
 }
 
 export function PhaseTimeline({
   project,
   phases,
   events = [],
-  members = [],
 }: PhaseTimelineProps) {
   const weekSlots = getProjectWeekSlots(project, phases, events)
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
@@ -47,18 +44,48 @@ export function PhaseTimeline({
           })}
         </div>
 
+        {orderedEvents.length > 0 ? (
+          <div className={styles.eventRow} style={{ gridTemplateColumns: columns }}>
+            <div className={styles.eventLead}>イベント</div>
+            {weekSlots.map((slot) => {
+              const slotEvents = orderedEvents.filter((event) => event.week === slot.index)
+              const isCurrentWeek = isDateInWeekSlot(slot.startDate)
+
+              return (
+                <div
+                  key={`event-slot-${slot.index}`}
+                  className={
+                    isCurrentWeek
+                      ? `${styles.eventCell} ${styles.currentWeek}`
+                      : styles.eventCell
+                  }
+                >
+                  {slotEvents.length > 0 ? (
+                    <div className={styles.eventChipList}>
+                      {slotEvents.map((event) => (
+                        <span
+                          key={event.id}
+                          className={styles.eventChip}
+                          data-testid={`timeline-event-${event.id}-week-${slot.index}`}
+                        >
+                          <span className={styles.eventChipTag}>EV</span>
+                          <span className={styles.eventChipText}>{event.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className={styles.eventEmpty}>-</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : null}
+
         <div className={styles.rowGroup}>
           {phases.map((phase) => (
             <PhaseRow key={phase.id} phase={phase} weekSlots={weekSlots} />
           ))}
-          {orderedEvents.length > 0 ? (
-            <div className={styles.eventSection}>
-              <div className={styles.eventSectionLabel}>イベント</div>
-              {orderedEvents.map((event) => (
-                <EventRow key={event.id} event={event} members={members} weekSlots={weekSlots} />
-              ))}
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

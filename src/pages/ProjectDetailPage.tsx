@@ -171,7 +171,7 @@ export function ProjectDetailPage() {
             </p>
           </div>
         </div>
-        <PhaseTimeline events={projectEvents} members={members} phases={projectPhases} project={project} />
+        <PhaseTimeline events={projectEvents} phases={projectPhases} project={project} />
       </Panel>
 
       <div className={styles.detailGrid}>
