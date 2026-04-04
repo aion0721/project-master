@@ -16,6 +16,12 @@
   gap: 16px;
 }
 
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .backTextLink {
   composes: backLink from '../styles/page.module.css';
 }
@@ -232,6 +238,10 @@
   .detailGrid,
   .metaGrid {
     grid-template-columns: 1fr;
+  }
+
+  .heroTop {
+    flex-direction: column;
   }
 
   .assignmentRow {

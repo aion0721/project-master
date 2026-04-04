@@ -6,6 +6,7 @@ import type {
   UpdatePhaseInput,
   UpdateProjectStructureInput,
 } from '../types/project'
+import type { UserProfile } from '../types/user'
 
 function cloneFixtures() {
   return {
@@ -13,6 +14,13 @@ function cloneFixtures() {
     phases: phases.map((phase) => ({ ...phase })),
     members: members.map((member) => ({ ...member })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
+    users: [
+      {
+        id: 'u1',
+        username: 'demo',
+        bookmarkedProjectIds: ['p1', 'p5'],
+      } satisfies UserProfile,
+    ],
   }
 }
 
@@ -71,6 +79,70 @@ export function mockProjectApi() {
 
     if (requestUrl.endsWith('/api/members') && method === 'GET') {
       return new Response(JSON.stringify({ items: fixtureData.members }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    if (requestUrl.endsWith('/api/users/login') && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as { username: string }
+      const normalizedUsername = body.username.trim()
+      const existingUser = fixtureData.users.find(
+        (user) => user.username.toLocaleLowerCase() === normalizedUsername.toLocaleLowerCase(),
+      )
+      const user =
+        existingUser ??
+        ({
+          id: `u${fixtureData.users.length + 1}`,
+          username: normalizedUsername,
+          bookmarkedProjectIds: [],
+        } satisfies UserProfile)
+
+      if (!existingUser) {
+        fixtureData.users.push(user)
+      }
+
+      return new Response(JSON.stringify({ user }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const getUserMatch = requestUrl.match(/\/api\/users\/([^/]+)$/)
+    if (getUserMatch && method === 'GET') {
+      const user = fixtureData.users.find((item) => item.id === getUserMatch[1])
+
+      return new Response(JSON.stringify({ user }), {
+        status: user ? 200 : 404,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const bookmarkMatch = requestUrl.match(/\/api\/users\/([^/]+)\/bookmarks$/)
+    if (bookmarkMatch && method === 'PATCH') {
+      const user = fixtureData.users.find((item) => item.id === bookmarkMatch[1])
+
+      if (!user) {
+        return new Response(JSON.stringify({ message: 'User not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      const body = JSON.parse(String(init?.body)) as { projectId: string }
+      user.bookmarkedProjectIds = user.bookmarkedProjectIds.includes(body.projectId)
+        ? user.bookmarkedProjectIds.filter((id) => id !== body.projectId)
+        : [...user.bookmarkedProjectIds, body.projectId]
+
+      return new Response(JSON.stringify({ user }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',

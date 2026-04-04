@@ -24,6 +24,51 @@
   composes: description from '../styles/page.module.css';
 }
 
+.filterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.toggleGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--border-subtle);
+}
+
+.toggle {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-subtle);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.toggleActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.filterHint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-subtle);
+}
+
 .heroStats {
   display: grid;
   gap: 16px;
@@ -190,8 +235,29 @@
   color: var(--text-faint);
 }
 
+.emptyState {
+  padding: 12px 4px 4px;
+}
+
+.emptyStateTitle {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.emptyStateText {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
 @media (max-width: 1120px) {
   .hero {
     grid-template-columns: 1fr;
+  }
+
+  .filterRow {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

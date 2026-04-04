@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Button } from '../components/ui/Button'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
+import { useUserSession } from '../store/useUserSession'
 import type { WorkStatus } from '../types/project'
 import {
   formatPeriod,
@@ -58,6 +59,7 @@ export function ProjectDetailPage() {
     updatePhase,
     updateProjectStructure,
   } = useProjectData()
+  const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseFormState>>({})
   const [savingPhaseId, setSavingPhaseId] = useState<string | null>(null)
   const [phaseRowErrors, setPhaseRowErrors] = useState<Record<string, string>>({})
@@ -317,8 +319,20 @@ export function ProjectDetailPage() {
               PM、フェーズ進捗、担当体制をまとめて確認できる案件詳細画面です。
             </p>
           </div>
-
-          <StatusBadge status={currentProject.status} />
+          <div className={styles.heroActions}>
+            {currentUser ? (
+              <Button
+                onClick={() => {
+                  void toggleBookmark(currentProject.id).catch(() => undefined)
+                }}
+                size="small"
+                variant={isBookmarked(currentProject.id) ? 'primary' : 'secondary'}
+              >
+                {isBookmarked(currentProject.id) ? 'ブックマーク済み' : 'ブックマーク'}
+              </Button>
+            ) : null}
+            <StatusBadge status={currentProject.status} />
+          </div>
         </div>
 
         <div className={styles.metaGrid}>

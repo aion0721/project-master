@@ -72,7 +72,6 @@
 }
 
 .sidebarCard {
-  margin-top: auto;
   padding: 16px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.08);
@@ -98,6 +97,78 @@
 .content {
   min-width: 0;
   padding: 28px;
+}
+
+.userCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.userCardLabel {
+  margin: 0;
+  font-size: 12px;
+  color: #93c5fd;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.userSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.username {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.userMeta,
+.userCardText {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(239, 246, 255, 0.78);
+}
+
+.userField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.userFieldLabel {
+  font-size: 12px;
+  color: rgba(239, 246, 255, 0.72);
+  font-weight: 700;
+}
+
+.userInput {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(191, 219, 254, 0.24);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-strong);
+}
+
+.userInput:focus {
+  outline: 2px solid rgba(125, 211, 252, 0.4);
+  outline-offset: 2px;
+}
+
+.userError {
+  margin: 0;
+  color: #fecaca;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 @media (max-width: 960px) {

@@ -51,3 +51,7 @@
   font-size: 12px;
   color: var(--text-subtle);
 }
+
+.actionCell {
+  white-space: nowrap;
+}

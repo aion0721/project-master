@@ -10,7 +10,19 @@ interface ProjectTableRow {
   pmName: string
 }
 
-export function ProjectTable({ rows }: { rows: ProjectTableRow[] }) {
+interface ProjectTableProps {
+  rows: ProjectTableRow[]
+  bookmarkedProjectIds?: string[]
+  onToggleBookmark?: (projectId: string) => void
+}
+
+export function ProjectTable({
+  rows,
+  bookmarkedProjectIds = [],
+  onToggleBookmark,
+}: ProjectTableProps) {
+  const bookmarkedSet = new Set(bookmarkedProjectIds)
+
   return (
     <div className={styles.wrapper}>
       <table className={styles.table}>
@@ -22,32 +34,48 @@ export function ProjectTable({ rows }: { rows: ProjectTableRow[] }) {
             <th>状態</th>
             <th>開始日</th>
             <th>終了予定日</th>
+            {onToggleBookmark ? <th>ブックマーク</th> : null}
             <th aria-label="actions" />
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ project, currentPhaseName, pmName }) => (
-            <tr key={project.id}>
-              <td>
-                <div className={styles.projectCell}>
-                  <span className={styles.projectName}>{project.name}</span>
-                  <span className={styles.projectId}>{project.id.toUpperCase()}</span>
-                </div>
-              </td>
-              <td>{currentPhaseName}</td>
-              <td>{pmName}</td>
-              <td>
-                <StatusBadge status={project.status} />
-              </td>
-              <td>{formatDate(project.startDate)}</td>
-              <td>{formatDate(project.endDate)}</td>
-              <td>
-                <Button size="small" to={`/projects/${project.id}`}>
-                  詳細を見る
-                </Button>
-              </td>
-            </tr>
-          ))}
+          {rows.map(({ project, currentPhaseName, pmName }) => {
+            const isBookmarked = bookmarkedSet.has(project.id)
+
+            return (
+              <tr key={project.id}>
+                <td>
+                  <div className={styles.projectCell}>
+                    <span className={styles.projectName}>{project.name}</span>
+                    <span className={styles.projectId}>{project.id.toUpperCase()}</span>
+                  </div>
+                </td>
+                <td>{currentPhaseName}</td>
+                <td>{pmName}</td>
+                <td>
+                  <StatusBadge status={project.status} />
+                </td>
+                <td>{formatDate(project.startDate)}</td>
+                <td>{formatDate(project.endDate)}</td>
+                {onToggleBookmark ? (
+                  <td>
+                    <Button
+                      onClick={() => onToggleBookmark(project.id)}
+                      size="small"
+                      variant={isBookmarked ? 'primary' : 'secondary'}
+                    >
+                      {isBookmarked ? '保存済み' : '追加'}
+                    </Button>
+                  </td>
+                ) : null}
+                <td className={styles.actionCell}>
+                  <Button size="small" to={`/projects/${project.id}`}>
+                    詳細を見る
+                  </Button>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
