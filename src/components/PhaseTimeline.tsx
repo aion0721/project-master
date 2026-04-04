@@ -1,16 +1,25 @@
-import type { Phase, Project } from '../types/project'
+import type { Member, Phase, Project, ProjectEvent } from '../types/project'
 import { getProjectWeekSlots, isDateInWeekSlot } from '../utils/projectUtils'
+import { EventRow } from './EventRow'
 import { PhaseRow } from './PhaseRow'
 import styles from './PhaseTimeline.module.css'
 
 interface PhaseTimelineProps {
   project: Project
   phases: Phase[]
+  events?: ProjectEvent[]
+  members?: Member[]
 }
 
-export function PhaseTimeline({ project, phases }: PhaseTimelineProps) {
-  const weekSlots = getProjectWeekSlots(project, phases)
+export function PhaseTimeline({
+  project,
+  phases,
+  events = [],
+  members = [],
+}: PhaseTimelineProps) {
+  const weekSlots = getProjectWeekSlots(project, phases, events)
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
+  const orderedEvents = [...events].sort((left, right) => left.week - right.week)
 
   return (
     <div className={styles.wrapper}>
@@ -42,6 +51,14 @@ export function PhaseTimeline({ project, phases }: PhaseTimelineProps) {
           {phases.map((phase) => (
             <PhaseRow key={phase.id} phase={phase} weekSlots={weekSlots} />
           ))}
+          {orderedEvents.length > 0 ? (
+            <div className={styles.eventSection}>
+              <div className={styles.eventSectionLabel}>イベント</div>
+              {orderedEvents.map((event) => (
+                <EventRow key={event.id} event={event} members={members} weekSlots={weekSlots} />
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

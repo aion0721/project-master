@@ -3,12 +3,12 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
-import { getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../utils/projectUtils'
+import { getActiveEventsForWeek, getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../utils/projectUtils'
 import { getPhaseToneKey, useCrossProjectView } from './cross-project/useCrossProjectView'
 import styles from './CrossProjectViewPage.module.css'
 
 export function CrossProjectViewPage() {
-  const { projects, members, getProjectPhases, isLoading, error } = useProjectData()
+  const { projects, members, getProjectPhases, getProjectEvents, isLoading, error } = useProjectData()
   const { currentUser } = useUserSession()
   const {
     filteredProjects,
@@ -23,6 +23,7 @@ export function CrossProjectViewPage() {
     viewMode,
   } = useCrossProjectView({
     currentUser,
+    getProjectEvents,
     getProjectPhases,
     projects,
   })
@@ -150,6 +151,7 @@ export function CrossProjectViewPage() {
               <tbody>
                 {filteredProjects.map((project) => {
                   const projectPhases = getProjectPhases(project.projectNumber)
+                  const projectEvents = getProjectEvents(project.projectNumber)
                   const pm = getProjectPm(project, members)
 
                   return (
@@ -167,7 +169,8 @@ export function CrossProjectViewPage() {
 
                       {globalWeekSlots.map((slot) => {
                         const activePhases = getActivePhasesForWeek(project, projectPhases, slot.startDate)
-                        const busy = activePhases.length > 1
+                        const activeEvents = getActiveEventsForWeek(projectEvents, slot.index)
+                        const busy = activePhases.length + activeEvents.length > 1
                         const isCurrentWeek = isDateInWeekSlot(slot.startDate)
 
                         return (
@@ -179,7 +182,7 @@ export function CrossProjectViewPage() {
                                 : `${styles.cell} ${isCurrentWeek ? styles.currentWeekCell : ''}`
                             }
                           >
-                            {activePhases.length > 0 ? (
+                            {activePhases.length > 0 || activeEvents.length > 0 ? (
                               <div className={styles.phaseChipList}>
                                 {activePhases.map((phase) => (
                                   <span
@@ -187,6 +190,16 @@ export function CrossProjectViewPage() {
                                     className={`${styles.phaseChip} ${styles[getPhaseToneKey(phase.name)]}`}
                                   >
                                     {phase.name}
+                                  </span>
+                                ))}
+                                {activeEvents.map((event) => (
+                                  <span
+                                    key={event.id}
+                                    className={`${styles.phaseChip} ${styles.eventChip}`}
+                                    data-testid={`cross-project-event-${project.projectNumber}-${event.id}`}
+                                  >
+                                    <span className={styles.eventChipTag}>EV</span>
+                                    <span className={styles.eventChipText}>{event.name}</span>
                                   </span>
                                 ))}
                               </div>

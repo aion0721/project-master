@@ -1,11 +1,13 @@
 import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
-import { assignments, members, phases, projects } from '../data/mockData'
+import { assignments, events, members, phases, projects } from '../data/mockData'
 import type {
   CreateMemberInput,
   CreateProjectInput,
   Phase,
   Project,
+  ProjectEvent,
+  UpdateProjectEventsInput,
   UpdateMemberInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
@@ -22,6 +24,7 @@ function cloneFixtures() {
       projectLinks: project.projectLinks.map((link) => ({ ...link })),
     })),
     phases: phases.map((phase) => ({ ...phase })),
+    events: events.map((event) => ({ ...event })),
     members: members.map((member) => ({ ...member })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
     users: [
@@ -76,6 +79,21 @@ function createPhaseIdGenerator(projectId: string, currentIds: string[]) {
 
   return () => {
     const nextId = `ph-${projectId}-${nextSuffix}`
+    nextSuffix += 1
+    return nextId
+  }
+}
+
+function createEventIdGenerator(projectId: string, currentIds: string[]) {
+  let nextSuffix =
+    currentIds
+      .filter((id) => id.startsWith(`ev-${projectId}-`))
+      .map((id) => Number(id.split('-').at(-1)))
+      .filter((value) => Number.isFinite(value))
+      .reduce((max, value) => Math.max(max, value), 0) + 1
+
+  return () => {
+    const nextId = `ev-${projectId}-${nextSuffix}`
     nextSuffix += 1
     return nextId
   }
@@ -399,6 +417,46 @@ export function mockProjectApi() {
         label: link.label.trim(),
         url: link.url.trim(),
       }))
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const eventsMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/events$/)
+    if (eventsMatch && method === 'PATCH') {
+      const projectNumber = eventsMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectEventsInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      const nextEventId = createEventIdGenerator(projectNumber, fixtureData.events.map((event) => event.id))
+      const nextEvents: ProjectEvent[] = body.events.map((event) => ({
+        id: event.id ?? nextEventId(),
+        projectId: projectNumber,
+        name: event.name.trim(),
+        week: event.week,
+        status: event.status,
+        ownerMemberId: event.ownerMemberId ?? null,
+        note: event.note?.trim() || null,
+      }))
+
+      fixtureData.events = fixtureData.events
+        .filter((event) => event.projectId !== projectNumber)
+        .concat(nextEvents)
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

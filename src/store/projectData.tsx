@@ -7,6 +7,7 @@ import {
   updateMemberRequest,
   updatePhaseRequest,
   updateProjectCurrentPhaseRequest,
+  updateProjectEventsRequest,
   updateProjectLinksRequest,
   updateProjectPhasesRequest,
   updateProjectScheduleRequest,
@@ -19,7 +20,9 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
+  ProjectEvent,
   UpdateMemberInput,
+  UpdateProjectEventsInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
   UpdateProjectPhasesInput,
@@ -47,9 +50,14 @@ function replaceAssignmentsForProject(
   return current.filter((assignment) => assignment.projectId !== projectId).concat(incoming)
 }
 
+function replaceEventsForProject(current: ProjectEvent[], projectId: string, incoming: ProjectEvent[]) {
+  return current.filter((event) => event.projectId !== projectId).concat(incoming)
+}
+
 export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
+  const [events, setEvents] = useState<ProjectEvent[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -68,6 +76,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
         setProjects(payload.projects)
         setPhases(payload.phases)
+        setEvents(payload.events)
         setMembers(payload.members)
         setAssignments(payload.assignments)
       } catch (caughtError) {
@@ -93,6 +102,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const value: ProjectDataContextValue = {
     projects,
     phases,
+    events,
     members,
     assignments,
     isLoading,
@@ -113,6 +123,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
 
@@ -143,6 +154,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
@@ -158,6 +170,23 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
+      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+
+      return updatedProject
+    },
+    updateProjectEvents: async (projectId: string, input: UpdateProjectEventsInput) => {
+      const payload = await updateProjectEventsRequest(projectId, input)
+      const updatedProject = payload.projects[0]
+
+      if (!updatedProject) {
+        throw new Error('Updated project payload is empty')
+      }
+
+      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
@@ -175,6 +204,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) =>
         current.filter((phase) => phase.projectId !== projectId).concat(payload.phases),
       )
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
@@ -190,6 +220,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
@@ -205,6 +236,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
@@ -214,6 +246,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     getProjectPhases: (projectId) => phases.filter((phase) => phase.projectId === projectId),
     getProjectAssignments: (projectId) =>
       assignments.filter((assignment) => assignment.projectId === projectId),
+    getProjectEvents: (projectId) => events.filter((event) => event.projectId === projectId),
     getMemberById: (memberId) => members.find((member) => member.id === memberId),
   }
 

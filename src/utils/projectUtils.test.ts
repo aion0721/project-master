@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { phases, projects } from '../data/mockData'
+import { events, phases, projects } from '../data/mockData'
 import {
   getActivePhasesForWeek,
   getProjectCurrentPhase,
@@ -28,6 +28,30 @@ describe('projectUtils', () => {
     expect(weekSlots).toHaveLength(12)
     expect(weekSlots[0]?.label).toBe('W1')
     expect(weekSlots[11]?.label).toBe('W12')
+  })
+
+  it('イベントがフェーズより後ろの週にあっても週スロットを生成する', () => {
+    const project = projects.find((item) => item.projectNumber === 'PRJ-001')
+    const projectPhases = phases.filter((phase) => phase.projectId === 'PRJ-001')
+
+    expect(project).toBeDefined()
+    if (!project) {
+      return
+    }
+
+    const weekSlots = getProjectWeekSlots(project, projectPhases, [
+      ...events.filter((event) => event.projectId === 'PRJ-001'),
+      {
+        id: 'ev-extra',
+        projectId: 'PRJ-001',
+        name: '本番連携',
+        week: 14,
+        status: '未着手',
+      },
+    ])
+
+    expect(weekSlots).toHaveLength(14)
+    expect(weekSlots[13]?.label).toBe('W14')
   })
 
   it('重なる週に該当するフェーズを正しく返す', () => {

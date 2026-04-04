@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Member, Phase, Project, ProjectAssignment } from '../../types/project'
+import type { Member, Phase, Project, ProjectAssignment, ProjectEvent } from '../../types/project'
 import { getProjectCurrentPhase, getProjectPm } from '../../utils/projectUtils'
 import type { StructureAssignmentDraft } from './projectDetailTypes'
 
@@ -10,6 +10,7 @@ interface UseProjectDetailDataParams {
   assignments: ProjectAssignment[]
   getProjectPhases: (projectId: string) => Phase[]
   getProjectAssignments: (projectId: string) => ProjectAssignment[]
+  getProjectEvents: (projectId: string) => ProjectEvent[]
 }
 
 export function useProjectDetailData({
@@ -19,6 +20,7 @@ export function useProjectDetailData({
   assignments,
   getProjectPhases,
   getProjectAssignments,
+  getProjectEvents,
 }: UseProjectDetailDataParams) {
   const projectPhases = useMemo(
     () => (project ? getProjectPhases(project.projectNumber) : []),
@@ -28,6 +30,11 @@ export function useProjectDetailData({
   const projectAssignments = useMemo(
     () => (project ? getProjectAssignments(project.projectNumber) : []),
     [getProjectAssignments, project],
+  )
+
+  const projectEvents = useMemo(
+    () => (project ? getProjectEvents(project.projectNumber) : []),
+    [getProjectEvents, project],
   )
 
   const editableAssignments = useMemo<StructureAssignmentDraft[]>(
@@ -48,9 +55,13 @@ export function useProjectDetailData({
   const workStatusOptions = useMemo(
     () =>
       Array.from(
-        new Set([...projects.map((item) => item.status), ...projectPhases.map((item) => item.status)]),
+        new Set([
+          ...projects.map((item) => item.status),
+          ...projectPhases.map((item) => item.status),
+          ...projectEvents.map((item) => item.status),
+        ]),
       ),
-    [projectPhases, projects],
+    [projectEvents, projectPhases, projects],
   )
 
   const responsibilityOptions = useMemo(
@@ -75,6 +86,7 @@ export function useProjectDetailData({
     editableAssignments,
     pm,
     projectAssignments,
+    projectEvents,
     projectPhases,
     responsibilityOptions,
     workStatusOptions,

@@ -1,4 +1,4 @@
-import type { Member, Phase, Project, ProjectAssignment } from '../types/project'
+import type { Member, Phase, Project, ProjectAssignment, ProjectEvent } from '../types/project'
 
 export interface WeekSlot {
   index: number
@@ -67,8 +67,16 @@ export function getProjectCurrentPhase(projectPhases: Phase[]) {
   )
 }
 
-export function getProjectWeekSlots(project: Project, projectPhases: Phase[]): WeekSlot[] {
-  const totalWeeks = Math.max(...projectPhases.map((phase) => phase.endWeek), 1)
+export function getProjectWeekSlots(
+  project: Project,
+  projectPhases: Phase[],
+  projectEvents: ProjectEvent[] = [],
+): WeekSlot[] {
+  const totalWeeks = Math.max(
+    ...projectPhases.map((phase) => phase.endWeek),
+    ...projectEvents.map((event) => event.week),
+    1,
+  )
 
   return Array.from({ length: totalWeeks }, (_, index) => {
     const startDate = addWeeks(project.startDate, index)
@@ -137,6 +145,10 @@ export function getActivePhasesForWeek(project: Project, projectPhases: Phase[],
 
     return slotTime >= startTime && slotTime <= endTime
   })
+}
+
+export function getActiveEventsForWeek(projectEvents: ProjectEvent[], weekIndex: number) {
+  return projectEvents.filter((event) => event.week === weekIndex)
 }
 
 export function getResponsibilitiesForMember(

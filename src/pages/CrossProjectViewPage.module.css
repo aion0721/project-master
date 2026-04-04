@@ -273,6 +273,48 @@
   background: #dcfce7;
 }
 
+.eventChip {
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 2px 8px 2px 2px;
+  border-radius: 10px;
+  border: 1px dashed #fb923c;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 237, 0.98), rgba(255, 237, 213, 0.98)),
+    repeating-linear-gradient(
+      135deg,
+      rgba(251, 146, 60, 0.08) 0,
+      rgba(251, 146, 60, 0.08) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  color: #7c2d12;
+  white-space: normal;
+  text-align: left;
+}
+
+.eventChipTag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 22px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #ea580c;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.eventChipText {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+}
+
 .emptyCell {
   color: var(--text-faint);
 }

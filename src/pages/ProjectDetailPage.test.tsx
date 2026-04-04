@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { assignments, phases, projects } from '../data/mockData'
+import { assignments, events, phases, projects } from '../data/mockData'
 import { mockProjectApi } from '../test/mockProjectApi'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { ProjectDetailPage } from './ProjectDetailPage'
@@ -9,6 +9,7 @@ const project = projects.find((item) => item.projectNumber === 'PRJ-001')!
 const currentPhase = phases.find((item) => item.id === 'ph-p1-2')!
 const nextPhase = phases.find((item) => item.id === 'ph-p1-3')!
 const editableAssignment = assignments.find((item) => item.id === 'as-p1-3')!
+const projectEvent = events.find((item) => item.id === 'ev-p1-1')!
 
 describe('ProjectDetailPage', () => {
   it('案件詳細と現在フェーズを表示する', async () => {
@@ -22,6 +23,8 @@ describe('ProjectDetailPage', () => {
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
     expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute('href', project.projectLinks[0]?.url)
+    expect(screen.getByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`)).toBeInTheDocument()
+    expect(screen.getAllByText(projectEvent.name).length).toBeGreaterThan(0)
     expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
   })
 
@@ -251,4 +254,57 @@ describe('ProjectDetailPage', () => {
       )
     })
   })
+
+  it('週次イベントを追加と更新で保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.change(await screen.findByTestId('event-name-0'), {
+      target: { value: '環境再提供' },
+    })
+    fireEvent.change(screen.getByTestId('event-week-0'), {
+      target: { value: '5' },
+    })
+    fireEvent.click(screen.getByTestId('project-events-add-button'))
+    fireEvent.change(await screen.findByTestId('event-name-2'), {
+      target: { value: '顧客説明' },
+    })
+    fireEvent.change(screen.getByTestId('event-week-2'), {
+      target: { value: '8' },
+    })
+    fireEvent.change(screen.getByTestId('event-owner-2'), {
+      target: { value: 'm1' },
+    })
+    fireEvent.click(screen.getByTestId('project-events-save-button'))
+
+    await waitFor(() => {
+      const eventsCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/events') && init?.method === 'PATCH'
+      })
+
+      expect(eventsCall).toBeDefined()
+      const body = JSON.parse(String(eventsCall?.[1]?.body))
+        expect(body.events).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: projectEvent.id,
+              name: '環境再提供',
+              week: 5,
+            }),
+            expect.objectContaining({
+              name: '顧客説明',
+              week: 8,
+              ownerMemberId: 'm1',
+            }),
+        ]),
+      )
+    })
+  })
+
 })

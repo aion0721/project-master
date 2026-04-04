@@ -5,9 +5,11 @@ import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
 import { ProjectDetailHero } from './project-detail/ProjectDetailHero'
+import { ProjectEventSection } from './project-detail/ProjectEventSection'
 import { ProjectPhaseSection } from './project-detail/ProjectPhaseSection'
 import { ProjectStructureSection } from './project-detail/ProjectStructureSection'
 import { useProjectDetailData } from './project-detail/useProjectDetailData'
+import { useProjectEventEditor } from './project-detail/useProjectEventEditor'
 import { useProjectPhaseEditor } from './project-detail/useProjectPhaseEditor'
 import { useProjectStructureEditor } from './project-detail/useProjectStructureEditor'
 import { useProjectSummaryEditor } from './project-detail/useProjectSummaryEditor'
@@ -22,9 +24,11 @@ export function ProjectDetailPage() {
     getProjectById,
     getProjectPhases,
     getProjectAssignments,
+    getProjectEvents,
     isLoading,
     error,
     updateProjectCurrentPhase,
+    updateProjectEvents,
     updateProjectLinks,
     updateProjectPhases,
     updateProjectSchedule,
@@ -37,6 +41,7 @@ export function ProjectDetailPage() {
     currentPhase,
     editableAssignments,
     pm,
+    projectEvents,
     projectAssignments,
     projectPhases,
     responsibilityOptions,
@@ -48,6 +53,7 @@ export function ProjectDetailPage() {
     assignments,
     getProjectPhases,
     getProjectAssignments,
+    getProjectEvents,
   })
 
   const summaryEditor = useProjectSummaryEditor(
@@ -58,6 +64,13 @@ export function ProjectDetailPage() {
     updateProjectLinks,
   )
   const phaseEditor = useProjectPhaseEditor(project, projectPhases, workStatusOptions, updateProjectPhases)
+  const eventEditor = useProjectEventEditor(
+    project,
+    projectEvents,
+    workStatusOptions,
+    members,
+    updateProjectEvents,
+  )
   const structureEditor = useProjectStructureEditor(
     project,
     editableAssignments,
@@ -158,7 +171,7 @@ export function ProjectDetailPage() {
             </p>
           </div>
         </div>
-        <PhaseTimeline project={project} phases={projectPhases} />
+        <PhaseTimeline events={projectEvents} members={members} phases={projectPhases} project={project} />
       </Panel>
 
       <div className={styles.detailGrid}>
@@ -199,6 +212,21 @@ export function ProjectDetailPage() {
           structurePmMemberId={structureEditor.structurePmMemberId}
         />
       </div>
+
+      <ProjectEventSection
+        eventDrafts={eventEditor.eventDrafts}
+        eventError={eventEditor.eventError}
+        isSavingEvents={eventEditor.isSavingEvents}
+        members={members}
+        onAddEvent={eventEditor.addEventDraft}
+        onRemoveEvent={eventEditor.removeEventDraft}
+        onSave={() => {
+          void eventEditor.saveEvents()
+        }}
+        onUpdateEvent={eventEditor.updateEventDraft}
+        projectPhases={projectPhases}
+        workStatusOptions={workStatusOptions}
+      />
     </div>
   )
 }

@@ -16,6 +16,7 @@ describe('CrossProjectViewPage', () => {
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
     expect(screen.getByText('表示案件数')).toBeInTheDocument()
     expect(screen.getAllByText('詳細設計').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('cross-project-event-PRJ-001-ev-p1-1')).toHaveTextContent('環境提供')
   })
 
   it('ブックマーク表示でもフィルターできる', async () => {

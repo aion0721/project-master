@@ -1,4 +1,4 @@
-import type { Phase, WorkStatus } from '../../types/project'
+import type { Phase, ProjectEvent, WorkStatus } from '../../types/project'
 
 export interface PhaseFormState {
   id?: string
@@ -17,6 +17,16 @@ export interface StructureAssignmentDraft {
   reportsToMemberId: string
 }
 
+export interface EventFormState {
+  id?: string
+  key: string
+  name: string
+  week: string
+  status: WorkStatus
+  ownerMemberId: string
+  note: string
+}
+
 export function buildPhaseFormState(phase: Phase): PhaseFormState {
   return {
     id: phase.id,
@@ -26,6 +36,18 @@ export function buildPhaseFormState(phase: Phase): PhaseFormState {
     endWeek: String(phase.endWeek),
     status: phase.status,
     progress: String(phase.progress),
+  }
+}
+
+export function buildEventFormState(event: ProjectEvent): EventFormState {
+  return {
+    id: event.id,
+    key: event.id,
+    name: event.name,
+    week: String(event.week),
+    status: event.status,
+    ownerMemberId: event.ownerMemberId ?? '',
+    note: event.note ?? '',
   }
 }
 
@@ -65,5 +87,17 @@ export function buildDraftPhaseForRange(
     status: draft.status,
     progress: Number(draft.progress) || 0,
     assigneeMemberId: pmMemberId,
+  }
+}
+
+export function buildDraftEvent(projectNumber: string, draft: EventFormState): ProjectEvent {
+  return {
+    id: draft.id ?? draft.key,
+    projectId: projectNumber,
+    name: draft.name.trim() || '未設定イベント',
+    week: Number(draft.week) || 1,
+    status: draft.status,
+    ownerMemberId: draft.ownerMemberId.trim() || null,
+    note: draft.note.trim() || null,
   }
 }

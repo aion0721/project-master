@@ -175,6 +175,10 @@
   overflow: auto;
 }
 
+.eventTableWrap {
+  overflow: auto;
+}
+
 .phaseTable {
   width: 100%;
 }
@@ -205,6 +209,30 @@
   flex-direction: column;
   gap: 8px;
   min-width: 120px;
+}
+
+.emptyCell {
+  color: var(--text-subtle);
+  text-align: center;
+}
+
+.eventSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.eventChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.08);
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .formField {

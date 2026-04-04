@@ -5,7 +5,9 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
+  ProjectEvent,
   UpdateMemberInput,
+  UpdateProjectEventsInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
   UpdateProjectPhasesInput,
@@ -57,6 +59,7 @@ interface ApiProjectDetailResponse {
       member: ApiMember | null
     }
   >
+  events: ProjectEvent[]
   members: ApiMember[]
 }
 
@@ -68,6 +71,7 @@ interface ApiPhaseUpdateResponse {
 export interface ProjectDataPayload {
   projects: Project[]
   phases: Phase[]
+  events: ProjectEvent[]
   members: Member[]
   assignments: ProjectAssignment[]
 }
@@ -125,6 +129,18 @@ function normalizeAssignment(assignment: ProjectAssignment): ProjectAssignment {
     memberId: assignment.memberId,
     responsibility: assignment.responsibility,
     reportsToMemberId: assignment.reportsToMemberId ?? null,
+  }
+}
+
+function normalizeEvent(event: ProjectEvent): ProjectEvent {
+  return {
+    id: event.id,
+    projectId: event.projectId,
+    name: event.name,
+    week: event.week,
+    status: event.status,
+    ownerMemberId: event.ownerMemberId ?? null,
+    note: event.note ?? null,
   }
 }
 
@@ -191,6 +207,7 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
   return {
     projects: [normalizeProject(detail.project)],
     phases: detail.phases.map(normalizePhase),
+    events: detail.events.map(normalizeEvent),
     assignments: detail.assignments.map(normalizeAssignment),
     members: [...memberMap.values()],
   }
@@ -215,6 +232,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
       .map((member) => [member.id, member] as const),
   )
   const phaseMap = new Map<string, Phase>()
+  const eventMap = new Map<string, ProjectEvent>()
   const assignmentMap = new Map<string, ProjectAssignment>()
 
   detailResponses.forEach((detail) => {
@@ -227,6 +245,10 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
 
     detail.phases.forEach((phase) => {
       phaseMap.set(phase.id, normalizePhase(phase))
+    })
+
+    detail.events.forEach((event) => {
+      eventMap.set(event.id, normalizeEvent(event))
     })
 
     detail.assignments.forEach((assignment) => {
@@ -247,6 +269,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
   return {
     projects: listResponse.items.map(normalizeProject),
     phases: [...phaseMap.values()],
+    events: [...eventMap.values()],
     members: [...memberMap.values()],
     assignments: [...assignmentMap.values()],
   }
@@ -405,6 +428,21 @@ export async function updateProjectLinksRequest(
   return normalizeProjectDetail(detail)
 }
 
+export async function updateProjectEventsRequest(
+  projectId: string,
+  input: UpdateProjectEventsInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectEventsInput>(
+    `/api/projects/${projectId}/events`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
 export async function updateProjectPhasesRequest(
   projectId: string,
   input: UpdateProjectPhasesInput,
@@ -450,11 +488,15 @@ export function buildProjectDetailResponse(
   const projectAssignments = data.assignments.filter(
     (assignment) => assignment.projectId === project.projectNumber,
   )
+  const projectEvents = data.events.filter((event) => event.projectId === project.projectNumber)
   const memberIds = new Set([
     project.pmMemberId,
     ...projectAssignments.map((assignment) => assignment.memberId),
     ...projectAssignments
       .map((assignment) => assignment.reportsToMemberId)
+      .filter((memberId): memberId is string => Boolean(memberId)),
+    ...projectEvents
+      .map((event) => event.ownerMemberId)
       .filter((memberId): memberId is string => Boolean(memberId)),
   ])
 
@@ -466,6 +508,9 @@ export function buildProjectDetailResponse(
     phases: projectPhases.map((phase) => ({
       ...phase,
       range: getPhaseActualRange(project, phase),
+    })),
+    events: projectEvents.map((event) => ({
+      ...event,
     })),
     assignments: projectAssignments.map((assignment) => ({
       ...assignment,

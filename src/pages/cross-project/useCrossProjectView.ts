@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
-import type { Phase, Project } from '../../types/project'
+import type { Phase, Project, ProjectEvent } from '../../types/project'
 import type { UserProfile } from '../../types/user'
-import { getActivePhasesForWeek, getGlobalWeekSlots } from '../../utils/projectUtils'
+import { getActiveEventsForWeek, getActivePhasesForWeek, getGlobalWeekSlots } from '../../utils/projectUtils'
 
 export type CrossProjectViewMode = 'all' | 'bookmarks'
 
 interface UseCrossProjectViewParams {
   currentUser: UserProfile | null
   getProjectPhases: (projectId: string) => Phase[]
+  getProjectEvents: (projectId: string) => ProjectEvent[]
   projects: Project[]
 }
 
@@ -31,6 +32,7 @@ export function getPhaseToneKey(phaseName: string) {
 export function useCrossProjectView({
   currentUser,
   getProjectPhases,
+  getProjectEvents,
   projects,
 }: UseCrossProjectViewParams) {
   const [viewMode, setViewMode] = useState<CrossProjectViewMode>('all')
@@ -67,12 +69,13 @@ export function useCrossProjectView({
           globalWeekSlots.map(
             (slot) =>
               getActivePhasesForWeek(project, getProjectPhases(project.projectNumber), slot.startDate)
-                .length,
+                .length +
+              getActiveEventsForWeek(getProjectEvents(project.projectNumber), slot.index).length,
           ),
         ),
         0,
       ),
-    [filteredProjects, getProjectPhases, globalWeekSlots],
+    [filteredProjects, getProjectEvents, getProjectPhases, globalWeekSlots],
   )
 
   return {
