@@ -10,7 +10,6 @@ import { useUserSession } from '../store/useUserSession'
 import type { WorkStatus } from '../types/project'
 import {
   formatPeriod,
-  getMemberName,
   getPhaseActualRange,
   getProjectCurrentPhase,
   getProjectPm,
@@ -47,8 +46,16 @@ function buildPhaseFormState(
   }
 }
 
+function normalizeAssignments(assignments: StructureAssignmentDraft[]) {
+  return assignments.map((assignment) => ({
+    id: assignment.id,
+    memberId: assignment.memberId,
+    responsibility: assignment.responsibility,
+  }))
+}
+
 export function ProjectDetailPage() {
-  const { projectId } = useParams()
+  const { projectNumber } = useParams()
   const {
     members,
     getProjectById,
@@ -58,29 +65,41 @@ export function ProjectDetailPage() {
     error,
     updatePhase,
     updateProjectCurrentPhase,
+    updateProjectSchedule,
     updateProjectStructure,
   } = useProjectData()
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
+
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseFormState>>({})
   const [savingPhaseId, setSavingPhaseId] = useState<string | null>(null)
   const [phaseRowErrors, setPhaseRowErrors] = useState<Record<string, string>>({})
+
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
   const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
   const [currentPhaseError, setCurrentPhaseError] = useState<string | null>(null)
   const [isSavingCurrentPhase, setIsSavingCurrentPhase] = useState(false)
+
+  const [isScheduleEditing, setIsScheduleEditing] = useState(false)
+  const [scheduleDraft, setScheduleDraft] = useState({
+    startDate: '',
+    endDate: '',
+  })
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false)
+
   const [isStructureEditing, setIsStructureEditing] = useState(false)
   const [structurePmMemberId, setStructurePmMemberId] = useState('')
   const [structureAssignments, setStructureAssignments] = useState<StructureAssignmentDraft[]>([])
   const [structureError, setStructureError] = useState<string | null>(null)
   const [isSavingStructure, setIsSavingStructure] = useState(false)
 
-  const project = projectId ? getProjectById(projectId) : undefined
+  const project = projectNumber ? getProjectById(projectNumber) : undefined
   const projectPhases = useMemo(
-    () => (project ? getProjectPhases(project.id) : []),
+    () => (project ? getProjectPhases(project.projectNumber) : []),
     [getProjectPhases, project],
   )
   const projectAssignments = useMemo(
-    () => (project ? getProjectAssignments(project.id) : []),
+    () => (project ? getProjectAssignments(project.projectNumber) : []),
     [getProjectAssignments, project],
   )
   const editableAssignments = useMemo(
@@ -132,21 +151,33 @@ export function ProjectDetailPage() {
       return
     }
 
-    setStructurePmMemberId(project.pmMemberId)
-    setStructureAssignments(editableAssignments)
-    setStructureError(null)
-  }, [editableAssignments, project])
+    setScheduleDraft({
+      startDate: project.startDate,
+      endDate: project.endDate,
+    })
+    setScheduleError(null)
+  }, [project])
 
   useEffect(() => {
     setCurrentPhaseDraftId(currentPhase?.id ?? '')
     setCurrentPhaseError(null)
   }, [currentPhase])
 
+  useEffect(() => {
+    if (!project) {
+      return
+    }
+
+    setStructurePmMemberId(project.pmMemberId)
+    setStructureAssignments(editableAssignments)
+    setStructureError(null)
+  }, [editableAssignments, project])
+
   if (isLoading) {
     return (
       <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件詳細を読み込み中です</h1>
-        <p className={styles.notFoundText}>バックエンドから案件詳細を取得しています。</p>
+        <p className={styles.notFoundText}>バックエンドから案件情報を取得しています。</p>
       </Panel>
     )
   }
@@ -167,9 +198,7 @@ export function ProjectDetailPage() {
     return (
       <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件が見つかりません</h1>
-        <p className={styles.notFoundText}>
-          指定された案件 ID は存在しません。案件一覧から選び直してください。
-        </p>
+        <p className={styles.notFoundText}>指定されたプロジェクト番号に該当する案件がありません。</p>
         <Button size="small" to="/projects" variant="secondary">
           一覧へ戻る
         </Button>
@@ -179,10 +208,13 @@ export function ProjectDetailPage() {
 
   const currentProject = project
   const pm = getProjectPm(currentProject, members)
+  const scheduleChanged =
+    scheduleDraft.startDate !== currentProject.startDate || scheduleDraft.endDate !== currentProject.endDate
+  const currentPhaseChanged = currentPhaseDraftId !== (currentPhase?.id ?? '')
   const structureChanged =
     structurePmMemberId !== currentProject.pmMemberId ||
-    JSON.stringify(structureAssignments) !== JSON.stringify(editableAssignments)
-  const currentPhaseChanged = currentPhaseDraftId !== (currentPhase?.id ?? '')
+    JSON.stringify(normalizeAssignments(structureAssignments)) !==
+      JSON.stringify(normalizeAssignments(editableAssignments))
 
   function resetStructureEditor() {
     setStructurePmMemberId(currentProject.pmMemberId)
@@ -210,7 +242,7 @@ export function ProjectDetailPage() {
     setCurrentPhaseError(null)
 
     try {
-      await updateProjectCurrentPhase(currentProject.id, currentPhaseDraftId)
+      await updateProjectCurrentPhase(currentProject.projectNumber, currentPhaseDraftId)
       setIsCurrentPhaseEditing(false)
     } catch (caughtError) {
       setCurrentPhaseError(
@@ -218,6 +250,30 @@ export function ProjectDetailPage() {
       )
     } finally {
       setIsSavingCurrentPhase(false)
+    }
+  }
+
+  async function handleScheduleSave() {
+    if (!scheduleDraft.startDate || !scheduleDraft.endDate) {
+      setScheduleError('開始日と終了日を入力してください。')
+      return
+    }
+
+    if (scheduleDraft.startDate > scheduleDraft.endDate) {
+      setScheduleError('終了日は開始日以降にしてください。')
+      return
+    }
+
+    setIsSavingSchedule(true)
+    setScheduleError(null)
+
+    try {
+      await updateProjectSchedule(currentProject.projectNumber, scheduleDraft)
+      setIsScheduleEditing(false)
+    } catch (caughtError) {
+      setScheduleError(caughtError instanceof Error ? caughtError.message : '期間の更新に失敗しました。')
+    } finally {
+      setIsSavingSchedule(false)
     }
   }
 
@@ -251,7 +307,7 @@ export function ProjectDetailPage() {
     if (endWeek < startWeek) {
       setPhaseRowErrors((current) => ({
         ...current,
-        [phaseId]: '終了週は開始週以上で入力してください。',
+        [phaseId]: '終了週は開始週以上にしてください。',
       }))
       return
     }
@@ -290,8 +346,7 @@ export function ProjectDetailPage() {
     } catch (caughtError) {
       setPhaseRowErrors((current) => ({
         ...current,
-        [phaseId]:
-          caughtError instanceof Error ? caughtError.message : 'フェーズ更新に失敗しました。',
+        [phaseId]: caughtError instanceof Error ? caughtError.message : 'フェーズ更新に失敗しました。',
       }))
     } finally {
       setSavingPhaseId((current) => (current === phaseId ? null : current))
@@ -306,9 +361,8 @@ export function ProjectDetailPage() {
       return
     }
 
-    const normalizedAssignments = structureAssignments.map((assignment) => ({
-      id: assignment.id,
-      memberId: assignment.memberId,
+    const normalizedAssignments = normalizeAssignments(structureAssignments).map((assignment) => ({
+      ...assignment,
       responsibility: assignment.responsibility.trim(),
     }))
 
@@ -324,7 +378,7 @@ export function ProjectDetailPage() {
     setIsSavingStructure(true)
 
     try {
-      await updateProjectStructure(currentProject.id, {
+      await updateProjectStructure(currentProject.projectNumber, {
         pmMemberId: structurePmMemberId,
         assignments: normalizedAssignments,
       })
@@ -338,6 +392,14 @@ export function ProjectDetailPage() {
     }
   }
 
+  function updateStructureAssignment(index: number, patch: Partial<StructureAssignmentDraft>) {
+    setStructureAssignments((current) =>
+      current.map((assignment, assignmentIndex) =>
+        assignmentIndex === index ? { ...assignment, ...patch } : assignment,
+      ),
+    )
+  }
+
   return (
     <div className={styles.page}>
       <Panel className={styles.hero} variant="hero">
@@ -348,19 +410,22 @@ export function ProjectDetailPage() {
             </Link>
             <h1 className={styles.title}>{currentProject.name}</h1>
             <p className={styles.description}>
-              PM、フェーズ進捗、担当体制をまとめて確認できる案件詳細画面です。
+              プロジェクト番号: {currentProject.projectNumber}
+              <br />
+              PM、進捗、体制をまとめて確認できる案件詳細です。
             </p>
           </div>
+
           <div className={styles.heroActions}>
             {currentUser ? (
               <Button
                 onClick={() => {
-                  void toggleBookmark(currentProject.id).catch(() => undefined)
+                  void toggleBookmark(currentProject.projectNumber).catch(() => undefined)
                 }}
                 size="small"
-                variant={isBookmarked(currentProject.id) ? 'primary' : 'secondary'}
+                variant={isBookmarked(currentProject.projectNumber) ? 'primary' : 'secondary'}
               >
-                {isBookmarked(currentProject.id) ? 'ブックマーク済み' : 'ブックマーク'}
+                {isBookmarked(currentProject.projectNumber) ? 'ブックマーク済み' : 'ブックマーク'}
               </Button>
             ) : null}
             <StatusBadge status={currentProject.status} />
@@ -374,9 +439,91 @@ export function ProjectDetailPage() {
           </article>
           <article className={styles.metaCard}>
             <span className={styles.metaLabel}>期間</span>
-            <strong className={styles.metaValue}>
-              {formatPeriod(currentProject.startDate, currentProject.endDate)}
-            </strong>
+            {isScheduleEditing ? (
+              <div className={styles.phaseMetaEditor}>
+                <label className={styles.formField}>
+                  <span className={styles.visuallyHidden}>開始日</span>
+                  <input
+                    aria-label="開始日"
+                    className={styles.selectInput}
+                    data-testid="project-schedule-start"
+                    onChange={(event) =>
+                      setScheduleDraft((current) => ({
+                        ...current,
+                        startDate: event.target.value,
+                      }))
+                    }
+                    type="date"
+                    value={scheduleDraft.startDate}
+                  />
+                </label>
+                <label className={styles.formField}>
+                  <span className={styles.visuallyHidden}>終了日</span>
+                  <input
+                    aria-label="終了日"
+                    className={styles.selectInput}
+                    data-testid="project-schedule-end"
+                    onChange={(event) =>
+                      setScheduleDraft((current) => ({
+                        ...current,
+                        endDate: event.target.value,
+                      }))
+                    }
+                    type="date"
+                    value={scheduleDraft.endDate}
+                  />
+                </label>
+                <div className={styles.phaseMetaActions}>
+                  <Button
+                    data-testid="project-schedule-save-button"
+                    disabled={isSavingSchedule || !scheduleChanged}
+                    onClick={() => {
+                      void handleScheduleSave()
+                    }}
+                    size="small"
+                  >
+                    {isSavingSchedule ? '保存中...' : '保存'}
+                  </Button>
+                  <Button
+                    data-testid="project-schedule-cancel-button"
+                    onClick={() => {
+                      setScheduleDraft({
+                        startDate: currentProject.startDate,
+                        endDate: currentProject.endDate,
+                      })
+                      setScheduleError(null)
+                      setIsScheduleEditing(false)
+                    }}
+                    size="small"
+                    variant="secondary"
+                  >
+                    キャンセル
+                  </Button>
+                </div>
+                {scheduleError ? <p className={styles.metaError}>{scheduleError}</p> : null}
+              </div>
+            ) : (
+              <div className={styles.phaseMetaDisplay}>
+                <strong className={styles.metaValue} data-testid="project-schedule-value">
+                  {formatPeriod(currentProject.startDate, currentProject.endDate)}
+                </strong>
+                <Button
+                  data-testid="project-schedule-edit-button"
+                  onClick={() => {
+                    setScheduleDraft({
+                      startDate: currentProject.startDate,
+                      endDate: currentProject.endDate,
+                    })
+                    setScheduleError(null)
+                    setIsScheduleEditing(true)
+                  }}
+                  size="small"
+                  variant="secondary"
+                >
+                  変更
+                </Button>
+              </div>
+            )}
           </article>
           <article className={styles.metaCard}>
             <span className={styles.metaLabel}>現在フェーズ</span>
@@ -450,34 +597,31 @@ export function ProjectDetailPage() {
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
             <p className={styles.sectionDescription}>
-              週ごとのフェーズ進行状況をガントチャート形式で表示します。
+              週ごとのフェーズ進捗を簡易ガントチャート形式で表示します。
             </p>
           </div>
         </div>
-
-        <PhaseTimeline project={currentProject} phases={projectPhases} members={members} />
+        <PhaseTimeline project={currentProject} phases={projectPhases} />
       </Panel>
 
       <div className={styles.detailGrid}>
         <Panel className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>フェーズ別担当</h2>
+              <h2 className={styles.sectionTitle}>フェーズ設定</h2>
               <p className={styles.sectionDescription}>
-                各フェーズの担当者、状態、進捗率、開始週と終了週を編集できます。
+                各フェーズの状態、進捗率、開始週、終了週を編集できます。
               </p>
             </div>
           </div>
-
           <div className={styles.phaseTableWrap}>
             <table className={styles.phaseTable}>
               <thead>
                 <tr>
                   <th>フェーズ</th>
                   <th>期間</th>
-                  <th>担当者</th>
                   <th>状態</th>
-                  <th>進捗</th>
+                  <th>進捗率</th>
                   <th>開始週</th>
                   <th>終了週</th>
                   <th>保存</th>
@@ -495,12 +639,10 @@ export function ProjectDetailPage() {
                     draft.endWeek !== String(phase.endWeek) ||
                     draft.status !== phase.status ||
                     draft.progress !== String(phase.progress)
-
                   return (
                     <tr data-testid={`phase-row-${phase.id}`} key={phase.id}>
                       <td>{phase.name}</td>
                       <td>{formatPeriod(range.startDate, range.endDate)}</td>
-                      <td>{getMemberName(phase.assigneeMemberId, members)}</td>
                       <td>
                         <label className={styles.formField}>
                           <span className={styles.visuallyHidden}>{phase.name} の状態</span>
@@ -627,10 +769,9 @@ export function ProjectDetailPage() {
             <div>
               <h2 className={styles.sectionTitle}>プロジェクト体制</h2>
               <p className={styles.sectionDescription}>
-                PM と役割担当を確認できます。編集ボタンから体制を更新できます。
+                PM と役割担当を確認できます。必要なときだけ編集モードを開けます。
               </p>
             </div>
-
             {isStructureEditing ? (
               <Button
                 data-testid="structure-edit-toggle"
@@ -651,7 +792,6 @@ export function ProjectDetailPage() {
               </Button>
             )}
           </div>
-
           {isStructureEditing ? (
             <div className={styles.structureEditor} data-testid="structure-editor">
               <label className={styles.formField}>
@@ -671,7 +811,6 @@ export function ProjectDetailPage() {
                   ))}
                 </select>
               </label>
-
               <div className={styles.assignmentEditor}>
                 <div className={styles.assignmentHeader}>
                   <h3 className={styles.assignmentTitle}>役割担当</h3>
@@ -691,12 +830,10 @@ export function ProjectDetailPage() {
                     役割を追加
                   </Button>
                 </div>
-
                 <div className={styles.assignmentList}>
                   {structureAssignments.length === 0 ? (
                     <p className={styles.emptyText}>役割担当はまだ登録されていません。</p>
                   ) : null}
-
                   {structureAssignments.map((assignment, index) => (
                     <div key={assignment.id ?? `new-${index}`} className={styles.assignmentRow}>
                       <label className={styles.formField}>
@@ -705,12 +842,9 @@ export function ProjectDetailPage() {
                           aria-label={`役割${index + 1} の責務`}
                           className={styles.selectInput}
                           onChange={(event) => {
-                            const value = event.target.value
-                            setStructureAssignments((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index ? { ...item, responsibility: value } : item,
-                              ),
-                            )
+                            updateStructureAssignment(index, {
+                              responsibility: event.target.value,
+                            })
                           }}
                           value={assignment.responsibility}
                         >
@@ -721,19 +855,15 @@ export function ProjectDetailPage() {
                           ))}
                         </select>
                       </label>
-
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>担当者</span>
                         <select
                           aria-label={`役割${index + 1} の担当者`}
                           className={styles.selectInput}
                           onChange={(event) => {
-                            const value = event.target.value
-                            setStructureAssignments((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index ? { ...item, memberId: value } : item,
-                              ),
-                            )
+                            updateStructureAssignment(index, {
+                              memberId: event.target.value,
+                            })
                           }}
                           value={assignment.memberId}
                         >
@@ -745,11 +875,10 @@ export function ProjectDetailPage() {
                           ))}
                         </select>
                       </label>
-
                       <Button
                         onClick={() =>
                           setStructureAssignments((current) =>
-                            current.filter((_, itemIndex) => itemIndex !== index),
+                            current.filter((_, assignmentIndex) => assignmentIndex !== index),
                           )
                         }
                         size="small"

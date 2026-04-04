@@ -12,6 +12,7 @@ export function ProjectCreatePage() {
   const navigate = useNavigate()
   const { members, isLoading, error, createProject } = useProjectData()
   const [formData, setFormData] = useState<CreateProjectInput>({
+    projectNumber: '',
     name: '',
     startDate: '',
     endDate: '',
@@ -37,7 +38,13 @@ export function ProjectCreatePage() {
     event.preventDefault()
     setSubmitError(null)
 
-    if (!formData.name || !formData.startDate || !formData.endDate || !formData.pmMemberId) {
+    if (
+      !formData.projectNumber ||
+      !formData.name ||
+      !formData.startDate ||
+      !formData.endDate ||
+      !formData.pmMemberId
+    ) {
       setSubmitError('必須項目を入力してください。')
       return
     }
@@ -51,9 +58,9 @@ export function ProjectCreatePage() {
 
     try {
       const createdProject = await createProject(formData)
-      navigate(`/projects/${createdProject.id}`)
+      navigate(`/projects/${createdProject.projectNumber}`)
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件追加に失敗しました。')
+      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件登録に失敗しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -63,7 +70,7 @@ export function ProjectCreatePage() {
     return (
       <Panel className={styles.section}>
         <h1 className={styles.title}>案件追加画面を準備中です</h1>
-        <p className={styles.description}>担当候補メンバーを取得しています。</p>
+        <p className={styles.description}>担当候補のメンバー情報を読み込んでいます。</p>
       </Panel>
     )
   }
@@ -85,19 +92,29 @@ export function ProjectCreatePage() {
         </Button>
         <h1 className={styles.title}>案件追加</h1>
         <p className={styles.description}>
-          案件の基本情報を登録します。登録後は詳細画面でフェーズと体制を確認できます。
+          プロジェクト番号、案件名、期間、PM を登録します。登録後は標準 5 フェーズが自動で作成されます。
         </p>
       </Panel>
 
       <Panel className={styles.section}>
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.field}>
+            <span className={styles.label}>プロジェクト番号</span>
+            <input
+              className={styles.input}
+              onChange={(event) => updateField('projectNumber', event.target.value)}
+              placeholder="例: PRJ-006"
+              value={formData.projectNumber}
+            />
+          </label>
+
+          <label className={styles.field}>
             <span className={styles.label}>案件名</span>
             <input
               className={styles.input}
-              value={formData.name}
               onChange={(event) => updateField('name', event.target.value)}
-              placeholder="例: 物流会計システム刷新"
+              placeholder="例: 会計システム刷新"
+              value={formData.name}
             />
           </label>
 
@@ -105,8 +122,8 @@ export function ProjectCreatePage() {
             <span className={styles.label}>PM</span>
             <select
               className={styles.input}
-              value={formData.pmMemberId}
               onChange={(event) => updateField('pmMemberId', event.target.value)}
+              value={formData.pmMemberId}
             >
               <option value="">選択してください</option>
               {pmMembers.map((member) => (
@@ -121,9 +138,9 @@ export function ProjectCreatePage() {
             <span className={styles.label}>開始日</span>
             <input
               className={styles.input}
+              onChange={(event) => updateField('startDate', event.target.value)}
               type="date"
               value={formData.startDate}
-              onChange={(event) => updateField('startDate', event.target.value)}
             />
           </label>
 
@@ -131,9 +148,9 @@ export function ProjectCreatePage() {
             <span className={styles.label}>終了予定日</span>
             <input
               className={styles.input}
+              onChange={(event) => updateField('endDate', event.target.value)}
               type="date"
               value={formData.endDate}
-              onChange={(event) => updateField('endDate', event.target.value)}
             />
           </label>
 
@@ -141,8 +158,8 @@ export function ProjectCreatePage() {
             <span className={styles.label}>状態</span>
             <select
               className={styles.input}
-              value={formData.status}
               onChange={(event) => updateField('status', event.target.value as WorkStatus)}
+              value={formData.status}
             >
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
@@ -153,9 +170,9 @@ export function ProjectCreatePage() {
           </label>
 
           <div className={styles.noteCard}>
-            <p className={styles.noteTitle}>登録時の初期ルール</p>
+            <p className={styles.noteTitle}>初期作成ルール</p>
             <p className={styles.noteText}>
-              登録時は標準 5 フェーズを未着手で自動生成し、PM を初期担当として紐付けます。
+              登録時に基礎検討、基本設計、詳細設計、テスト、移行の 5 フェーズを自動生成します。PM は初期担当として設定されます。
             </p>
           </div>
 

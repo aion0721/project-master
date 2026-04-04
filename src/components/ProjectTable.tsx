@@ -13,7 +13,7 @@ interface ProjectTableRow {
 interface ProjectTableProps {
   rows: ProjectTableRow[]
   bookmarkedProjectIds?: string[]
-  onToggleBookmark?: (projectId: string) => void
+  onToggleBookmark?: (projectNumber: string) => void
 }
 
 export function ProjectTable({
@@ -40,14 +40,14 @@ export function ProjectTable({
         </thead>
         <tbody>
           {rows.map(({ project, currentPhaseName, pmName }) => {
-            const isBookmarked = bookmarkedSet.has(project.id)
+            const isBookmarked = bookmarkedSet.has(project.projectNumber)
 
             return (
-              <tr key={project.id}>
+              <tr key={project.projectNumber}>
                 <td>
                   <div className={styles.projectCell}>
                     <span className={styles.projectName}>{project.name}</span>
-                    <span className={styles.projectId}>{project.id.toUpperCase()}</span>
+                    <span className={styles.projectId}>{project.projectNumber}</span>
                   </div>
                 </td>
                 <td>{currentPhaseName}</td>
@@ -60,7 +60,7 @@ export function ProjectTable({
                 {onToggleBookmark ? (
                   <td>
                     <Button
-                      onClick={() => onToggleBookmark(project.id)}
+                      onClick={() => onToggleBookmark(project.projectNumber)}
                       size="small"
                       variant={isBookmarked ? 'primary' : 'secondary'}
                     >
@@ -69,7 +69,7 @@ export function ProjectTable({
                   </td>
                 ) : null}
                 <td className={styles.actionCell}>
-                  <Button size="small" to={`/projects/${project.id}`}>
+                  <Button size="small" to={`/projects/${project.projectNumber}`}>
                     詳細を見る
                   </Button>
                 </td>

@@ -17,7 +17,7 @@ function App() {
               <Route index element={<Navigate to="/projects" replace />} />
               <Route path="/projects" element={<ProjectListPage />} />
               <Route path="/projects/new" element={<ProjectCreatePage />} />
-              <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+              <Route path="/projects/:projectNumber" element={<ProjectDetailPage />} />
               <Route path="/cross-project" element={<CrossProjectViewPage />} />
               <Route path="*" element={<Navigate to="/projects" replace />} />
             </Route>

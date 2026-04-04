@@ -5,7 +5,7 @@ import { renderWithProviders } from '../test/renderWithProviders'
 import { ProjectCreatePage } from './ProjectCreatePage'
 
 describe('ProjectCreatePage', () => {
-  it('案件追加フォームを表示し、登録APIを呼び出す', async () => {
+  it('案件追加フォームを表示し、登録 API を呼び出す', async () => {
     const fetchMock = mockProjectApi()
 
     renderWithProviders(<ProjectCreatePage />, {
@@ -15,6 +15,9 @@ describe('ProjectCreatePage', () => {
 
     expect(await screen.findByRole('heading', { name: '案件追加' })).toBeInTheDocument()
 
+    fireEvent.change(screen.getByLabelText('プロジェクト番号'), {
+      target: { value: 'PRJ-006' },
+    })
     fireEvent.change(screen.getByLabelText('案件名'), {
       target: { value: '新規案件A' },
     })

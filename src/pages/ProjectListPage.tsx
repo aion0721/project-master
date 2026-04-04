@@ -20,7 +20,7 @@ export function ProjectListPage() {
     }
 
     const bookmarkedSet = new Set(currentUser.bookmarkedProjectIds)
-    return projects.filter((project) => bookmarkedSet.has(project.id))
+    return projects.filter((project) => bookmarkedSet.has(project.projectNumber))
   }, [currentUser, projects, viewMode])
 
   if (isLoading) {
@@ -42,7 +42,7 @@ export function ProjectListPage() {
   }
 
   const rows = filteredProjects.map((project) => {
-    const projectPhases = getProjectPhases(project.id)
+    const projectPhases = getProjectPhases(project.projectNumber)
     const currentPhase = getProjectCurrentPhase(projectPhases)
     const pm = getProjectPm(project, members)
 

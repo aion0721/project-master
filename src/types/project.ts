@@ -3,7 +3,7 @@ export type WorkStatus = '未着手' | '進行中' | '完了' | '遅延'
 export type PhaseName = '基礎検討' | '基本設計' | '詳細設計' | 'テスト' | '移行'
 
 export interface Project {
-  id: string
+  projectNumber: string
   name: string
   startDate: string
   endDate: string
@@ -37,11 +37,17 @@ export interface ProjectAssignment {
 }
 
 export interface CreateProjectInput {
+  projectNumber: string
   name: string
   startDate: string
   endDate: string
   status: WorkStatus
   pmMemberId: string
+}
+
+export interface UpdateProjectScheduleInput {
+  startDate: string
+  endDate: string
 }
 
 export interface UpdatePhaseInput {

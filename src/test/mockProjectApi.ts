@@ -6,6 +6,7 @@ import type {
   Phase,
   Project,
   UpdatePhaseInput,
+  UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
 } from '../types/project'
 import type { UserProfile } from '../types/user'
@@ -20,7 +21,7 @@ function cloneFixtures() {
       {
         id: 'u1',
         username: 'demo',
-        bookmarkedProjectIds: ['p1', 'p5'],
+        bookmarkedProjectIds: ['PRJ-001', 'PRJ-005'],
       } satisfies UserProfile,
     ],
   }
@@ -29,7 +30,7 @@ function cloneFixtures() {
 type FixtureData = ReturnType<typeof cloneFixtures>
 
 const phaseTemplates = phases
-  .filter((phase) => phase.projectId === 'p1')
+  .filter((phase) => phase.projectId === 'PRJ-001')
   .sort((left, right) => left.startWeek - right.startWeek)
   .map(({ name, startWeek, endWeek }) => ({
     name,
@@ -38,10 +39,10 @@ const phaseTemplates = phases
   }))
 
 const statusLabelByCode = {
-  not_started: projects.find((project) => project.id === 'p4')!.status,
-  in_progress: projects.find((project) => project.id === 'p1')!.status,
-  completed: projects.find((project) => project.id === 'p3')!.status,
-  delayed: projects.find((project) => project.id === 'p2')!.status,
+  not_started: projects.find((project) => project.projectNumber === 'PRJ-004')!.status,
+  in_progress: projects.find((project) => project.projectNumber === 'PRJ-001')!.status,
+  completed: projects.find((project) => project.projectNumber === 'PRJ-003')!.status,
+  delayed: projects.find((project) => project.projectNumber === 'PRJ-002')!.status,
 } as const
 
 function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
@@ -57,6 +58,10 @@ function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
     nextSuffix += 1
     return nextId
   }
+}
+
+function buildProjectKey(projectNumber: string) {
+  return projectNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 }
 
 function deriveProjectStatus(projectPhases: Array<{ status: string }>) {
@@ -80,31 +85,33 @@ function deriveProjectStatus(projectPhases: Array<{ status: string }>) {
   return statusLabelByCode.not_started
 }
 
-function getOrderedProjectPhases(fixtureData: FixtureData, projectId: string) {
+function getOrderedProjectPhases(fixtureData: FixtureData, projectNumber: string) {
   return fixtureData.phases
-    .filter((phase) => phase.projectId === projectId)
+    .filter((phase) => phase.projectId === projectNumber)
     .sort((left, right) => left.startWeek - right.startWeek)
 }
 
-function updateProjectStatus(fixtureData: FixtureData, projectId: string) {
-  const project = fixtureData.projects.find((item) => item.id === projectId)
+function updateProjectStatus(fixtureData: FixtureData, projectNumber: string) {
+  const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
 
   if (!project) {
     return null
   }
 
-  project.status = deriveProjectStatus(getOrderedProjectPhases(fixtureData, projectId)) as Project['status']
+  project.status = deriveProjectStatus(
+    getOrderedProjectPhases(fixtureData, projectNumber),
+  ) as Project['status']
   return project
 }
 
-function updateCurrentPhaseState(fixtureData: FixtureData, projectId: string, phaseId: string) {
-  const project = fixtureData.projects.find((item) => item.id === projectId)
+function updateCurrentPhaseState(fixtureData: FixtureData, projectNumber: string, phaseId: string) {
+  const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
 
   if (!project) {
     return null
   }
 
-  const projectPhases = getOrderedProjectPhases(fixtureData, projectId)
+  const projectPhases = getOrderedProjectPhases(fixtureData, projectNumber)
   const targetIndex = projectPhases.findIndex((phase) => phase.id === phaseId)
 
   if (targetIndex === -1) {
@@ -128,8 +135,8 @@ function updateCurrentPhaseState(fixtureData: FixtureData, projectId: string, ph
     phase.progress = 0
   })
 
-  updateProjectStatus(fixtureData, projectId)
-  return buildProjectDetailResponse(fixtureData, projectId)
+  updateProjectStatus(fixtureData, projectNumber)
+  return buildProjectDetailResponse(fixtureData, projectNumber)
 }
 
 export function mockProjectApi() {
@@ -225,25 +232,30 @@ export function mockProjectApi() {
       const body = JSON.parse(String(init?.body)) as Omit<CreateProjectInput, 'status'> & {
         status: keyof typeof statusLabelByCode
       }
-      const nextProjectId = `p${fixtureData.projects.length + 1}`
+
       const project = {
-        id: nextProjectId,
-        ...body,
+        projectNumber: body.projectNumber,
+        name: body.name,
+        startDate: body.startDate,
+        endDate: body.endDate,
         status: statusLabelByCode[body.status],
+        pmMemberId: body.pmMemberId,
       }
 
       fixtureData.projects.push(project)
+      const projectKey = buildProjectKey(body.projectNumber)
+
       fixtureData.assignments.push({
-        id: `as-${nextProjectId}-1`,
-        projectId: nextProjectId,
+        id: `as-${projectKey}-1`,
+        projectId: body.projectNumber,
         memberId: body.pmMemberId,
         responsibility: 'PM',
       })
 
       phaseTemplates.forEach((phase, index) => {
         fixtureData.phases.push({
-          id: `ph-${nextProjectId}-${index + 1}`,
-          projectId: nextProjectId,
+          id: `ph-${projectKey}-${index + 1}`,
+          projectId: body.projectNumber,
           name: phase.name,
           startWeek: phase.startWeek,
           endWeek: phase.endWeek,
@@ -253,7 +265,7 @@ export function mockProjectApi() {
         })
       })
 
-      const detail = buildProjectDetailResponse(fixtureData, nextProjectId)
+      const detail = buildProjectDetailResponse(fixtureData, body.projectNumber)
 
       return new Response(JSON.stringify(detail), {
         status: 201,
@@ -265,9 +277,9 @@ export function mockProjectApi() {
 
     const currentPhaseMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/current-phase$/)
     if (currentPhaseMatch && method === 'PATCH') {
-      const projectId = currentPhaseMatch[1]
+      const projectNumber = currentPhaseMatch[1]
       const body = JSON.parse(String(init?.body)) as { phaseId: string }
-      const detail = updateCurrentPhaseState(fixtureData, projectId, body.phaseId)
+      const detail = updateCurrentPhaseState(fixtureData, projectNumber, body.phaseId)
 
       return new Response(JSON.stringify(detail ?? { message: 'Project or phase not found' }), {
         status: detail ? 200 : 404,
@@ -277,11 +289,48 @@ export function mockProjectApi() {
       })
     }
 
+    const scheduleMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/schedule$/)
+    if (scheduleMatch && method === 'PATCH') {
+      const projectNumber = scheduleMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectScheduleInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      if (body.startDate > body.endDate) {
+        return new Response(JSON.stringify({ message: 'Invalid schedule' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.startDate = body.startDate
+      project.endDate = body.endDate
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
     const structureMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/structure$/)
     if (structureMatch && method === 'PATCH') {
-      const projectId = structureMatch[1]
+      const projectNumber = structureMatch[1]
       const body = JSON.parse(String(init?.body)) as UpdateProjectStructureInput
-      const project = fixtureData.projects.find((item) => item.id === projectId)
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
 
       if (!project) {
         return new Response(JSON.stringify({ message: 'Project not found' }), {
@@ -295,33 +344,33 @@ export function mockProjectApi() {
       project.pmMemberId = body.pmMemberId
 
       const currentProjectAssignments = fixtureData.assignments.filter(
-        (assignment) => assignment.projectId === projectId,
+        (assignment) => assignment.projectId === projectNumber,
       )
       const existingIds = currentProjectAssignments.map((assignment) => assignment.id)
 
-      const nextAssignmentId = createAssignmentIdGenerator(projectId, existingIds)
+      const nextAssignmentId = createAssignmentIdGenerator(buildProjectKey(projectNumber), existingIds)
       const nextAssignments = [
         {
           id:
             currentProjectAssignments.find((assignment) => assignment.responsibility === 'PM')?.id ??
             nextAssignmentId(),
-          projectId,
+          projectId: projectNumber,
           memberId: body.pmMemberId,
           responsibility: 'PM',
         },
         ...body.assignments.map((assignment) => ({
           id: assignment.id ?? nextAssignmentId(),
-          projectId,
+          projectId: projectNumber,
           memberId: assignment.memberId,
           responsibility: assignment.responsibility,
         })),
       ]
 
       fixtureData.assignments = fixtureData.assignments
-        .filter((assignment) => assignment.projectId !== projectId)
+        .filter((assignment) => assignment.projectId !== projectNumber)
         .concat(nextAssignments)
 
-      const detail = buildProjectDetailResponse(fixtureData, projectId)
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 
       return new Response(JSON.stringify(detail), {
         status: 200,

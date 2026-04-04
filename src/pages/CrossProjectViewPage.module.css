@@ -12,6 +12,10 @@
     linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
 }
 
+.section {
+  min-width: 0;
+}
+
 .eyebrow {
   composes: eyebrow from '../styles/page.module.css';
 }
@@ -26,7 +30,7 @@
 
 .filterRow {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
   margin-top: 24px;
@@ -63,8 +67,22 @@
   color: #fff;
 }
 
+.searchField {
+  composes: field from '../styles/form.module.css';
+  min-width: 280px;
+  max-width: 360px;
+}
+
+.searchLabel {
+  composes: label from '../styles/form.module.css';
+}
+
+.searchInput {
+  composes: control from '../styles/form.module.css';
+}
+
 .filterHint {
-  margin: 0;
+  margin: 12px 0 0;
   font-size: 13px;
   color: var(--text-subtle);
 }
@@ -258,6 +276,11 @@
 
   .filterRow {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+  }
+
+  .searchField {
+    min-width: 0;
+    max-width: none;
   }
 }

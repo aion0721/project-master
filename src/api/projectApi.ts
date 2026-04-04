@@ -5,6 +5,7 @@ import type {
   Project,
   ProjectAssignment,
   UpdatePhaseInput,
+  UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
@@ -41,7 +42,6 @@ interface ApiProjectDetailResponse {
   }
   phases: Array<
     Phase & {
-      assignee: ApiMember | null
       range: {
         startDate: string
         endDate: string
@@ -88,7 +88,7 @@ function normalizeMember(member: ApiMember | null | undefined): Member | null {
 
 function normalizeProject(project: Project): Project {
   return {
-    id: project.id,
+    projectNumber: project.projectNumber,
     name: project.name,
     startDate: project.startDate,
     endDate: project.endDate,
@@ -167,13 +167,6 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
     }
   })
 
-  detail.phases.forEach((phase) => {
-    const assignee = normalizeMember(phase.assignee)
-    if (assignee) {
-      memberMap.set(assignee.id, assignee)
-    }
-  })
-
   detail.assignments.forEach((assignment) => {
     const member = normalizeMember(assignment.member)
     if (member) {
@@ -202,7 +195,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
 
   const detailResponses = await Promise.all(
     listResponse.items.map((project) =>
-      fetchJson<ApiProjectDetailResponse>(`/api/projects/${project.id}`, signal),
+      fetchJson<ApiProjectDetailResponse>(`/api/projects/${project.projectNumber}`, signal),
     ),
   )
 
@@ -225,11 +218,6 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
 
     detail.phases.forEach((phase) => {
       phaseMap.set(phase.id, normalizePhase(phase))
-
-      const assignee = normalizeMember(phase.assignee)
-      if (assignee) {
-        memberMap.set(assignee.id, assignee)
-      }
     })
 
     detail.assignments.forEach((assignment) => {
@@ -325,10 +313,25 @@ export async function updateProjectCurrentPhaseRequest(
   return normalizeProjectDetail(detail)
 }
 
+export async function updateProjectScheduleRequest(
+  projectId: string,
+  input: UpdateProjectScheduleInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectScheduleInput>(
+    `/api/projects/${projectId}/schedule`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
 export function buildProjectListResponse(data: ProjectDataPayload) {
   return {
     items: data.projects.map((project) => {
-      const projectPhases = data.phases.filter((phase) => phase.projectId === project.id)
+      const projectPhases = data.phases.filter((phase) => phase.projectId === project.projectNumber)
       const currentPhase = getProjectCurrentPhase(projectPhases)
       const pm = getProjectPm(project, data.members)
 
@@ -345,17 +348,18 @@ export function buildProjectDetailResponse(
   data: ProjectDataPayload,
   projectId: string,
 ): ApiProjectDetailResponse | null {
-  const project = data.projects.find((item) => item.id === projectId)
+  const project = data.projects.find((item) => item.projectNumber === projectId)
 
   if (!project) {
     return null
   }
 
-  const projectPhases = data.phases.filter((phase) => phase.projectId === projectId)
-  const projectAssignments = data.assignments.filter((assignment) => assignment.projectId === projectId)
+  const projectPhases = data.phases.filter((phase) => phase.projectId === project.projectNumber)
+  const projectAssignments = data.assignments.filter(
+    (assignment) => assignment.projectId === project.projectNumber,
+  )
   const memberIds = new Set([
     project.pmMemberId,
-    ...projectPhases.map((phase) => phase.assigneeMemberId),
     ...projectAssignments.map((assignment) => assignment.memberId),
   ])
 
@@ -366,7 +370,6 @@ export function buildProjectDetailResponse(
     },
     phases: projectPhases.map((phase) => ({
       ...phase,
-      assignee: data.members.find((member) => member.id === phase.assigneeMemberId) ?? null,
       range: getPhaseActualRange(project, phase),
     })),
     assignments: projectAssignments.map((assignment) => ({

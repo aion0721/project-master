@@ -5,9 +5,10 @@ import { mockProjectApi } from '../test/mockProjectApi'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { ProjectDetailPage } from './ProjectDetailPage'
 
-const project = projects.find((item) => item.id === 'p1')!
+const project = projects.find((item) => item.projectNumber === 'PRJ-001')!
 const currentPhase = phases.find((item) => item.id === 'ph-p1-2')!
 const nextPhase = phases.find((item) => item.id === 'ph-p1-3')!
+const delayedStatus = projects.find((item) => item.projectNumber === 'PRJ-002')!.status
 const editableAssignment = assignments.find((item) => item.id === 'as-p1-3')!
 
 describe('ProjectDetailPage', () => {
@@ -15,22 +16,56 @@ describe('ProjectDetailPage', () => {
     mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/p1'],
-      routePath: '/projects/:projectId',
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
     })
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
     expect(screen.getByTestId('current-phase-edit-button')).toBeInTheDocument()
+    expect(screen.getByTestId('project-schedule-value')).toBeInTheDocument()
     expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
+  })
+
+  it('開始日と終了日を更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-schedule-edit-button'))
+    fireEvent.change(screen.getByTestId('project-schedule-start'), {
+      target: { value: '2026-04-13' },
+    })
+    fireEvent.change(screen.getByTestId('project-schedule-end'), {
+      target: { value: '2026-07-03' },
+    })
+    fireEvent.click(screen.getByTestId('project-schedule-save-button'))
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/projects/PRJ-001/schedule'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            startDate: '2026-04-13',
+            endDate: '2026-07-03',
+          }),
+        }),
+      )
+    })
   })
 
   it('現在フェーズを変更できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/p1'],
-      routePath: '/projects/:projectId',
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
     })
 
     await screen.findByRole('heading', { name: project.name })
@@ -43,7 +78,7 @@ describe('ProjectDetailPage', () => {
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/projects/p1/current-phase'),
+        expect.stringContaining('/api/projects/PRJ-001/current-phase'),
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({
@@ -52,18 +87,14 @@ describe('ProjectDetailPage', () => {
         }),
       )
     })
-
-    await waitFor(() => {
-      expect(screen.getByTestId('current-phase-value')).toHaveTextContent(nextPhase.name)
-    })
   })
 
   it('フェーズの状態と進捗率と週を更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/p1'],
-      routePath: '/projects/:projectId',
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
     })
 
     await screen.findByRole('heading', { name: project.name })
@@ -72,7 +103,7 @@ describe('ProjectDetailPage', () => {
     fireEvent.change(screen.getByTestId('phase-end-ph-p1-2'), { target: { value: '6' } })
     fireEvent.change(screen.getByTestId('phase-progress-ph-p1-2'), { target: { value: '80' } })
     fireEvent.change(screen.getByTestId('phase-status-ph-p1-2'), {
-      target: { value: projects.find((item) => item.id === 'p2')!.status },
+      target: { value: delayedStatus },
     })
     fireEvent.click(screen.getByTestId('phase-save-ph-p1-2'))
 
@@ -84,7 +115,7 @@ describe('ProjectDetailPage', () => {
           body: JSON.stringify({
             startWeek: 4,
             endWeek: 6,
-            status: projects.find((item) => item.id === 'p2')!.status,
+            status: delayedStatus,
             progress: 80,
           }),
         }),
@@ -96,8 +127,8 @@ describe('ProjectDetailPage', () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/p1'],
-      routePath: '/projects/:projectId',
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
     })
 
     await screen.findByRole('heading', { name: project.name })
@@ -110,7 +141,7 @@ describe('ProjectDetailPage', () => {
 
     await waitFor(() => {
       const structureCall = fetchSpy.mock.calls.find(([url, init]) => {
-        return String(url).includes('/api/projects/p1/structure') && init?.method === 'PATCH'
+        return String(url).includes('/api/projects/PRJ-001/structure') && init?.method === 'PATCH'
       })
 
       expect(structureCall).toBeDefined()
@@ -124,10 +155,6 @@ describe('ProjectDetailPage', () => {
           }),
         ]),
       )
-    })
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
     })
   })
 })

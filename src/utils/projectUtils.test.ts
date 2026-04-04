@@ -8,14 +8,14 @@ import {
 
 describe('projectUtils', () => {
   it('進行中または遅延のフェーズを現在フェーズとして返す', () => {
-    const projectPhases = phases.filter((phase) => phase.projectId === 'p2')
+    const projectPhases = phases.filter((phase) => phase.projectId === 'PRJ-002')
 
     expect(getProjectCurrentPhase(projectPhases)?.name).toBe('詳細設計')
   })
 
   it('案件の週スロットを最大週まで生成する', () => {
-    const project = projects.find((item) => item.id === 'p1')
-    const projectPhases = phases.filter((phase) => phase.projectId === 'p1')
+    const project = projects.find((item) => item.projectNumber === 'PRJ-001')
+    const projectPhases = phases.filter((phase) => phase.projectId === 'PRJ-001')
 
     expect(project).toBeDefined()
     if (!project) {
@@ -30,8 +30,8 @@ describe('projectUtils', () => {
   })
 
   it('重なる週に該当するフェーズを正しく返す', () => {
-    const project = projects.find((item) => item.id === 'p1')
-    const projectPhases = phases.filter((phase) => phase.projectId === 'p1')
+    const project = projects.find((item) => item.projectNumber === 'PRJ-001')
+    const projectPhases = phases.filter((phase) => phase.projectId === 'PRJ-001')
 
     expect(project).toBeDefined()
     if (!project) {

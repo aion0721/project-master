@@ -20,10 +20,9 @@ function getStatusClassName(status: Phase['status']) {
 interface PhaseRowProps {
   phase: Phase
   weekSlots: WeekSlot[]
-  assigneeName: string
 }
 
-export function PhaseRow({ phase, weekSlots, assigneeName }: PhaseRowProps) {
+export function PhaseRow({ phase, weekSlots }: PhaseRowProps) {
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
 
   return (
@@ -34,9 +33,8 @@ export function PhaseRow({ phase, weekSlots, assigneeName }: PhaseRowProps) {
           <StatusBadge status={phase.status} />
         </div>
         <div className={styles.metaList}>
-          <span>担当: {assigneeName}</span>
           <span>
-            週: W{phase.startWeek} - W{phase.endWeek}
+            期間: W{phase.startWeek} - W{phase.endWeek}
           </span>
           <span>進捗: {phase.progress}%</span>
         </div>

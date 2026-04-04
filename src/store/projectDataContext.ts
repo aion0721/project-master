@@ -6,6 +6,7 @@ import type {
   Project,
   ProjectAssignment,
   UpdatePhaseInput,
+  UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
 } from '../types/project'
 
@@ -19,6 +20,7 @@ export interface ProjectDataContextValue {
   refresh: () => void
   createProject: (input: CreateProjectInput) => Promise<Project>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
+  updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
   updateProjectCurrentPhase: (projectId: string, phaseId: string) => Promise<Project>
   updateProjectStructure: (projectId: string, input: UpdateProjectStructureInput) => Promise<Project>
   getProjectById: (projectId: string) => Project | undefined
