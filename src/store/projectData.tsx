@@ -3,6 +3,7 @@ import {
   createProjectRequest,
   loadProjectData,
   updatePhaseRequest,
+  updateProjectCurrentPhaseRequest,
   updateProjectStructureRequest,
 } from '../api/projectApi'
 import type {
@@ -106,6 +107,21 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeById(current, [payload.phase]))
       setProjects((current) => mergeById(current, [payload.project]))
       return payload.phase
+    },
+    updateProjectCurrentPhase: async (projectId: string, phaseId: string) => {
+      const payload = await updateProjectCurrentPhaseRequest(projectId, phaseId)
+      const updatedProject = payload.projects[0]
+
+      if (!updatedProject) {
+        throw new Error('Updated project payload is empty')
+      }
+
+      setProjects((current) => mergeById(current, payload.projects))
+      setPhases((current) => mergeById(current, payload.phases))
+      setMembers((current) => mergeById(current, payload.members))
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+
+      return updatedProject
     },
     updateProjectStructure: async (projectId: string, input: UpdateProjectStructureInput) => {
       const payload = await updateProjectStructureRequest(projectId, input)

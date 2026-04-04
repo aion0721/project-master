@@ -1,11 +1,17 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { assignments, phases, projects } from '../data/mockData'
 import { mockProjectApi } from '../test/mockProjectApi'
 import { renderWithProviders } from '../test/renderWithProviders'
 import { ProjectDetailPage } from './ProjectDetailPage'
 
+const project = projects.find((item) => item.id === 'p1')!
+const currentPhase = phases.find((item) => item.id === 'ph-p1-2')!
+const nextPhase = phases.find((item) => item.id === 'ph-p1-3')!
+const editableAssignment = assignments.find((item) => item.id === 'as-p1-3')!
+
 describe('ProjectDetailPage', () => {
-  it('案件詳細、タイムライン、体制情報を表示する', async () => {
+  it('案件詳細と現在フェーズを表示する', async () => {
     mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
@@ -13,18 +19,13 @@ describe('ProjectDetailPage', () => {
       routePath: '/projects/:projectId',
     })
 
-    expect(await screen.findByRole('heading', { name: '基幹会計刷新' })).toBeInTheDocument()
-    expect(screen.getByText('フェーズ進捗タイムライン')).toBeInTheDocument()
-    expect(screen.getByText('プロジェクト体制')).toBeInTheDocument()
-    expect(screen.getByText('OS タスク担当')).toBeInTheDocument()
-    expect(screen.getAllByLabelText('基本設計 の開始週')[0]).toHaveValue(3)
-    expect(screen.getAllByLabelText('基本設計 の終了週')[0]).toHaveValue(5)
-    expect(screen.getAllByLabelText('基本設計 の進捗率')[0]).toHaveValue(70)
-    expect(screen.queryByLabelText('PMを選択')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '編集' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
+    expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
+    expect(screen.getByTestId('current-phase-edit-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
   })
 
-  it('フェーズの状態、進捗率、週を更新できる', async () => {
+  it('現在フェーズを変更できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
@@ -32,16 +33,48 @@ describe('ProjectDetailPage', () => {
       routePath: '/projects/:projectId',
     })
 
-    const startWeekInput = (await screen.findAllByLabelText('基本設計 の開始週'))[0]
-    const endWeekInput = screen.getAllByLabelText('基本設計 の終了週')[0]
-    const progressInput = screen.getAllByLabelText('基本設計 の進捗率')[0]
-    const statusSelect = screen.getAllByLabelText('基本設計 の状態')[0]
+    await screen.findByRole('heading', { name: project.name })
 
-    fireEvent.change(startWeekInput, { target: { value: '4' } })
-    fireEvent.change(endWeekInput, { target: { value: '6' } })
-    fireEvent.change(progressInput, { target: { value: '80' } })
-    fireEvent.change(statusSelect, { target: { value: '遅延' } })
-    fireEvent.click(screen.getAllByRole('button', { name: '保存' })[1]!)
+    fireEvent.click(screen.getByTestId('current-phase-edit-button'))
+    fireEvent.change(screen.getByTestId('current-phase-select'), {
+      target: { value: nextPhase.id },
+    })
+    fireEvent.click(screen.getByTestId('current-phase-save-button'))
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/projects/p1/current-phase'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            phaseId: nextPhase.id,
+          }),
+        }),
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('current-phase-value')).toHaveTextContent(nextPhase.name)
+    })
+  })
+
+  it('フェーズの状態と進捗率と週を更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/p1'],
+      routePath: '/projects/:projectId',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.change(screen.getByTestId('phase-start-ph-p1-2'), { target: { value: '4' } })
+    fireEvent.change(screen.getByTestId('phase-end-ph-p1-2'), { target: { value: '6' } })
+    fireEvent.change(screen.getByTestId('phase-progress-ph-p1-2'), { target: { value: '80' } })
+    fireEvent.change(screen.getByTestId('phase-status-ph-p1-2'), {
+      target: { value: projects.find((item) => item.id === 'p2')!.status },
+    })
+    fireEvent.click(screen.getByTestId('phase-save-ph-p1-2'))
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -51,7 +84,7 @@ describe('ProjectDetailPage', () => {
           body: JSON.stringify({
             startWeek: 4,
             endWeek: 6,
-            status: '遅延',
+            status: projects.find((item) => item.id === 'p2')!.status,
             progress: 80,
           }),
         }),
@@ -67,11 +100,13 @@ describe('ProjectDetailPage', () => {
       routePath: '/projects/:projectId',
     })
 
-    fireEvent.click((await screen.findAllByRole('button', { name: '編集' }))[0]!)
-    fireEvent.change(screen.getByLabelText('PMを選択'), {
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('structure-edit-toggle'))
+    fireEvent.change(screen.getByTestId('structure-pm-select'), {
       target: { value: 'm6' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '体制を保存' }))
+    fireEvent.click(screen.getByTestId('structure-save-button'))
 
     await waitFor(() => {
       const structureCall = fetchSpy.mock.calls.find(([url, init]) => {
@@ -83,13 +118,16 @@ describe('ProjectDetailPage', () => {
       expect(body.pmMemberId).toBe('m6')
       expect(body.assignments).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ responsibility: '基本設計', memberId: 'm2' }),
+          expect.objectContaining({
+            responsibility: editableAssignment.responsibility,
+            memberId: editableAssignment.memberId,
+          }),
         ]),
       )
     })
 
     await waitFor(() => {
-      expect(screen.queryByLabelText('PMを選択')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
     })
   })
 })

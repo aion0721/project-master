@@ -3,6 +3,8 @@ import { buildProjectDetailResponse, buildProjectListResponse } from '../api/pro
 import { assignments, members, phases, projects } from '../data/mockData'
 import type {
   CreateProjectInput,
+  Phase,
+  Project,
   UpdatePhaseInput,
   UpdateProjectStructureInput,
 } from '../types/project'
@@ -24,19 +26,22 @@ function cloneFixtures() {
   }
 }
 
-const phaseTemplates = [
-  { name: '基礎検討', startWeek: 1, endWeek: 2 },
-  { name: '基本設計', startWeek: 3, endWeek: 5 },
-  { name: '詳細設計', startWeek: 6, endWeek: 8 },
-  { name: 'テスト', startWeek: 9, endWeek: 11 },
-  { name: '移行', startWeek: 12, endWeek: 13 },
-] as const
+type FixtureData = ReturnType<typeof cloneFixtures>
+
+const phaseTemplates = phases
+  .filter((phase) => phase.projectId === 'p1')
+  .sort((left, right) => left.startWeek - right.startWeek)
+  .map(({ name, startWeek, endWeek }) => ({
+    name,
+    startWeek,
+    endWeek,
+  }))
 
 const statusLabelByCode = {
-  not_started: '未着手',
-  in_progress: '進行中',
-  completed: '完了',
-  delayed: '遅延',
+  not_started: projects.find((project) => project.id === 'p4')!.status,
+  in_progress: projects.find((project) => project.id === 'p1')!.status,
+  completed: projects.find((project) => project.id === 'p3')!.status,
+  delayed: projects.find((project) => project.id === 'p2')!.status,
 } as const
 
 function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
@@ -55,19 +60,76 @@ function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
 }
 
 function deriveProjectStatus(projectPhases: Array<{ status: string }>) {
-  if (projectPhases.some((phase) => phase.status === '遅延')) {
-    return '遅延'
+  if (projectPhases.some((phase) => phase.status === statusLabelByCode.delayed)) {
+    return statusLabelByCode.delayed
   }
 
-  if (projectPhases.every((phase) => phase.status === '完了')) {
-    return '完了'
+  if (projectPhases.every((phase) => phase.status === statusLabelByCode.completed)) {
+    return statusLabelByCode.completed
   }
 
-  if (projectPhases.some((phase) => phase.status === '進行中' || phase.status === '完了')) {
-    return '進行中'
+  if (
+    projectPhases.some(
+      (phase) =>
+        phase.status === statusLabelByCode.in_progress || phase.status === statusLabelByCode.completed,
+    )
+  ) {
+    return statusLabelByCode.in_progress
   }
 
-  return '未着手'
+  return statusLabelByCode.not_started
+}
+
+function getOrderedProjectPhases(fixtureData: FixtureData, projectId: string) {
+  return fixtureData.phases
+    .filter((phase) => phase.projectId === projectId)
+    .sort((left, right) => left.startWeek - right.startWeek)
+}
+
+function updateProjectStatus(fixtureData: FixtureData, projectId: string) {
+  const project = fixtureData.projects.find((item) => item.id === projectId)
+
+  if (!project) {
+    return null
+  }
+
+  project.status = deriveProjectStatus(getOrderedProjectPhases(fixtureData, projectId)) as Project['status']
+  return project
+}
+
+function updateCurrentPhaseState(fixtureData: FixtureData, projectId: string, phaseId: string) {
+  const project = fixtureData.projects.find((item) => item.id === projectId)
+
+  if (!project) {
+    return null
+  }
+
+  const projectPhases = getOrderedProjectPhases(fixtureData, projectId)
+  const targetIndex = projectPhases.findIndex((phase) => phase.id === phaseId)
+
+  if (targetIndex === -1) {
+    return null
+  }
+
+  projectPhases.forEach((phase, index) => {
+    if (index < targetIndex) {
+      phase.status = statusLabelByCode.completed as Phase['status']
+      phase.progress = 100
+      return
+    }
+
+    if (index === targetIndex) {
+      phase.status = statusLabelByCode.in_progress as Phase['status']
+      phase.progress = phase.progress === 100 ? 80 : phase.progress
+      return
+    }
+
+    phase.status = statusLabelByCode.not_started as Phase['status']
+    phase.progress = 0
+  })
+
+  updateProjectStatus(fixtureData, projectId)
+  return buildProjectDetailResponse(fixtureData, projectId)
 }
 
 export function mockProjectApi() {
@@ -185,7 +247,7 @@ export function mockProjectApi() {
           name: phase.name,
           startWeek: phase.startWeek,
           endWeek: phase.endWeek,
-          status: '未着手',
+          status: statusLabelByCode.not_started,
           progress: 0,
           assigneeMemberId: body.pmMemberId,
         })
@@ -195,6 +257,20 @@ export function mockProjectApi() {
 
       return new Response(JSON.stringify(detail), {
         status: 201,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const currentPhaseMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/current-phase$/)
+    if (currentPhaseMatch && method === 'PATCH') {
+      const projectId = currentPhaseMatch[1]
+      const body = JSON.parse(String(init?.body)) as { phaseId: string }
+      const detail = updateCurrentPhaseState(fixtureData, projectId, body.phaseId)
+
+      return new Response(JSON.stringify(detail ?? { message: 'Project or phase not found' }), {
+        status: detail ? 200 : 404,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -275,7 +351,7 @@ export function mockProjectApi() {
       targetPhase.status = body.status
       targetPhase.progress = body.progress
 
-      const targetProject = fixtureData.projects.find((project) => project.id === targetPhase.projectId)
+      const targetProject = updateProjectStatus(fixtureData, targetPhase.projectId)
 
       if (!targetProject) {
         return new Response(JSON.stringify({ message: 'Project not found' }), {
@@ -285,10 +361,6 @@ export function mockProjectApi() {
           },
         })
       }
-
-      targetProject.status = deriveProjectStatus(
-        fixtureData.phases.filter((phase) => phase.projectId === targetProject.id),
-      ) as typeof targetProject.status
 
       return new Response(JSON.stringify({ phase: targetPhase, project: targetProject }), {
         status: 200,

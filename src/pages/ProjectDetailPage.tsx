@@ -11,8 +11,8 @@ import type { WorkStatus } from '../types/project'
 import {
   formatPeriod,
   getMemberName,
-  getOsOwners,
   getPhaseActualRange,
+  getProjectCurrentPhase,
   getProjectPm,
 } from '../utils/projectUtils'
 import styles from './ProjectDetailPage.module.css'
@@ -57,12 +57,17 @@ export function ProjectDetailPage() {
     isLoading,
     error,
     updatePhase,
+    updateProjectCurrentPhase,
     updateProjectStructure,
   } = useProjectData()
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseFormState>>({})
   const [savingPhaseId, setSavingPhaseId] = useState<string | null>(null)
   const [phaseRowErrors, setPhaseRowErrors] = useState<Record<string, string>>({})
+  const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
+  const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
+  const [currentPhaseError, setCurrentPhaseError] = useState<string | null>(null)
+  const [isSavingCurrentPhase, setIsSavingCurrentPhase] = useState(false)
   const [isStructureEditing, setIsStructureEditing] = useState(false)
   const [structurePmMemberId, setStructurePmMemberId] = useState('')
   const [structureAssignments, setStructureAssignments] = useState<StructureAssignmentDraft[]>([])
@@ -89,6 +94,7 @@ export function ProjectDetailPage() {
         })),
     [projectAssignments],
   )
+  const currentPhase = useMemo(() => getProjectCurrentPhase(projectPhases), [projectPhases])
 
   useEffect(() => {
     if (projectPhases.length === 0) {
@@ -131,6 +137,11 @@ export function ProjectDetailPage() {
     setStructureError(null)
   }, [editableAssignments, project])
 
+  useEffect(() => {
+    setCurrentPhaseDraftId(currentPhase?.id ?? '')
+    setCurrentPhaseError(null)
+  }, [currentPhase])
+
   if (isLoading) {
     return (
       <Panel className={styles.notFound}>
@@ -168,10 +179,10 @@ export function ProjectDetailPage() {
 
   const currentProject = project
   const pm = getProjectPm(currentProject, members)
-  const osOwners = getOsOwners(projectAssignments, members)
   const structureChanged =
     structurePmMemberId !== currentProject.pmMemberId ||
     JSON.stringify(structureAssignments) !== JSON.stringify(editableAssignments)
+  const currentPhaseChanged = currentPhaseDraftId !== (currentPhase?.id ?? '')
 
   function resetStructureEditor() {
     setStructurePmMemberId(currentProject.pmMemberId)
@@ -187,6 +198,27 @@ export function ProjectDetailPage() {
   function closeStructureEditor() {
     resetStructureEditor()
     setIsStructureEditing(false)
+  }
+
+  async function handleCurrentPhaseSave() {
+    if (!currentPhaseDraftId) {
+      setCurrentPhaseError('現在フェーズを選択してください。')
+      return
+    }
+
+    setIsSavingCurrentPhase(true)
+    setCurrentPhaseError(null)
+
+    try {
+      await updateProjectCurrentPhase(currentProject.id, currentPhaseDraftId)
+      setIsCurrentPhaseEditing(false)
+    } catch (caughtError) {
+      setCurrentPhaseError(
+        caughtError instanceof Error ? caughtError.message : '現在フェーズの更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingCurrentPhase(false)
+    }
   }
 
   async function handlePhaseSave(phaseId: string) {
@@ -347,8 +379,68 @@ export function ProjectDetailPage() {
             </strong>
           </article>
           <article className={styles.metaCard}>
-            <span className={styles.metaLabel}>OS タスク担当</span>
-            <strong className={styles.metaValue}>{osOwners.join(' / ') || '未設定'}</strong>
+            <span className={styles.metaLabel}>現在フェーズ</span>
+            {isCurrentPhaseEditing ? (
+              <div className={styles.phaseMetaEditor}>
+                <select
+                  aria-label="現在フェーズを選択"
+                  className={styles.selectInput}
+                  data-testid="current-phase-select"
+                  onChange={(event) => setCurrentPhaseDraftId(event.target.value)}
+                  value={currentPhaseDraftId}
+                >
+                  <option value="">選択してください</option>
+                  {projectPhases.map((phase) => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.name}
+                    </option>
+                  ))}
+                </select>
+                <div className={styles.phaseMetaActions}>
+                  <Button
+                    data-testid="current-phase-save-button"
+                    disabled={isSavingCurrentPhase || !currentPhaseChanged}
+                    onClick={() => {
+                      void handleCurrentPhaseSave()
+                    }}
+                    size="small"
+                  >
+                    {isSavingCurrentPhase ? '保存中...' : '保存'}
+                  </Button>
+                  <Button
+                    data-testid="current-phase-cancel-button"
+                    onClick={() => {
+                      setCurrentPhaseDraftId(currentPhase?.id ?? '')
+                      setCurrentPhaseError(null)
+                      setIsCurrentPhaseEditing(false)
+                    }}
+                    size="small"
+                    variant="secondary"
+                  >
+                    キャンセル
+                  </Button>
+                </div>
+                {currentPhaseError ? <p className={styles.metaError}>{currentPhaseError}</p> : null}
+              </div>
+            ) : (
+              <div className={styles.phaseMetaDisplay}>
+                <strong className={styles.metaValue} data-testid="current-phase-value">
+                  {currentPhase?.name ?? '未設定'}
+                </strong>
+                <Button
+                  data-testid="current-phase-edit-button"
+                  onClick={() => {
+                    setCurrentPhaseDraftId(currentPhase?.id ?? '')
+                    setCurrentPhaseError(null)
+                    setIsCurrentPhaseEditing(true)
+                  }}
+                  size="small"
+                  variant="secondary"
+                >
+                  変更
+                </Button>
+              </div>
+            )}
           </article>
         </div>
       </Panel>
@@ -405,7 +497,7 @@ export function ProjectDetailPage() {
                     draft.progress !== String(phase.progress)
 
                   return (
-                    <tr key={phase.id}>
+                    <tr data-testid={`phase-row-${phase.id}`} key={phase.id}>
                       <td>{phase.name}</td>
                       <td>{formatPeriod(range.startDate, range.endDate)}</td>
                       <td>{getMemberName(phase.assigneeMemberId, members)}</td>
@@ -415,6 +507,7 @@ export function ProjectDetailPage() {
                           <select
                             aria-label={`${phase.name} の状態`}
                             className={styles.selectInput}
+                            data-testid={`phase-status-${phase.id}`}
                             onChange={(event) => {
                               const value = event.target.value as WorkStatus
                               setPhaseDrafts((current) => ({
@@ -441,6 +534,7 @@ export function ProjectDetailPage() {
                           <input
                             aria-label={`${phase.name} の進捗率`}
                             className={styles.progressInput}
+                            data-testid={`phase-progress-${phase.id}`}
                             inputMode="numeric"
                             max={100}
                             min={0}
@@ -463,6 +557,7 @@ export function ProjectDetailPage() {
                         <input
                           aria-label={`${phase.name} の開始週`}
                           className={styles.weekInput}
+                          data-testid={`phase-start-${phase.id}`}
                           inputMode="numeric"
                           min={1}
                           onChange={(event) => {
@@ -483,6 +578,7 @@ export function ProjectDetailPage() {
                         <input
                           aria-label={`${phase.name} の終了週`}
                           className={styles.weekInput}
+                          data-testid={`phase-end-${phase.id}`}
                           inputMode="numeric"
                           min={1}
                           onChange={(event) => {
@@ -502,6 +598,7 @@ export function ProjectDetailPage() {
                       <td>
                         <div className={styles.actionCell}>
                           <Button
+                            data-testid={`phase-save-${phase.id}`}
                             disabled={isSaving || !hasChanges}
                             onClick={() => {
                               void handlePhaseSave(phase.id)
@@ -535,23 +632,34 @@ export function ProjectDetailPage() {
             </div>
 
             {isStructureEditing ? (
-              <Button onClick={closeStructureEditor} size="small" variant="secondary">
+              <Button
+                data-testid="structure-edit-toggle"
+                onClick={closeStructureEditor}
+                size="small"
+                variant="secondary"
+              >
                 編集を閉じる
               </Button>
             ) : (
-              <Button onClick={openStructureEditor} size="small" variant="secondary">
+              <Button
+                data-testid="structure-edit-toggle"
+                onClick={openStructureEditor}
+                size="small"
+                variant="secondary"
+              >
                 編集
               </Button>
             )}
           </div>
 
           {isStructureEditing ? (
-            <div className={styles.structureEditor}>
+            <div className={styles.structureEditor} data-testid="structure-editor">
               <label className={styles.formField}>
                 <span className={styles.formLabel}>PM</span>
                 <select
                   aria-label="PMを選択"
                   className={styles.selectInput}
+                  data-testid="structure-pm-select"
                   onChange={(event) => setStructurePmMemberId(event.target.value)}
                   value={structurePmMemberId}
                 >
@@ -661,6 +769,7 @@ export function ProjectDetailPage() {
                   キャンセル
                 </Button>
                 <Button
+                  data-testid="structure-save-button"
                   disabled={isSavingStructure || !structureChanged}
                   onClick={() => {
                     void handleStructureSave()

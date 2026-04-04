@@ -19,6 +19,7 @@ export interface ProjectDataContextValue {
   refresh: () => void
   createProject: (input: CreateProjectInput) => Promise<Project>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
+  updateProjectCurrentPhase: (projectId: string, phaseId: string) => Promise<Project>
   updateProjectStructure: (projectId: string, input: UpdateProjectStructureInput) => Promise<Project>
   getProjectById: (projectId: string) => Project | undefined
   getProjectPhases: (projectId: string) => Phase[]

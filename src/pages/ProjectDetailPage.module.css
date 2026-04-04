@@ -77,6 +77,28 @@
   color: var(--text-strong);
 }
 
+.phaseMetaDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.phaseMetaEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phaseMetaActions {
+  display: flex;
+  gap: 8px;
+}
+
+.metaError {
+  composes: errorText from '../styles/form.module.css';
+}
+
 .sectionHeader {
   composes: sectionHeader from '../styles/page.module.css';
 }

@@ -310,6 +310,21 @@ export async function updateProjectStructureRequest(
   return normalizeProjectDetail(detail)
 }
 
+export async function updateProjectCurrentPhaseRequest(
+  projectId: string,
+  phaseId: string,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, { phaseId: string }>(
+    `/api/projects/${projectId}/current-phase`,
+    'PATCH',
+    { phaseId },
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
 export function buildProjectListResponse(data: ProjectDataPayload) {
   return {
     items: data.projects.map((project) => {
