@@ -4,6 +4,8 @@ import {
   loadProjectData,
   updatePhaseRequest,
   updateProjectCurrentPhaseRequest,
+  updateProjectLinkRequest,
+  updateProjectPhasesRequest,
   updateProjectScheduleRequest,
   updateProjectStructureRequest,
 } from '../api/projectApi'
@@ -14,6 +16,8 @@ import type {
   Project,
   ProjectAssignment,
   UpdatePhaseInput,
+  UpdateProjectLinkInput,
+  UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
 } from '../types/project'
@@ -120,6 +124,38 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+
+      return updatedProject
+    },
+    updateProjectLink: async (projectId: string, input: UpdateProjectLinkInput) => {
+      const payload = await updateProjectLinkRequest(projectId, input)
+      const updatedProject = payload.projects[0]
+
+      if (!updatedProject) {
+        throw new Error('Updated project payload is empty')
+      }
+
+      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+
+      return updatedProject
+    },
+    updateProjectPhases: async (projectId: string, input: UpdateProjectPhasesInput) => {
+      const payload = await updateProjectPhasesRequest(projectId, input)
+      const updatedProject = payload.projects[0]
+
+      if (!updatedProject) {
+        throw new Error('Updated project payload is empty')
+      }
+
+      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+      setPhases((current) =>
+        current.filter((phase) => phase.projectId !== projectId).concat(payload.phases),
+      )
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 

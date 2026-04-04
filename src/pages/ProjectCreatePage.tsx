@@ -8,6 +8,19 @@ import styles from './ProjectCreatePage.module.css'
 
 const statusOptions: WorkStatus[] = ['未着手', '進行中', '完了', '遅延']
 
+function isValidOptionalUrl(value: string) {
+  if (!value.trim()) {
+    return true
+  }
+
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function ProjectCreatePage() {
   const navigate = useNavigate()
   const { members, isLoading, error, createProject } = useProjectData()
@@ -18,6 +31,7 @@ export function ProjectCreatePage() {
     endDate: '',
     status: '未着手',
     pmMemberId: '',
+    projectLink: '',
   })
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -54,13 +68,18 @@ export function ProjectCreatePage() {
       return
     }
 
+    if (!isValidOptionalUrl(formData.projectLink)) {
+      setSubmitError('案件リンクは有効な URL を入力してください。')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const createdProject = await createProject(formData)
       navigate(`/projects/${createdProject.projectNumber}`)
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件登録に失敗しました。')
+      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件作成に失敗しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -70,7 +89,7 @@ export function ProjectCreatePage() {
     return (
       <Panel className={styles.section}>
         <h1 className={styles.title}>案件追加画面を準備中です</h1>
-        <p className={styles.description}>担当候補のメンバー情報を読み込んでいます。</p>
+        <p className={styles.description}>担当者候補などの初期情報を読み込んでいます。</p>
       </Panel>
     )
   }
@@ -92,7 +111,7 @@ export function ProjectCreatePage() {
         </Button>
         <h1 className={styles.title}>案件追加</h1>
         <p className={styles.description}>
-          プロジェクト番号、案件名、期間、PM を登録します。登録後は標準 5 フェーズが自動で作成されます。
+          プロジェクト番号、案件名、期間、PM を設定して案件を作成します。案件リンクは任意です。
         </p>
       </Panel>
 
@@ -113,7 +132,7 @@ export function ProjectCreatePage() {
             <input
               className={styles.input}
               onChange={(event) => updateField('name', event.target.value)}
-              placeholder="例: 会計システム刷新"
+              placeholder="例: 新規業務システム刷新"
               value={formData.name}
             />
           </label>
@@ -169,10 +188,22 @@ export function ProjectCreatePage() {
             </select>
           </label>
 
+          <label className={styles.field}>
+            <span className={styles.label}>案件リンク</span>
+            <input
+              className={styles.input}
+              onChange={(event) => updateField('projectLink', event.target.value)}
+              placeholder="例: https://example.com/projects/PRJ-006"
+              type="url"
+              value={formData.projectLink}
+            />
+          </label>
+
           <div className={styles.noteCard}>
-            <p className={styles.noteTitle}>初期作成ルール</p>
+            <p className={styles.noteTitle}>初期設定ルール</p>
             <p className={styles.noteText}>
-              登録時に基礎検討、基本設計、詳細設計、テスト、移行の 5 フェーズを自動生成します。PM は初期担当として設定されます。
+              登録時に基礎検討、基本設計、詳細設計、テスト、移行の 5 フェーズを自動作成します。
+              PM は初期担当として設定されます。
             </p>
           </div>
 

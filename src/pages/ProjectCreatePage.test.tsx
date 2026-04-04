@@ -30,6 +30,9 @@ describe('ProjectCreatePage', () => {
     fireEvent.change(screen.getByLabelText('終了予定日'), {
       target: { value: '2026-10-30' },
     })
+    fireEvent.change(screen.getByLabelText('案件リンク'), {
+      target: { value: 'https://example.com/projects/PRJ-006' },
+    })
     fireEvent.click(screen.getByRole('button', { name: '案件を登録' }))
 
     await waitFor(() => {
@@ -37,6 +40,15 @@ describe('ProjectCreatePage', () => {
         'http://localhost:8787/api/projects',
         expect.objectContaining({
           method: 'POST',
+          body: JSON.stringify({
+            projectNumber: 'PRJ-006',
+            name: '新規案件A',
+            startDate: '2026-08-03',
+            endDate: '2026-10-30',
+            status: 'not_started',
+            pmMemberId: 'm1',
+            projectLink: 'https://example.com/projects/PRJ-006',
+          }),
         }),
       )
     })

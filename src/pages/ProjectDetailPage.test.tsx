@@ -8,7 +8,6 @@ import { ProjectDetailPage } from './ProjectDetailPage'
 const project = projects.find((item) => item.projectNumber === 'PRJ-001')!
 const currentPhase = phases.find((item) => item.id === 'ph-p1-2')!
 const nextPhase = phases.find((item) => item.id === 'ph-p1-3')!
-const delayedStatus = projects.find((item) => item.projectNumber === 'PRJ-002')!.status
 const editableAssignment = assignments.find((item) => item.id === 'as-p1-3')!
 
 describe('ProjectDetailPage', () => {
@@ -22,8 +21,7 @@ describe('ProjectDetailPage', () => {
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
-    expect(screen.getByTestId('current-phase-edit-button')).toBeInTheDocument()
-    expect(screen.getByTestId('project-schedule-value')).toBeInTheDocument()
+    expect(screen.getByTestId('project-link-anchor')).toHaveAttribute('href', project.projectLink)
     expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
   })
 
@@ -60,6 +58,35 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('案件リンクを更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-link-edit-button'))
+    fireEvent.change(screen.getByTestId('project-link-input'), {
+      target: { value: 'https://example.com/projects/PRJ-001/review' },
+    })
+    fireEvent.click(screen.getByTestId('project-link-save-button'))
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/projects/PRJ-001/link'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            projectLink: 'https://example.com/projects/PRJ-001/review',
+          }),
+        }),
+      )
+    })
+  })
+
   it('現在フェーズを変更できる', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -89,7 +116,7 @@ describe('ProjectDetailPage', () => {
     })
   })
 
-  it('フェーズの状態と進捗率と週を更新できる', async () => {
+  it('案件ごとのフェーズ構成を保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
@@ -99,26 +126,33 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
-    fireEvent.change(screen.getByTestId('phase-start-ph-p1-2'), { target: { value: '4' } })
-    fireEvent.change(screen.getByTestId('phase-end-ph-p1-2'), { target: { value: '6' } })
-    fireEvent.change(screen.getByTestId('phase-progress-ph-p1-2'), { target: { value: '80' } })
-    fireEvent.change(screen.getByTestId('phase-status-ph-p1-2'), {
-      target: { value: delayedStatus },
+    fireEvent.change(await screen.findByTestId('phase-name-ph-p1-2'), {
+      target: { value: '予備検討' },
     })
-    fireEvent.click(screen.getByTestId('phase-save-ph-p1-2'))
+    fireEvent.click(await screen.findByTestId('phase-remove-ph-p1-3'))
+    fireEvent.click(screen.getByTestId('phase-structure-save-button'))
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/phases/ph-p1-2'),
-        expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({
-            startWeek: 4,
-            endWeek: 6,
-            status: delayedStatus,
-            progress: 80,
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/phases') && init?.method === 'PATCH'
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body.phases).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'ph-p1-2',
+            name: '予備検討',
           }),
-        }),
+        ]),
+      )
+      expect(body.phases).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'ph-p1-3',
+          }),
+        ]),
       )
     })
   })

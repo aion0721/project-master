@@ -6,6 +6,8 @@ import type {
   Phase,
   Project,
   UpdatePhaseInput,
+  UpdateProjectLinkInput,
+  UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
 } from '../types/project'
@@ -55,6 +57,21 @@ function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
 
   return () => {
     const nextId = `as-${projectId}-${nextSuffix}`
+    nextSuffix += 1
+    return nextId
+  }
+}
+
+function createPhaseIdGenerator(projectId: string, currentIds: string[]) {
+  let nextSuffix =
+    currentIds
+      .filter((id) => id.startsWith(`ph-${projectId}-`))
+      .map((id) => Number(id.split('-').at(-1)))
+      .filter((value) => Number.isFinite(value))
+      .reduce((max, value) => Math.max(max, value), 0) + 1
+
+  return () => {
+    const nextId = `ph-${projectId}-${nextSuffix}`
     nextSuffix += 1
     return nextId
   }
@@ -240,6 +257,7 @@ export function mockProjectApi() {
         endDate: body.endDate,
         status: statusLabelByCode[body.status],
         pmMemberId: body.pmMemberId,
+        projectLink: body.projectLink ?? '',
       }
 
       fixtureData.projects.push(project)
@@ -316,6 +334,75 @@ export function mockProjectApi() {
       project.startDate = body.startDate
       project.endDate = body.endDate
 
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const linkMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/link$/)
+    if (linkMatch && method === 'PATCH') {
+      const projectNumber = linkMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectLinkInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.projectLink = body.projectLink.trim() ? body.projectLink.trim() : null
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const phasesMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/phases$/)
+    if (phasesMatch && method === 'PATCH') {
+      const projectNumber = phasesMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectPhasesInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      const nextPhaseId = createPhaseIdGenerator(projectNumber, fixtureData.phases.map((phase) => phase.id))
+      const nextPhases = body.phases.map((phase) => ({
+        id: phase.id ?? nextPhaseId(),
+        projectId: projectNumber,
+        name: phase.name,
+        startWeek: phase.startWeek,
+        endWeek: phase.endWeek,
+        status: phase.status,
+        progress: phase.progress,
+        assigneeMemberId: project.pmMemberId,
+      }))
+
+      fixtureData.phases = fixtureData.phases
+        .filter((phase) => phase.projectId !== projectNumber)
+        .concat(nextPhases)
+
+      updateProjectStatus(fixtureData, projectNumber)
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 
       return new Response(JSON.stringify(detail), {

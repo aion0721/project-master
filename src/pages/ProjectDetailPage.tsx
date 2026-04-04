@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { MemberTree } from '../components/MemberTree'
 import { PhaseTimeline } from '../components/PhaseTimeline'
@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
-import type { WorkStatus } from '../types/project'
+import type { Phase, WorkStatus } from '../types/project'
 import {
   formatPeriod,
   getPhaseActualRange,
@@ -16,10 +16,10 @@ import {
 } from '../utils/projectUtils'
 import styles from './ProjectDetailPage.module.css'
 
-const responsibilityOptions = ['OS', '基礎検討', '基本設計', '詳細設計', 'テスト', '移行', 'インフラ統括']
-const workStatusOptions: WorkStatus[] = ['未着手', '進行中', '完了', '遅延']
-
 interface PhaseFormState {
+  id?: string
+  key: string
+  name: string
   startWeek: string
   endWeek: string
   status: WorkStatus
@@ -32,17 +32,15 @@ interface StructureAssignmentDraft {
   responsibility: string
 }
 
-function buildPhaseFormState(
-  startWeek: number,
-  endWeek: number,
-  status: WorkStatus,
-  progress: number,
-): PhaseFormState {
+function buildPhaseFormState(phase: Phase): PhaseFormState {
   return {
-    startWeek: String(startWeek),
-    endWeek: String(endWeek),
-    status,
-    progress: String(progress),
+    id: phase.id,
+    key: phase.id,
+    name: phase.name,
+    startWeek: String(phase.startWeek),
+    endWeek: String(phase.endWeek),
+    status: phase.status,
+    progress: String(phase.progress),
   }
 }
 
@@ -50,29 +48,58 @@ function normalizeAssignments(assignments: StructureAssignmentDraft[]) {
   return assignments.map((assignment) => ({
     id: assignment.id,
     memberId: assignment.memberId,
-    responsibility: assignment.responsibility,
+    responsibility: assignment.responsibility.trim(),
   }))
+}
+
+function isValidOptionalUrl(value: string) {
+  if (!value.trim()) {
+    return true
+  }
+
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function buildDraftPhaseForRange(projectNumber: string, pmMemberId: string, draft: PhaseFormState): Phase {
+  return {
+    id: draft.id ?? draft.key,
+    projectId: projectNumber,
+    name: draft.name.trim() || '未設定フェーズ',
+    startWeek: Number(draft.startWeek) || 1,
+    endWeek: Number(draft.endWeek) || 1,
+    status: draft.status,
+    progress: Number(draft.progress) || 0,
+    assigneeMemberId: pmMemberId,
+  }
 }
 
 export function ProjectDetailPage() {
   const { projectNumber } = useParams()
   const {
+    projects,
+    assignments,
     members,
     getProjectById,
     getProjectPhases,
     getProjectAssignments,
     isLoading,
     error,
-    updatePhase,
     updateProjectCurrentPhase,
+    updateProjectLink,
+    updateProjectPhases,
     updateProjectSchedule,
     updateProjectStructure,
   } = useProjectData()
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
 
-  const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseFormState>>({})
-  const [savingPhaseId, setSavingPhaseId] = useState<string | null>(null)
-  const [phaseRowErrors, setPhaseRowErrors] = useState<Record<string, string>>({})
+  const [phaseDrafts, setPhaseDrafts] = useState<PhaseFormState[]>([])
+  const [phaseStructureError, setPhaseStructureError] = useState<string | null>(null)
+  const [isSavingPhaseStructure, setIsSavingPhaseStructure] = useState(false)
 
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
   const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
@@ -80,12 +107,14 @@ export function ProjectDetailPage() {
   const [isSavingCurrentPhase, setIsSavingCurrentPhase] = useState(false)
 
   const [isScheduleEditing, setIsScheduleEditing] = useState(false)
-  const [scheduleDraft, setScheduleDraft] = useState({
-    startDate: '',
-    endDate: '',
-  })
+  const [scheduleDraft, setScheduleDraft] = useState({ startDate: '', endDate: '' })
   const [scheduleError, setScheduleError] = useState<string | null>(null)
   const [isSavingSchedule, setIsSavingSchedule] = useState(false)
+
+  const [isProjectLinkEditing, setIsProjectLinkEditing] = useState(false)
+  const [projectLinkDraft, setProjectLinkDraft] = useState('')
+  const [projectLinkError, setProjectLinkError] = useState<string | null>(null)
+  const [isSavingProjectLink, setIsSavingProjectLink] = useState(false)
 
   const [isStructureEditing, setIsStructureEditing] = useState(false)
   const [structurePmMemberId, setStructurePmMemberId] = useState('')
@@ -115,35 +144,25 @@ export function ProjectDetailPage() {
   )
   const currentPhase = useMemo(() => getProjectCurrentPhase(projectPhases), [projectPhases])
 
+  const workStatusOptions = useMemo(
+    () => Array.from(new Set([...projects.map((item) => item.status), ...projectPhases.map((item) => item.status)])),
+    [projectPhases, projects],
+  )
+  const responsibilityOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          assignments
+            .map((assignment) => assignment.responsibility)
+            .filter((responsibility) => responsibility !== 'PM'),
+        ),
+      ),
+    [assignments],
+  )
+
   useEffect(() => {
-    if (projectPhases.length === 0) {
-      return
-    }
-
-    setPhaseDrafts((current) => {
-      const next = { ...current }
-
-      projectPhases.forEach((phase) => {
-        const existing = current[phase.id]
-
-        if (
-          !existing ||
-          (existing.startWeek === String(phase.startWeek) &&
-            existing.endWeek === String(phase.endWeek) &&
-            existing.status === phase.status &&
-            existing.progress === String(phase.progress))
-        ) {
-          next[phase.id] = buildPhaseFormState(
-            phase.startWeek,
-            phase.endWeek,
-            phase.status,
-            phase.progress,
-          )
-        }
-      })
-
-      return next
-    })
+    setPhaseDrafts(projectPhases.map(buildPhaseFormState))
+    setPhaseStructureError(null)
   }, [projectPhases])
 
   useEffect(() => {
@@ -151,11 +170,10 @@ export function ProjectDetailPage() {
       return
     }
 
-    setScheduleDraft({
-      startDate: project.startDate,
-      endDate: project.endDate,
-    })
+    setScheduleDraft({ startDate: project.startDate, endDate: project.endDate })
     setScheduleError(null)
+    setProjectLinkDraft(project.projectLink ?? '')
+    setProjectLinkError(null)
   }, [project])
 
   useEffect(() => {
@@ -210,6 +228,7 @@ export function ProjectDetailPage() {
   const pm = getProjectPm(currentProject, members)
   const scheduleChanged =
     scheduleDraft.startDate !== currentProject.startDate || scheduleDraft.endDate !== currentProject.endDate
+  const projectLinkChanged = projectLinkDraft !== (currentProject.projectLink ?? '')
   const currentPhaseChanged = currentPhaseDraftId !== (currentPhase?.id ?? '')
   const structureChanged =
     structurePmMemberId !== currentProject.pmMemberId ||
@@ -230,6 +249,35 @@ export function ProjectDetailPage() {
   function closeStructureEditor() {
     resetStructureEditor()
     setIsStructureEditing(false)
+  }
+
+  function updatePhaseDraft(key: string, patch: Partial<PhaseFormState>) {
+    setPhaseDrafts((current) =>
+      current.map((phase) => (phase.key === key ? { ...phase, ...patch } : phase)),
+    )
+  }
+
+  function addPhaseDraft() {
+    const nextIndex = phaseDrafts.length + 1
+    const previousEndWeek = phaseDrafts.reduce((max, phase) => Math.max(max, Number(phase.endWeek) || 0), 0)
+
+    setPhaseDrafts((current) => [
+      ...current,
+      {
+        key: `new-${Date.now()}-${nextIndex}`,
+        name: `新規フェーズ${nextIndex}`,
+        startWeek: String(Math.max(previousEndWeek + 1, 1)),
+        endWeek: String(Math.max(previousEndWeek + 1, 1)),
+        status: workStatusOptions[0] ?? currentProject.status,
+        progress: '0',
+      },
+    ])
+    setPhaseStructureError(null)
+  }
+
+  function removePhaseDraft(key: string) {
+    setPhaseDrafts((current) => current.filter((phase) => phase.key !== key))
+    setPhaseStructureError(null)
   }
 
   async function handleCurrentPhaseSave() {
@@ -260,7 +308,7 @@ export function ProjectDetailPage() {
     }
 
     if (scheduleDraft.startDate > scheduleDraft.endDate) {
-      setScheduleError('終了日は開始日以降にしてください。')
+      setScheduleError('終了日は開始日以降で入力してください。')
       return
     }
 
@@ -277,79 +325,84 @@ export function ProjectDetailPage() {
     }
   }
 
-  async function handlePhaseSave(phaseId: string) {
-    const draft = phaseDrafts[phaseId]
-
-    if (!draft) {
+  async function handleProjectLinkSave() {
+    if (!isValidOptionalUrl(projectLinkDraft)) {
+      setProjectLinkError('案件リンクは有効な URL を入力してください。')
       return
     }
 
-    const startWeek = Number(draft.startWeek)
-    const endWeek = Number(draft.endWeek)
-    const progress = Number(draft.progress)
-
-    if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek)) {
-      setPhaseRowErrors((current) => ({
-        ...current,
-        [phaseId]: '開始週と終了週は整数で入力してください。',
-      }))
-      return
-    }
-
-    if (startWeek < 1) {
-      setPhaseRowErrors((current) => ({
-        ...current,
-        [phaseId]: '開始週は 1 以上で入力してください。',
-      }))
-      return
-    }
-
-    if (endWeek < startWeek) {
-      setPhaseRowErrors((current) => ({
-        ...current,
-        [phaseId]: '終了週は開始週以上にしてください。',
-      }))
-      return
-    }
-
-    if (!Number.isInteger(progress) || progress < 0 || progress > 100) {
-      setPhaseRowErrors((current) => ({
-        ...current,
-        [phaseId]: '進捗率は 0 から 100 の整数で入力してください。',
-      }))
-      return
-    }
-
-    setSavingPhaseId(phaseId)
-    setPhaseRowErrors((current) => {
-      const next = { ...current }
-      delete next[phaseId]
-      return next
-    })
+    setIsSavingProjectLink(true)
+    setProjectLinkError(null)
 
     try {
-      const updatedPhase = await updatePhase(phaseId, {
+      await updateProjectLink(currentProject.projectNumber, { projectLink: projectLinkDraft.trim() })
+      setIsProjectLinkEditing(false)
+    } catch (caughtError) {
+      setProjectLinkError(
+        caughtError instanceof Error ? caughtError.message : '案件リンクの更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectLink(false)
+    }
+  }
+
+  async function handlePhaseStructureSave() {
+    if (phaseDrafts.length === 0) {
+      setPhaseStructureError('フェーズは最低 1 件必要です。')
+      return
+    }
+
+    const normalizedPhases: Array<{
+      id?: string
+      name: string
+      startWeek: number
+      endWeek: number
+      status: WorkStatus
+      progress: number
+    }> = []
+
+    for (const phase of phaseDrafts) {
+      const name = phase.name.trim()
+      const startWeek = Number(phase.startWeek)
+      const endWeek = Number(phase.endWeek)
+      const progress = Number(phase.progress)
+
+      if (!name) {
+        setPhaseStructureError('フェーズ名を入力してください。')
+        return
+      }
+
+      if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek) || startWeek < 1 || endWeek < startWeek) {
+        setPhaseStructureError(`「${name}」の開始週・終了週が不正です。`)
+        return
+      }
+
+      if (!Number.isInteger(progress) || progress < 0 || progress > 100) {
+        setPhaseStructureError(`「${name}」の進捗率は 0 から 100 で入力してください。`)
+        return
+      }
+
+      normalizedPhases.push({
+        id: phase.id,
+        name,
         startWeek,
         endWeek,
-        status: draft.status,
+        status: phase.status,
         progress,
       })
-      setPhaseDrafts((current) => ({
-        ...current,
-        [phaseId]: buildPhaseFormState(
-          updatedPhase.startWeek,
-          updatedPhase.endWeek,
-          updatedPhase.status,
-          updatedPhase.progress,
-        ),
-      }))
+    }
+
+    setIsSavingPhaseStructure(true)
+    setPhaseStructureError(null)
+
+    try {
+      await updateProjectPhases(currentProject.projectNumber, { phases: normalizedPhases })
     } catch (caughtError) {
-      setPhaseRowErrors((current) => ({
-        ...current,
-        [phaseId]: caughtError instanceof Error ? caughtError.message : 'フェーズ更新に失敗しました。',
-      }))
+      setPhaseStructureError(
+        caughtError instanceof Error ? caughtError.message : 'フェーズ構成の保存に失敗しました。',
+      )
     } finally {
-      setSavingPhaseId((current) => (current === phaseId ? null : current))
+      setIsSavingPhaseStructure(false)
     }
   }
 
@@ -361,17 +414,13 @@ export function ProjectDetailPage() {
       return
     }
 
-    const normalizedAssignments = normalizeAssignments(structureAssignments).map((assignment) => ({
-      ...assignment,
-      responsibility: assignment.responsibility.trim(),
-    }))
-
+    const normalizedAssignments = normalizeAssignments(structureAssignments)
     const hasInvalidAssignment = normalizedAssignments.some(
       (assignment) => !assignment.memberId || !assignment.responsibility,
     )
 
     if (hasInvalidAssignment) {
-      setStructureError('各担当行に責務と担当者を入力してください。')
+      setStructureError('各役割に担当者と責務を入力してください。')
       return
     }
 
@@ -412,7 +461,7 @@ export function ProjectDetailPage() {
             <p className={styles.description}>
               プロジェクト番号: {currentProject.projectNumber}
               <br />
-              PM、進捗、体制をまとめて確認できる案件詳細です。
+              PM・進捗・体制をまとめて確認できる案件詳細です。
             </p>
           </div>
 
@@ -425,7 +474,7 @@ export function ProjectDetailPage() {
                 size="small"
                 variant={isBookmarked(currentProject.projectNumber) ? 'primary' : 'secondary'}
               >
-                {isBookmarked(currentProject.projectNumber) ? 'ブックマーク済み' : 'ブックマーク'}
+                {isBookmarked(currentProject.projectNumber) ? 'ブックマーク解除' : 'ブックマーク'}
               </Button>
             ) : null}
             <StatusBadge status={currentProject.status} />
@@ -437,6 +486,7 @@ export function ProjectDetailPage() {
             <span className={styles.metaLabel}>PM</span>
             <strong className={styles.metaValue}>{pm?.name ?? '未設定'}</strong>
           </article>
+
           <article className={styles.metaCard}>
             <span className={styles.metaLabel}>期間</span>
             {isScheduleEditing ? (
@@ -448,10 +498,7 @@ export function ProjectDetailPage() {
                     className={styles.selectInput}
                     data-testid="project-schedule-start"
                     onChange={(event) =>
-                      setScheduleDraft((current) => ({
-                        ...current,
-                        startDate: event.target.value,
-                      }))
+                      setScheduleDraft((current) => ({ ...current, startDate: event.target.value }))
                     }
                     type="date"
                     value={scheduleDraft.startDate}
@@ -464,10 +511,7 @@ export function ProjectDetailPage() {
                     className={styles.selectInput}
                     data-testid="project-schedule-end"
                     onChange={(event) =>
-                      setScheduleDraft((current) => ({
-                        ...current,
-                        endDate: event.target.value,
-                      }))
+                      setScheduleDraft((current) => ({ ...current, endDate: event.target.value }))
                     }
                     type="date"
                     value={scheduleDraft.endDate}
@@ -487,10 +531,7 @@ export function ProjectDetailPage() {
                   <Button
                     data-testid="project-schedule-cancel-button"
                     onClick={() => {
-                      setScheduleDraft({
-                        startDate: currentProject.startDate,
-                        endDate: currentProject.endDate,
-                      })
+                      setScheduleDraft({ startDate: currentProject.startDate, endDate: currentProject.endDate })
                       setScheduleError(null)
                       setIsScheduleEditing(false)
                     }}
@@ -510,10 +551,7 @@ export function ProjectDetailPage() {
                 <Button
                   data-testid="project-schedule-edit-button"
                   onClick={() => {
-                    setScheduleDraft({
-                      startDate: currentProject.startDate,
-                      endDate: currentProject.endDate,
-                    })
+                    setScheduleDraft({ startDate: currentProject.startDate, endDate: currentProject.endDate })
                     setScheduleError(null)
                     setIsScheduleEditing(true)
                   }}
@@ -525,6 +563,7 @@ export function ProjectDetailPage() {
               </div>
             )}
           </article>
+
           <article className={styles.metaCard}>
             <span className={styles.metaLabel}>現在フェーズ</span>
             {isCurrentPhaseEditing ? (
@@ -589,6 +628,81 @@ export function ProjectDetailPage() {
               </div>
             )}
           </article>
+
+          <article className={styles.metaCard}>
+            <span className={styles.metaLabel}>案件リンク</span>
+            {isProjectLinkEditing ? (
+              <div className={styles.phaseMetaEditor}>
+                <label className={styles.formField}>
+                  <span className={styles.visuallyHidden}>案件リンク</span>
+                  <input
+                    aria-label="案件リンク"
+                    className={styles.selectInput}
+                    data-testid="project-link-input"
+                    onChange={(event) => setProjectLinkDraft(event.target.value)}
+                    placeholder="https://example.com/projects/PRJ-001"
+                    type="url"
+                    value={projectLinkDraft}
+                  />
+                </label>
+                <div className={styles.phaseMetaActions}>
+                  <Button
+                    data-testid="project-link-save-button"
+                    disabled={isSavingProjectLink || !projectLinkChanged}
+                    onClick={() => {
+                      void handleProjectLinkSave()
+                    }}
+                    size="small"
+                  >
+                    {isSavingProjectLink ? '保存中...' : '保存'}
+                  </Button>
+                  <Button
+                    data-testid="project-link-cancel-button"
+                    onClick={() => {
+                      setProjectLinkDraft(currentProject.projectLink ?? '')
+                      setProjectLinkError(null)
+                      setIsProjectLinkEditing(false)
+                    }}
+                    size="small"
+                    variant="secondary"
+                  >
+                    キャンセル
+                  </Button>
+                </div>
+                {projectLinkError ? <p className={styles.metaError}>{projectLinkError}</p> : null}
+              </div>
+            ) : (
+              <div className={styles.phaseMetaDisplay}>
+                {currentProject.projectLink ? (
+                  <a
+                    className={styles.externalLink}
+                    data-testid="project-link-anchor"
+                    href={currentProject.projectLink}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    案件リンクを開く
+                  </a>
+                ) : (
+                  <strong className={styles.metaValue} data-testid="project-link-empty">
+                    未設定
+                  </strong>
+                )}
+                <Button
+                  data-testid="project-link-edit-button"
+                  onClick={() => {
+                    setProjectLinkDraft(currentProject.projectLink ?? '')
+                    setProjectLinkError(null)
+                    setIsProjectLinkEditing(true)
+                  }}
+                  size="small"
+                  variant="secondary"
+                >
+                  変更
+                </Button>
+              </div>
+            )}
+          </article>
         </div>
       </Panel>
 
@@ -597,7 +711,7 @@ export function ProjectDetailPage() {
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
             <p className={styles.sectionDescription}>
-              週ごとのフェーズ進捗を簡易ガントチャート形式で表示します。
+              案件ごとのフェーズ進捗を週単位のガントチャート形式で表示します。
             </p>
           </div>
         </div>
@@ -608,59 +722,81 @@ export function ProjectDetailPage() {
         <Panel className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>フェーズ設定</h2>
+              <h2 className={styles.sectionTitle}>フェーズ構成</h2>
               <p className={styles.sectionDescription}>
-                各フェーズの状態、進捗率、開始週、終了週を編集できます。
+                案件ごとにフェーズ名、開始週、終了週、状態、進捗率を編集できます。不要なフェーズは削除し、新しいフェーズは追加してください。
               </p>
             </div>
+            <div className={styles.phaseHeaderActions}>
+              <Button onClick={addPhaseDraft} size="small" variant="secondary">
+                フェーズを追加
+              </Button>
+              <Button
+                data-testid="phase-structure-save-button"
+                disabled={isSavingPhaseStructure}
+                onClick={() => {
+                  void handlePhaseStructureSave()
+                }}
+                size="small"
+              >
+                {isSavingPhaseStructure ? '保存中...' : 'フェーズ構成を保存'}
+              </Button>
+            </div>
           </div>
+          {phaseStructureError ? <p className={styles.sectionError}>{phaseStructureError}</p> : null}
           <div className={styles.phaseTableWrap}>
             <table className={styles.phaseTable}>
               <thead>
                 <tr>
-                  <th>フェーズ</th>
+                  <th>フェーズ名</th>
                   <th>期間</th>
                   <th>状態</th>
                   <th>進捗率</th>
                   <th>開始週</th>
                   <th>終了週</th>
-                  <th>保存</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                {projectPhases.map((phase) => {
-                  const range = getPhaseActualRange(currentProject, phase)
-                  const draft =
-                    phaseDrafts[phase.id] ??
-                    buildPhaseFormState(phase.startWeek, phase.endWeek, phase.status, phase.progress)
-                  const isSaving = savingPhaseId === phase.id
-                  const hasChanges =
-                    draft.startWeek !== String(phase.startWeek) ||
-                    draft.endWeek !== String(phase.endWeek) ||
-                    draft.status !== phase.status ||
-                    draft.progress !== String(phase.progress)
+                {phaseDrafts.map((phase) => {
+                  const draftPhase = buildDraftPhaseForRange(
+                    currentProject.projectNumber,
+                    currentProject.pmMemberId,
+                    phase,
+                  )
+                  const hasValidRange =
+                    Number.isInteger(draftPhase.startWeek) &&
+                    Number.isInteger(draftPhase.endWeek) &&
+                    draftPhase.startWeek > 0 &&
+                    draftPhase.endWeek >= draftPhase.startWeek
+                  const phaseRange = hasValidRange ? getPhaseActualRange(currentProject, draftPhase) : null
+                  const range = phaseRange ? formatPeriod(phaseRange.startDate, phaseRange.endDate) : '-'
+
                   return (
-                    <tr data-testid={`phase-row-${phase.id}`} key={phase.id}>
-                      <td>{phase.name}</td>
-                      <td>{formatPeriod(range.startDate, range.endDate)}</td>
+                    <tr data-testid={`phase-row-${phase.key}`} key={phase.key}>
+                      <td>
+                        <input
+                          aria-label={`${phase.name || '新規フェーズ'} のフェーズ名`}
+                          className={styles.selectInput}
+                          data-testid={`phase-name-${phase.key}`}
+                          onChange={(event) => {
+                            updatePhaseDraft(phase.key, { name: event.target.value })
+                          }}
+                          value={phase.name}
+                        />
+                      </td>
+                      <td>{range}</td>
                       <td>
                         <label className={styles.formField}>
                           <span className={styles.visuallyHidden}>{phase.name} の状態</span>
                           <select
-                            aria-label={`${phase.name} の状態`}
+                            aria-label={`${phase.name || '新規フェーズ'} の状態`}
                             className={styles.selectInput}
-                            data-testid={`phase-status-${phase.id}`}
+                            data-testid={`phase-status-${phase.key}`}
                             onChange={(event) => {
-                              const value = event.target.value as WorkStatus
-                              setPhaseDrafts((current) => ({
-                                ...current,
-                                [phase.id]: {
-                                  ...draft,
-                                  status: value,
-                                },
-                              }))
+                              updatePhaseDraft(phase.key, { status: event.target.value as WorkStatus })
                             }}
-                            value={draft.status}
+                            value={phase.status}
                           >
                             {workStatusOptions.map((option) => (
                               <option key={option} value={option}>
@@ -674,87 +810,57 @@ export function ProjectDetailPage() {
                         <label className={styles.formField}>
                           <span className={styles.visuallyHidden}>{phase.name} の進捗率</span>
                           <input
-                            aria-label={`${phase.name} の進捗率`}
+                            aria-label={`${phase.name || '新規フェーズ'} の進捗率`}
                             className={styles.progressInput}
-                            data-testid={`phase-progress-${phase.id}`}
+                            data-testid={`phase-progress-${phase.key}`}
                             inputMode="numeric"
                             max={100}
                             min={0}
                             onChange={(event) => {
-                              const value = event.target.value
-                              setPhaseDrafts((current) => ({
-                                ...current,
-                                [phase.id]: {
-                                  ...draft,
-                                  progress: value,
-                                },
-                              }))
+                              updatePhaseDraft(phase.key, { progress: event.target.value })
                             }}
                             type="number"
-                            value={draft.progress}
+                            value={phase.progress}
                           />
                         </label>
                       </td>
                       <td>
                         <input
-                          aria-label={`${phase.name} の開始週`}
+                          aria-label={`${phase.name || '新規フェーズ'} の開始週`}
                           className={styles.weekInput}
-                          data-testid={`phase-start-${phase.id}`}
+                          data-testid={`phase-start-${phase.key}`}
                           inputMode="numeric"
                           min={1}
                           onChange={(event) => {
-                            const value = event.target.value
-                            setPhaseDrafts((current) => ({
-                              ...current,
-                              [phase.id]: {
-                                ...draft,
-                                startWeek: value,
-                              },
-                            }))
+                            updatePhaseDraft(phase.key, { startWeek: event.target.value })
                           }}
                           type="number"
-                          value={draft.startWeek}
+                          value={phase.startWeek}
                         />
                       </td>
                       <td>
                         <input
-                          aria-label={`${phase.name} の終了週`}
+                          aria-label={`${phase.name || '新規フェーズ'} の終了週`}
                           className={styles.weekInput}
-                          data-testid={`phase-end-${phase.id}`}
+                          data-testid={`phase-end-${phase.key}`}
                           inputMode="numeric"
                           min={1}
                           onChange={(event) => {
-                            const value = event.target.value
-                            setPhaseDrafts((current) => ({
-                              ...current,
-                              [phase.id]: {
-                                ...draft,
-                                endWeek: value,
-                              },
-                            }))
+                            updatePhaseDraft(phase.key, { endWeek: event.target.value })
                           }}
                           type="number"
-                          value={draft.endWeek}
+                          value={phase.endWeek}
                         />
                       </td>
-                      <td>
-                        <div className={styles.actionCell}>
-                          <Button
-                            data-testid={`phase-save-${phase.id}`}
-                            disabled={isSaving || !hasChanges}
-                            onClick={() => {
-                              void handlePhaseSave(phase.id)
-                            }}
-                            size="small"
-                          >
-                            {isSaving ? '保存中...' : '保存'}
-                          </Button>
-                          {phaseRowErrors[phase.id] ? (
-                            <p className={styles.rowError}>{phaseRowErrors[phase.id]}</p>
-                          ) : (
-                            <StatusBadge status={phase.status} />
-                          )}
-                        </div>
+                      <td className={styles.actionCell}>
+                        <Button
+                          data-testid={`phase-remove-${phase.key}`}
+                          onClick={() => removePhaseDraft(phase.key)}
+                          size="small"
+                          variant="danger"
+                        >
+                          削除
+                        </Button>
                       </td>
                     </tr>
                   )
@@ -769,7 +875,7 @@ export function ProjectDetailPage() {
             <div>
               <h2 className={styles.sectionTitle}>プロジェクト体制</h2>
               <p className={styles.sectionDescription}>
-                PM と役割担当を確認できます。必要なときだけ編集モードを開けます。
+                PM と各役割の担当者を確認できます。必要なときだけ編集フォームを開いて更新します。
               </p>
             </div>
             {isStructureEditing ? (
@@ -792,6 +898,7 @@ export function ProjectDetailPage() {
               </Button>
             )}
           </div>
+
           {isStructureEditing ? (
             <div className={styles.structureEditor} data-testid="structure-editor">
               <label className={styles.formField}>
@@ -811,16 +918,17 @@ export function ProjectDetailPage() {
                   ))}
                 </select>
               </label>
+
               <div className={styles.assignmentEditor}>
                 <div className={styles.assignmentHeader}>
-                  <h3 className={styles.assignmentTitle}>役割担当</h3>
+                  <h3 className={styles.assignmentTitle}>役割一覧</h3>
                   <Button
                     onClick={() =>
                       setStructureAssignments((current) => [
                         ...current,
                         {
                           memberId: '',
-                          responsibility: responsibilityOptions[0]!,
+                          responsibility: responsibilityOptions[0] ?? 'OS',
                         },
                       ])
                     }
@@ -830,10 +938,12 @@ export function ProjectDetailPage() {
                     役割を追加
                   </Button>
                 </div>
+
                 <div className={styles.assignmentList}>
                   {structureAssignments.length === 0 ? (
                     <p className={styles.emptyText}>役割担当はまだ登録されていません。</p>
                   ) : null}
+
                   {structureAssignments.map((assignment, index) => (
                     <div key={assignment.id ?? `new-${index}`} className={styles.assignmentRow}>
                       <label className={styles.formField}>
@@ -842,9 +952,7 @@ export function ProjectDetailPage() {
                           aria-label={`役割${index + 1} の責務`}
                           className={styles.selectInput}
                           onChange={(event) => {
-                            updateStructureAssignment(index, {
-                              responsibility: event.target.value,
-                            })
+                            updateStructureAssignment(index, { responsibility: event.target.value })
                           }}
                           value={assignment.responsibility}
                         >
@@ -855,15 +963,14 @@ export function ProjectDetailPage() {
                           ))}
                         </select>
                       </label>
+
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>担当者</span>
                         <select
                           aria-label={`役割${index + 1} の担当者`}
                           className={styles.selectInput}
                           onChange={(event) => {
-                            updateStructureAssignment(index, {
-                              memberId: event.target.value,
-                            })
+                            updateStructureAssignment(index, { memberId: event.target.value })
                           }}
                           value={assignment.memberId}
                         >
@@ -875,6 +982,7 @@ export function ProjectDetailPage() {
                           ))}
                         </select>
                       </label>
+
                       <Button
                         onClick={() =>
                           setStructureAssignments((current) =>
@@ -894,7 +1002,7 @@ export function ProjectDetailPage() {
               {structureError ? <p className={styles.sectionError}>{structureError}</p> : null}
 
               <div className={styles.structureActions}>
-                <Button onClick={closeStructureEditor} variant="secondary">
+                <Button onClick={closeStructureEditor} size="small" variant="secondary">
                   キャンセル
                 </Button>
                 <Button
@@ -903,8 +1011,9 @@ export function ProjectDetailPage() {
                   onClick={() => {
                     void handleStructureSave()
                   }}
+                  size="small"
                 >
-                  {isSavingStructure ? '保存中...' : '体制を保存'}
+                  {isSavingStructure ? '保存中...' : '保存'}
                 </Button>
               </div>
             </div>
