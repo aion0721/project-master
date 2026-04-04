@@ -17,13 +17,14 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByText('フェーズ進捗タイムライン')).toBeInTheDocument()
     expect(screen.getByText('プロジェクト体制')).toBeInTheDocument()
     expect(screen.getByText('OS タスク担当')).toBeInTheDocument()
-    expect(screen.getAllByLabelText('基本設計の開始週')[0]).toHaveValue(3)
-    expect(screen.getAllByLabelText('基本設計の終了週')[0]).toHaveValue(5)
+    expect(screen.getAllByLabelText('基本設計 の開始週')[0]).toHaveValue(3)
+    expect(screen.getAllByLabelText('基本設計 の終了週')[0]).toHaveValue(5)
+    expect(screen.getAllByLabelText('基本設計 の進捗率')[0]).toHaveValue(70)
     expect(screen.queryByLabelText('PMを選択')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '編集' })).toBeInTheDocument()
   })
 
-  it('フェーズの開始週と終了週を更新できる', async () => {
+  it('フェーズの状態、進捗率、週を更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
@@ -31,20 +32,28 @@ describe('ProjectDetailPage', () => {
       routePath: '/projects/:projectId',
     })
 
-    const startWeekInput = (await screen.findAllByLabelText('基本設計の開始週'))[0]
-    const endWeekInput = screen.getAllByLabelText('基本設計の終了週')[0]
-    const saveButtons = screen.getAllByRole('button', { name: '保存' })
+    const startWeekInput = (await screen.findAllByLabelText('基本設計 の開始週'))[0]
+    const endWeekInput = screen.getAllByLabelText('基本設計 の終了週')[0]
+    const progressInput = screen.getAllByLabelText('基本設計 の進捗率')[0]
+    const statusSelect = screen.getAllByLabelText('基本設計 の状態')[0]
 
     fireEvent.change(startWeekInput, { target: { value: '4' } })
     fireEvent.change(endWeekInput, { target: { value: '6' } })
-    fireEvent.click(saveButtons[1]!)
+    fireEvent.change(progressInput, { target: { value: '80' } })
+    fireEvent.change(statusSelect, { target: { value: '遅延' } })
+    fireEvent.click(screen.getAllByRole('button', { name: '保存' })[1]!)
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining('/api/phases/ph-p1-2'),
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ startWeek: 4, endWeek: 6 }),
+          body: JSON.stringify({
+            startWeek: 4,
+            endWeek: 6,
+            status: '遅延',
+            progress: 80,
+          }),
         }),
       )
     })

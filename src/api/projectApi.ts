@@ -4,7 +4,7 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
-  UpdatePhaseScheduleInput,
+  UpdatePhaseInput,
   UpdateProjectStructureInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
@@ -56,8 +56,9 @@ interface ApiProjectDetailResponse {
   members: ApiMember[]
 }
 
-interface ApiPhaseResponse {
+interface ApiPhaseUpdateResponse {
   phase: Phase
+  project: Project
 }
 
 export interface ProjectDataPayload {
@@ -65,6 +66,11 @@ export interface ProjectDataPayload {
   phases: Phase[]
   members: Member[]
   assignments: ProjectAssignment[]
+}
+
+export interface PhaseUpdatePayload {
+  phase: Phase
+  project: Project
 }
 
 function normalizeMember(member: ApiMember | null | undefined): Member | null {
@@ -271,19 +277,22 @@ export async function createProjectRequest(
   return normalizeProjectDetail(detail)
 }
 
-export async function updatePhaseScheduleRequest(
+export async function updatePhaseRequest(
   phaseId: string,
-  input: UpdatePhaseScheduleInput,
+  input: UpdatePhaseInput,
   signal?: AbortSignal,
-): Promise<Phase> {
-  const response = await sendJson<ApiPhaseResponse, UpdatePhaseScheduleInput>(
+): Promise<PhaseUpdatePayload> {
+  const response = await sendJson<ApiPhaseUpdateResponse, UpdatePhaseInput>(
     `/api/phases/${phaseId}`,
     'PATCH',
     input,
     signal,
   )
 
-  return normalizePhase(response.phase)
+  return {
+    phase: normalizePhase(response.phase),
+    project: normalizeProject(response.project),
+  }
 }
 
 export async function updateProjectStructureRequest(

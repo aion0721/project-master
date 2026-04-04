@@ -3,7 +3,7 @@ import { buildProjectDetailResponse, buildProjectListResponse } from '../api/pro
 import { assignments, members, phases, projects } from '../data/mockData'
 import type {
   CreateProjectInput,
-  UpdatePhaseScheduleInput,
+  UpdatePhaseInput,
   UpdateProjectStructureInput,
 } from '../types/project'
 
@@ -44,6 +44,22 @@ function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
     nextSuffix += 1
     return nextId
   }
+}
+
+function deriveProjectStatus(projectPhases: Array<{ status: string }>) {
+  if (projectPhases.some((phase) => phase.status === '遅延')) {
+    return '遅延'
+  }
+
+  if (projectPhases.every((phase) => phase.status === '完了')) {
+    return '完了'
+  }
+
+  if (projectPhases.some((phase) => phase.status === '進行中' || phase.status === '完了')) {
+    return '進行中'
+  }
+
+  return '未着手'
 }
 
 export function mockProjectApi() {
@@ -170,7 +186,7 @@ export function mockProjectApi() {
     const phaseMatch = requestUrl.match(/\/api\/phases\/([^/]+)$/)
     if (phaseMatch && method === 'PATCH') {
       const phaseId = phaseMatch[1]
-      const body = JSON.parse(String(init?.body)) as UpdatePhaseScheduleInput
+      const body = JSON.parse(String(init?.body)) as UpdatePhaseInput
       const targetPhase = fixtureData.phases.find((phase) => phase.id === phaseId)
 
       if (!targetPhase) {
@@ -184,8 +200,25 @@ export function mockProjectApi() {
 
       targetPhase.startWeek = body.startWeek
       targetPhase.endWeek = body.endWeek
+      targetPhase.status = body.status
+      targetPhase.progress = body.progress
 
-      return new Response(JSON.stringify({ phase: targetPhase }), {
+      const targetProject = fixtureData.projects.find((project) => project.id === targetPhase.projectId)
+
+      if (!targetProject) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      targetProject.status = deriveProjectStatus(
+        fixtureData.phases.filter((phase) => phase.projectId === targetProject.id),
+      ) as typeof targetProject.status
+
+      return new Response(JSON.stringify({ phase: targetPhase, project: targetProject }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',

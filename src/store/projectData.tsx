@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import {
   createProjectRequest,
   loadProjectData,
-  updatePhaseScheduleRequest,
+  updatePhaseRequest,
   updateProjectStructureRequest,
 } from '../api/projectApi'
 import type {
@@ -11,7 +11,7 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
-  UpdatePhaseScheduleInput,
+  UpdatePhaseInput,
   UpdateProjectStructureInput,
 } from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
@@ -101,10 +101,11 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       return createdProject
     },
-    updatePhaseSchedule: async (phaseId: string, input: UpdatePhaseScheduleInput) => {
-      const updatedPhase = await updatePhaseScheduleRequest(phaseId, input)
-      setPhases((current) => mergeById(current, [updatedPhase]))
-      return updatedPhase
+    updatePhase: async (phaseId: string, input: UpdatePhaseInput) => {
+      const payload = await updatePhaseRequest(phaseId, input)
+      setPhases((current) => mergeById(current, [payload.phase]))
+      setProjects((current) => mergeById(current, [payload.project]))
+      return payload.phase
     },
     updateProjectStructure: async (projectId: string, input: UpdateProjectStructureInput) => {
       const payload = await updateProjectStructureRequest(projectId, input)

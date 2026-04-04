@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Button } from '../components/ui/Button'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
+import type { WorkStatus } from '../types/project'
 import {
   formatPeriod,
   getMemberName,
@@ -16,10 +17,13 @@ import {
 import styles from './ProjectDetailPage.module.css'
 
 const responsibilityOptions = ['OS', '基礎検討', '基本設計', '詳細設計', 'テスト', '移行', 'インフラ統括']
+const workStatusOptions: WorkStatus[] = ['未着手', '進行中', '完了', '遅延']
 
 interface PhaseFormState {
   startWeek: string
   endWeek: string
+  status: WorkStatus
+  progress: string
 }
 
 interface StructureAssignmentDraft {
@@ -28,10 +32,17 @@ interface StructureAssignmentDraft {
   responsibility: string
 }
 
-function buildPhaseFormState(startWeek: number, endWeek: number): PhaseFormState {
+function buildPhaseFormState(
+  startWeek: number,
+  endWeek: number,
+  status: WorkStatus,
+  progress: number,
+): PhaseFormState {
   return {
     startWeek: String(startWeek),
     endWeek: String(endWeek),
+    status,
+    progress: String(progress),
   }
 }
 
@@ -44,7 +55,7 @@ export function ProjectDetailPage() {
     getProjectAssignments,
     isLoading,
     error,
-    updatePhaseSchedule,
+    updatePhase,
     updateProjectStructure,
   } = useProjectData()
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseFormState>>({})
@@ -91,9 +102,16 @@ export function ProjectDetailPage() {
         if (
           !existing ||
           (existing.startWeek === String(phase.startWeek) &&
-            existing.endWeek === String(phase.endWeek))
+            existing.endWeek === String(phase.endWeek) &&
+            existing.status === phase.status &&
+            existing.progress === String(phase.progress))
         ) {
-          next[phase.id] = buildPhaseFormState(phase.startWeek, phase.endWeek)
+          next[phase.id] = buildPhaseFormState(
+            phase.startWeek,
+            phase.endWeek,
+            phase.status,
+            phase.progress,
+          )
         }
       })
 
@@ -178,6 +196,7 @@ export function ProjectDetailPage() {
 
     const startWeek = Number(draft.startWeek)
     const endWeek = Number(draft.endWeek)
+    const progress = Number(draft.progress)
 
     if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek)) {
       setPhaseRowErrors((current) => ({
@@ -203,6 +222,14 @@ export function ProjectDetailPage() {
       return
     }
 
+    if (!Number.isInteger(progress) || progress < 0 || progress > 100) {
+      setPhaseRowErrors((current) => ({
+        ...current,
+        [phaseId]: '進捗率は 0 から 100 の整数で入力してください。',
+      }))
+      return
+    }
+
     setSavingPhaseId(phaseId)
     setPhaseRowErrors((current) => {
       const next = { ...current }
@@ -211,16 +238,26 @@ export function ProjectDetailPage() {
     })
 
     try {
-      const updatedPhase = await updatePhaseSchedule(phaseId, { startWeek, endWeek })
+      const updatedPhase = await updatePhase(phaseId, {
+        startWeek,
+        endWeek,
+        status: draft.status,
+        progress,
+      })
       setPhaseDrafts((current) => ({
         ...current,
-        [phaseId]: buildPhaseFormState(updatedPhase.startWeek, updatedPhase.endWeek),
+        [phaseId]: buildPhaseFormState(
+          updatedPhase.startWeek,
+          updatedPhase.endWeek,
+          updatedPhase.status,
+          updatedPhase.progress,
+        ),
       }))
     } catch (caughtError) {
       setPhaseRowErrors((current) => ({
         ...current,
         [phaseId]:
-          caughtError instanceof Error ? caughtError.message : 'フェーズ期間の更新に失敗しました。',
+          caughtError instanceof Error ? caughtError.message : 'フェーズ更新に失敗しました。',
       }))
     } finally {
       setSavingPhaseId((current) => (current === phaseId ? null : current))
@@ -246,7 +283,7 @@ export function ProjectDetailPage() {
     )
 
     if (hasInvalidAssignment) {
-      setStructureError('各役割行に担当者と責務を入力してください。')
+      setStructureError('各担当行に責務と担当者を入力してください。')
       return
     }
 
@@ -307,7 +344,7 @@ export function ProjectDetailPage() {
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
             <p className={styles.sectionDescription}>
-              週ごとのフェーズ実施状況をガントチャート形式で表示します。
+              週ごとのフェーズ進行状況をガントチャート形式で表示します。
             </p>
           </div>
         </div>
@@ -319,9 +356,9 @@ export function ProjectDetailPage() {
         <Panel className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>フェーズ別担当者</h2>
+              <h2 className={styles.sectionTitle}>フェーズ別担当</h2>
               <p className={styles.sectionDescription}>
-                各フェーズの担当者、状態、進捗に加えて、開始週と終了週を編集できます。
+                各フェーズの担当者、状態、進捗率、開始週と終了週を編集できます。
               </p>
             </div>
           </div>
@@ -337,16 +374,21 @@ export function ProjectDetailPage() {
                   <th>進捗</th>
                   <th>開始週</th>
                   <th>終了週</th>
-                  <th>操作</th>
+                  <th>保存</th>
                 </tr>
               </thead>
               <tbody>
                 {projectPhases.map((phase) => {
                   const range = getPhaseActualRange(currentProject, phase)
-                  const draft = phaseDrafts[phase.id] ?? buildPhaseFormState(phase.startWeek, phase.endWeek)
+                  const draft =
+                    phaseDrafts[phase.id] ??
+                    buildPhaseFormState(phase.startWeek, phase.endWeek, phase.status, phase.progress)
                   const isSaving = savingPhaseId === phase.id
                   const hasChanges =
-                    draft.startWeek !== String(phase.startWeek) || draft.endWeek !== String(phase.endWeek)
+                    draft.startWeek !== String(phase.startWeek) ||
+                    draft.endWeek !== String(phase.endWeek) ||
+                    draft.status !== phase.status ||
+                    draft.progress !== String(phase.progress)
 
                   return (
                     <tr key={phase.id}>
@@ -354,12 +396,58 @@ export function ProjectDetailPage() {
                       <td>{formatPeriod(range.startDate, range.endDate)}</td>
                       <td>{getMemberName(phase.assigneeMemberId, members)}</td>
                       <td>
-                        <StatusBadge status={phase.status} />
+                        <label className={styles.formField}>
+                          <span className={styles.visuallyHidden}>{phase.name} の状態</span>
+                          <select
+                            aria-label={`${phase.name} の状態`}
+                            className={styles.selectInput}
+                            onChange={(event) => {
+                              const value = event.target.value as WorkStatus
+                              setPhaseDrafts((current) => ({
+                                ...current,
+                                [phase.id]: {
+                                  ...draft,
+                                  status: value,
+                                },
+                              }))
+                            }}
+                            value={draft.status}
+                          >
+                            {workStatusOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                       </td>
-                      <td>{phase.progress}%</td>
+                      <td>
+                        <label className={styles.formField}>
+                          <span className={styles.visuallyHidden}>{phase.name} の進捗率</span>
+                          <input
+                            aria-label={`${phase.name} の進捗率`}
+                            className={styles.progressInput}
+                            inputMode="numeric"
+                            max={100}
+                            min={0}
+                            onChange={(event) => {
+                              const value = event.target.value
+                              setPhaseDrafts((current) => ({
+                                ...current,
+                                [phase.id]: {
+                                  ...draft,
+                                  progress: value,
+                                },
+                              }))
+                            }}
+                            type="number"
+                            value={draft.progress}
+                          />
+                        </label>
+                      </td>
                       <td>
                         <input
-                          aria-label={`${phase.name}の開始週`}
+                          aria-label={`${phase.name} の開始週`}
                           className={styles.weekInput}
                           inputMode="numeric"
                           min={1}
@@ -379,7 +467,7 @@ export function ProjectDetailPage() {
                       </td>
                       <td>
                         <input
-                          aria-label={`${phase.name}の終了週`}
+                          aria-label={`${phase.name} の終了週`}
                           className={styles.weekInput}
                           inputMode="numeric"
                           min={1}
@@ -410,7 +498,9 @@ export function ProjectDetailPage() {
                           </Button>
                           {phaseRowErrors[phase.id] ? (
                             <p className={styles.rowError}>{phaseRowErrors[phase.id]}</p>
-                          ) : null}
+                          ) : (
+                            <StatusBadge status={phase.status} />
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -426,7 +516,7 @@ export function ProjectDetailPage() {
             <div>
               <h2 className={styles.sectionTitle}>プロジェクト体制</h2>
               <p className={styles.sectionDescription}>
-                PM と役割担当を管理できます。上司・部下の関係はメンバー定義に基づく参照表示です。
+                PM と役割担当を確認できます。編集ボタンから体制を更新できます。
               </p>
             </div>
 
@@ -490,7 +580,7 @@ export function ProjectDetailPage() {
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>責務</span>
                         <select
-                          aria-label={`役割${index + 1}の責務`}
+                          aria-label={`役割${index + 1} の責務`}
                           className={styles.selectInput}
                           onChange={(event) => {
                             const value = event.target.value
@@ -513,7 +603,7 @@ export function ProjectDetailPage() {
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>担当者</span>
                         <select
-                          aria-label={`役割${index + 1}の担当者`}
+                          aria-label={`役割${index + 1} の担当者`}
                           className={styles.selectInput}
                           onChange={(event) => {
                             const value = event.target.value
