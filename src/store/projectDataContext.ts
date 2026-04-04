@@ -6,6 +6,9 @@ export interface ProjectDataContextValue {
   phases: Phase[]
   members: Member[]
   assignments: ProjectAssignment[]
+  isLoading: boolean
+  error: string | null
+  refresh: () => void
   getProjectById: (projectId: string) => Project | undefined
   getProjectPhases: (projectId: string) => Phase[]
   getProjectAssignments: (projectId: string) => ProjectAssignment[]

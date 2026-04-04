@@ -36,6 +36,9 @@ yarn dev
 
 ブラウザで `http://localhost:5173` を開いてください。
 
+バックエンド利用時は別途 `H:\react\project-master-backend` で API を起動してください。  
+デフォルトでは `http://localhost:8787` を参照します。変更する場合は `VITE_API_BASE_URL` を設定してください。
+
 ## ビルド
 
 ```bash

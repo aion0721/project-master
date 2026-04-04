@@ -14,7 +14,29 @@ import styles from './ProjectDetailPage.module.css'
 
 export function ProjectDetailPage() {
   const { projectId } = useParams()
-  const { members, getProjectById, getProjectPhases, getProjectAssignments } = useProjectData()
+  const { members, getProjectById, getProjectPhases, getProjectAssignments, isLoading, error } =
+    useProjectData()
+
+  if (isLoading) {
+    return (
+      <section className={styles.notFound}>
+        <h1 className={styles.notFoundTitle}>案件詳細を読み込み中です</h1>
+        <p className={styles.notFoundText}>バックエンドから案件詳細を取得しています。</p>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className={styles.notFound}>
+        <h1 className={styles.notFoundTitle}>案件詳細を取得できませんでした</h1>
+        <p className={styles.notFoundText}>{error}</p>
+        <Link className={styles.backLink} to="/projects">
+          一覧へ戻る
+        </Link>
+      </section>
+    )
+  }
 
   const project = projectId ? getProjectById(projectId) : undefined
 
@@ -22,7 +44,9 @@ export function ProjectDetailPage() {
     return (
       <section className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件が見つかりません</h1>
-        <p className={styles.notFoundText}>指定された案件IDは存在しません。案件一覧から選び直してください。</p>
+        <p className={styles.notFoundText}>
+          指定された案件IDは存在しません。案件一覧から選び直してください。
+        </p>
         <Link className={styles.backLink} to="/projects">
           一覧へ戻る
         </Link>
@@ -45,7 +69,7 @@ export function ProjectDetailPage() {
             </Link>
             <h1 className={styles.title}>{project.name}</h1>
             <p className={styles.description}>
-              PM、フェーズ進捗、役割ごとの担当者、上下関係をひとつの案件単位で確認できます。
+              PM、フェーズ進捗、役割ごとの担当者、上司・部下の関係をひとつの案件単位で確認できます。
             </p>
           </div>
 
@@ -72,7 +96,9 @@ export function ProjectDetailPage() {
         <div className={styles.sectionHeader}>
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
-            <p className={styles.sectionDescription}>週単位でどのフェーズが走っているかを確認できます。</p>
+            <p className={styles.sectionDescription}>
+              週単位でどのフェーズが走っているかを確認できます。
+            </p>
           </div>
         </div>
 
@@ -84,7 +110,9 @@ export function ProjectDetailPage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 className={styles.sectionTitle}>フェーズ別担当者</h2>
-              <p className={styles.sectionDescription}>各フェーズの責任者、期間、進捗を一覧で確認できます。</p>
+              <p className={styles.sectionDescription}>
+                各フェーズの責任者、期間、進捗を一覧で確認できます。
+              </p>
             </div>
           </div>
 
@@ -124,11 +152,17 @@ export function ProjectDetailPage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 className={styles.sectionTitle}>プロジェクト体制</h2>
-              <p className={styles.sectionDescription}>PM、OS担当、各役割、上司・部下の関係をツリーで表示します。</p>
+              <p className={styles.sectionDescription}>
+                PM、OS担当、各役割、上司・部下の関係をツリーで表示します。
+              </p>
             </div>
           </div>
 
-          <MemberTree members={members} projectAssignments={projectAssignments} pmMemberId={project.pmMemberId} />
+          <MemberTree
+            members={members}
+            projectAssignments={projectAssignments}
+            pmMemberId={project.pmMemberId}
+          />
         </section>
       </div>
     </div>

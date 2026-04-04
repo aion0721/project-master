@@ -4,7 +4,26 @@ import { getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 import styles from './ProjectListPage.module.css'
 
 export function ProjectListPage() {
-  const { projects, members, getProjectPhases } = useProjectData()
+  const { projects, members, getProjectPhases, isLoading, error } = useProjectData()
+
+  if (isLoading) {
+    return (
+      <section className={styles.section}>
+        <h1 className={styles.sectionTitle}>案件一覧を読み込み中です</h1>
+        <p className={styles.sectionDescription}>バックエンドから案件データを取得しています。</p>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className={styles.section}>
+        <h1 className={styles.sectionTitle}>案件一覧を取得できませんでした</h1>
+        <p className={styles.sectionDescription}>{error}</p>
+      </section>
+    )
+  }
+
   const rows = projects.map((project) => {
     const projectPhases = getProjectPhases(project.id)
     const currentPhase = getProjectCurrentPhase(projectPhases)
@@ -59,7 +78,9 @@ export function ProjectListPage() {
         <div className={styles.sectionHeader}>
           <div>
             <h2 className={styles.sectionTitle}>案件ステータス一覧</h2>
-            <p className={styles.sectionDescription}>案件ごとのPM、現在フェーズ、開始/終了予定日を確認できます。</p>
+            <p className={styles.sectionDescription}>
+              案件ごとのPM、現在フェーズ、開始/終了予定日を確認できます。
+            </p>
           </div>
         </div>
 

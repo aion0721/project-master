@@ -1,94 +1,109 @@
 # AGENTS.md
 
-このファイルは、このリポジトリで作業する開発者やコーディングエージェント向けの作業ガイドです。
+このファイルは、`H:\react\project-master` のフロントエンド作業ガイドです。
 
-## プロジェクト概要
+## 概要
 
-- 案件管理WebアプリのフロントエンドMVP
+- 案件管理Webアプリのフロントエンド
 - 技術スタックは React + TypeScript + Vite
-- バックエンドは未実装
-- データは現在モックのみ
-- 業務向けの見やすさ、高密度UI、案件進捗の可視化を重視
+- UI は CSS Modules で統一
+- 現在はモックデータベースのMVP
+- 将来的には `H:\react\project-master-backend` の API を利用する前提
 
 ## 開発コマンド
 
 - 依存インストール: `yarn`
 - 開発サーバー: `yarn dev`
-- 本番ビルド: `yarn build`
+- テスト: `yarn test`
+- テスト一回実行: `yarn test:run`
 - Lint: `yarn lint`
+- ビルド: `yarn build`
 
-作業完了前は最低でも `yarn lint` と `yarn build` を通すこと。
+作業完了前は最低でも `yarn lint`、`yarn test:run`、`yarn build` を通すこと。
 
 ## ディレクトリ構成
 
 ```text
 src/
-  components/   共通UIコンポーネント
+  components/   共通UI
   data/         モックデータ
-  pages/        画面コンポーネント
+  pages/        画面
   store/        Context と hooks
+  test/         テストセットアップ
   types/        型定義
   utils/        表示用ユーティリティ
 ```
 
-## 現在の画面
+## 主要画面
 
 - `/projects`
-  - 案件一覧画面
+  - 案件一覧
 - `/projects/:projectId`
-  - 案件詳細画面
+  - 案件詳細
 - `/cross-project`
   - 複数案件横断ビュー
 
-ルーティング定義は `src/App.tsx` にある。
+ルーティングは `src/App.tsx` にある。
 
 ## 主要コンポーネント
 
 - `Layout`
-  - 全画面共通のサイドバーとレイアウト
+  - サイドバーと画面共通レイアウト
 - `StatusBadge`
-  - 案件/フェーズ状態の色付き表示
+  - 状態バッジ
 - `ProjectTable`
-  - 案件一覧テーブル
+  - 案件一覧表
 - `PhaseTimeline`
-  - 案件詳細の簡易ガントUI
+  - 週単位タイムライン
 - `PhaseRow`
-  - タイムライン1行分
+  - タイムライン1行
 - `MemberTree`
-  - PM、OS、役割、上下関係をツリー表示
+  - PM、OS担当、上下関係のツリー表示
 
-## データ方針
+## データと状態管理
 
 - 型定義は `src/types/project.ts` を基準にする
-- モックデータは `src/data/mockData.ts` に集約する
-- 画面で直接モックを import せず、`useProjectData()` 経由で参照する
-- 日付変換、週ラベル生成、担当者名解決などは `src/utils/projectUtils.ts` に寄せる
+- モックデータは `src/data/mockData.ts` に置く
+- 画面から直接モックを import せず、`useProjectData()` 経由で参照する
+- 日付計算やフェーズ判定は `src/utils/projectUtils.ts` に寄せる
+- `react-refresh/only-export-components` の都合があるため、Context と hook は必要に応じて分ける
+
+## API移行方針
+
+フロントは今後、バックエンドの以下エンドポイントに置き換える前提。
+
+- `GET /health`
+- `GET /api/projects`
+- `GET /api/projects/:projectId`
+- `GET /api/cross-project-weeks`
+
+移行時の優先ルール:
+
+1. まず API クライアント層を作る
+2. `mockData` を直接消さず、差し替え可能な形にする
+3. 画面はレスポンス整形済みデータを受け取る
+4. フェーズ週計算をフロントとバックで二重管理しない
 
 ## 実装ルール
 
-- 新規UIは基本的に CSS Modules で実装する
-- 業務アプリ前提なので、装飾より可読性と情報の比較しやすさを優先する
-- 状態色は既存のCSS変数を流用する
-  - `完了`
-  - `進行中`
-  - `未着手`
-  - `遅延`
-- 同じ責務のロジックを複数画面に重複させない
-- データ取得は将来 API に置き換えやすい形を意識する
+- 新規UIは CSS Modules を使う
+- 情報密度は高くてよいが、可読性を優先する
+- 状態色は既存のCSS変数を再利用する
+- 同じロジックを複数画面に重複させない
+- 業務アプリなので、装飾より比較しやすさを優先する
+- PC表示を優先するが、崩れない最低限のレスポンシブは維持する
 
-## UI方針
+## テスト方針
 
-- PC表示優先
-- テーブル、カード、タイムラインの情報密度は高めでよい
-- ただし1画面に情報を詰め込みすぎず、セクション単位で区切る
-- 状態、フェーズ、役割は一目で区別できること
-- 横断ビューでは「どの週が重いか」を見つけやすくすること
+- 表示ロジックより先に、週計算や現在フェーズ判定のような純関数を優先してテストする
+- 画面テストでは `renderWithProviders` を使い、Router と Context 前提を吸収する
+- 詳細画面、横断ビュー、一覧画面の主要見出しと代表データは落ちないように保つ
 
 ## 変更時の注意
 
-- 既存のモックデータを更新する場合、一覧、詳細、横断ビューの見え方が崩れないか確認する
-- フェーズ週の計算を変更した場合、`ProjectDetailPage` と `CrossProjectViewPage` の両方を確認する
-- `react-refresh/only-export-components` のLintルールが有効なので、Context と hook は必要に応じてファイル分割する
+- フェーズや週ロジックを変えたら `ProjectDetailPage` と `CrossProjectViewPage` を両方確認する
+- モックデータを変えたら一覧、詳細、横断ビューの3画面を確認する
+- バックエンド導入時はレスポンス型を先に定義してから画面差し替えを進める
 
 ## 今後の拡張候補
 
@@ -96,13 +111,13 @@ src/
 - 検索、絞り込み、ソート
 - 案件編集UI
 - メンバー管理UI
-- テスト追加
 - 権限管理
+- E2Eテスト
 
-## 迷ったときの優先順位
+## 判断優先順位
 
 1. 型安全
 2. 画面の見やすさ
 3. コンポーネント責務の明確さ
-4. 将来のAPI置き換えやすさ
+4. API置き換えやすさ
 5. 実装速度

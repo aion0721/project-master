@@ -22,11 +22,32 @@ function getToneClassName(phaseName: string) {
 }
 
 export function CrossProjectViewPage() {
-  const { projects, members, getProjectPhases } = useProjectData()
+  const { projects, members, getProjectPhases, isLoading, error } = useProjectData()
+
+  if (isLoading) {
+    return (
+      <section className={styles.section}>
+        <h1 className={styles.title}>複数案件横断ビューを読み込み中です</h1>
+        <p className={styles.description}>バックエンドから週次データを取得しています。</p>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className={styles.section}>
+        <h1 className={styles.title}>複数案件横断ビューを取得できませんでした</h1>
+        <p className={styles.description}>{error}</p>
+      </section>
+    )
+  }
+
   const globalWeekSlots = getGlobalWeekSlots(projects)
   const peakBusy = Math.max(
     ...projects.flatMap((project) =>
-      globalWeekSlots.map((slot) => getActivePhasesForWeek(project, getProjectPhases(project.id), slot.startDate).length),
+      globalWeekSlots.map(
+        (slot) => getActivePhasesForWeek(project, getProjectPhases(project.id), slot.startDate).length,
+      ),
     ),
     0,
   )
