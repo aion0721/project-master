@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
-import type { Phase, Project } from '../../types/project'
+import type { Phase, Project, ProjectLink } from '../../types/project'
 import { ProjectDetailMetaGrid } from './ProjectDetailMetaGrid'
 import styles from '../ProjectDetailPage.module.css'
 
@@ -37,15 +37,17 @@ interface ProjectDetailHeroProps {
   onCurrentPhaseEdit: () => void
   onCurrentPhaseCancel: () => void
   onCurrentPhaseSave: () => void
-  isProjectLinkEditing: boolean
-  projectLinkDraft: string
-  projectLinkChanged: boolean
-  projectLinkError: string | null
-  isSavingProjectLink: boolean
-  onProjectLinkDraftChange: (value: string) => void
-  onProjectLinkEdit: () => void
-  onProjectLinkCancel: () => void
-  onProjectLinkSave: () => void
+  isProjectLinksEditing: boolean
+  projectLinksDraft: ProjectLink[]
+  projectLinksChanged: boolean
+  projectLinksError: string | null
+  isSavingProjectLinks: boolean
+  onAddProjectLink: () => void
+  onProjectLinkDraftChange: (index: number, patch: Partial<ProjectLink>) => void
+  onProjectLinksEdit: () => void
+  onProjectLinksCancel: () => void
+  onProjectLinksSave: () => void
+  onRemoveProjectLink: (index: number) => void
 }
 
 export function ProjectDetailHero({
@@ -74,15 +76,17 @@ export function ProjectDetailHero({
   onCurrentPhaseEdit,
   onCurrentPhaseCancel,
   onCurrentPhaseSave,
-  isProjectLinkEditing,
-  projectLinkDraft,
-  projectLinkChanged,
-  projectLinkError,
-  isSavingProjectLink,
+  isProjectLinksEditing,
+  projectLinksDraft,
+  projectLinksChanged,
+  projectLinksError,
+  isSavingProjectLinks,
+  onAddProjectLink,
   onProjectLinkDraftChange,
-  onProjectLinkEdit,
-  onProjectLinkCancel,
-  onProjectLinkSave,
+  onProjectLinksEdit,
+  onProjectLinksCancel,
+  onProjectLinksSave,
+  onRemoveProjectLink,
 }: ProjectDetailHeroProps) {
   return (
     <Panel className={styles.hero} variant="hero">
@@ -119,28 +123,30 @@ export function ProjectDetailHero({
         currentPhaseDraftId={currentPhaseDraftId}
         currentPhaseError={currentPhaseError}
         isCurrentPhaseEditing={isCurrentPhaseEditing}
-        isProjectLinkEditing={isProjectLinkEditing}
+        isProjectLinksEditing={isProjectLinksEditing}
         isSavingCurrentPhase={isSavingCurrentPhase}
-        isSavingProjectLink={isSavingProjectLink}
+        isSavingProjectLinks={isSavingProjectLinks}
         isSavingSchedule={isSavingSchedule}
         isScheduleEditing={isScheduleEditing}
+        onAddProjectLink={onAddProjectLink}
         onCurrentPhaseCancel={onCurrentPhaseCancel}
         onCurrentPhaseDraftChange={onCurrentPhaseDraftChange}
         onCurrentPhaseEdit={onCurrentPhaseEdit}
         onCurrentPhaseSave={onCurrentPhaseSave}
-        onProjectLinkCancel={onProjectLinkCancel}
+        onProjectLinksCancel={onProjectLinksCancel}
         onProjectLinkDraftChange={onProjectLinkDraftChange}
-        onProjectLinkEdit={onProjectLinkEdit}
-        onProjectLinkSave={onProjectLinkSave}
+        onProjectLinksEdit={onProjectLinksEdit}
+        onProjectLinksSave={onProjectLinksSave}
+        onRemoveProjectLink={onRemoveProjectLink}
         onScheduleCancel={onScheduleCancel}
         onScheduleDraftChange={onScheduleDraftChange}
         onScheduleEdit={onScheduleEdit}
         onScheduleSave={onScheduleSave}
         pmName={pmName}
         project={project}
-        projectLinkChanged={projectLinkChanged}
-        projectLinkDraft={projectLinkDraft}
-        projectLinkError={projectLinkError}
+        projectLinksChanged={projectLinksChanged}
+        projectLinksDraft={projectLinksDraft}
+        projectLinksError={projectLinksError}
         projectPhases={projectPhases}
         scheduleChanged={scheduleChanged}
         scheduleDraft={scheduleDraft}

@@ -30,7 +30,10 @@ describe('ProjectCreatePage', () => {
     fireEvent.change(screen.getByLabelText('終了予定日'), {
       target: { value: '2026-10-30' },
     })
-    fireEvent.change(screen.getByLabelText('案件リンク'), {
+    fireEvent.change(screen.getByLabelText('案件リンク名 1'), {
+      target: { value: 'Backlog' },
+    })
+    fireEvent.change(screen.getByLabelText('案件リンクURL 1'), {
       target: { value: 'https://example.com/projects/PRJ-006' },
     })
     fireEvent.click(screen.getByRole('button', { name: '案件を登録' }))
@@ -47,7 +50,12 @@ describe('ProjectCreatePage', () => {
             endDate: '2026-10-30',
             status: 'not_started',
             pmMemberId: 'm1',
-            projectLink: 'https://example.com/projects/PRJ-006',
+            projectLinks: [
+              {
+                label: 'Backlog',
+                url: 'https://example.com/projects/PRJ-006',
+              },
+            ],
           }),
         }),
       )

@@ -3,36 +3,28 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
-import type { CreateProjectInput, WorkStatus } from '../types/project'
+import type { CreateProjectInput, ProjectLink, WorkStatus } from '../types/project'
+import { createEmptyProjectLink, validateProjectLinks } from '../utils/projectLinkUtils'
 import styles from './ProjectCreatePage.module.css'
 
 const statusOptions: WorkStatus[] = ['未着手', '進行中', '完了', '遅延']
 
-function isValidOptionalUrl(value: string) {
-  if (!value.trim()) {
-    return true
-  }
-
-  try {
-    new URL(value)
-    return true
-  } catch {
-    return false
-  }
-}
-
-export function ProjectCreatePage() {
-  const navigate = useNavigate()
-  const { members, isLoading, error, createProject } = useProjectData()
-  const [formData, setFormData] = useState<CreateProjectInput>({
+function buildInitialFormData(): CreateProjectInput {
+  return {
     projectNumber: '',
     name: '',
     startDate: '',
     endDate: '',
     status: '未着手',
     pmMemberId: '',
-    projectLink: '',
-  })
+    projectLinks: [createEmptyProjectLink()],
+  }
+}
+
+export function ProjectCreatePage() {
+  const navigate = useNavigate()
+  const { members, isLoading, error, createProject } = useProjectData()
+  const [formData, setFormData] = useState<CreateProjectInput>(buildInitialFormData)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -46,6 +38,33 @@ export function ProjectCreatePage() {
       ...current,
       [key]: value,
     }))
+  }
+
+  function updateProjectLink(index: number, patch: Partial<ProjectLink>) {
+    setFormData((current) => ({
+      ...current,
+      projectLinks: current.projectLinks.map((link, currentIndex) =>
+        currentIndex === index ? { ...link, ...patch } : link,
+      ),
+    }))
+  }
+
+  function addProjectLink() {
+    setFormData((current) => ({
+      ...current,
+      projectLinks: [...current.projectLinks, createEmptyProjectLink()],
+    }))
+  }
+
+  function removeProjectLink(index: number) {
+    setFormData((current) => {
+      const nextLinks = current.projectLinks.filter((_, currentIndex) => currentIndex !== index)
+
+      return {
+        ...current,
+        projectLinks: nextLinks.length > 0 ? nextLinks : [createEmptyProjectLink()],
+      }
+    })
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -68,18 +87,25 @@ export function ProjectCreatePage() {
       return
     }
 
-    if (!isValidOptionalUrl(formData.projectLink)) {
-      setSubmitError('案件リンクは有効な URL を入力してください。')
+    const validatedLinks = validateProjectLinks(formData.projectLinks)
+
+    if (validatedLinks.error) {
+      setSubmitError(validatedLinks.error)
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      const createdProject = await createProject(formData)
+      const createdProject = await createProject({
+        ...formData,
+        projectLinks: validatedLinks.links,
+      })
       navigate(`/projects/${createdProject.projectNumber}`)
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件作成に失敗しました。')
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : '案件登録に失敗しました。',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -89,7 +115,7 @@ export function ProjectCreatePage() {
     return (
       <Panel className={styles.section}>
         <h1 className={styles.title}>案件追加画面を準備中です</h1>
-        <p className={styles.description}>担当者候補などの初期情報を読み込んでいます。</p>
+        <p className={styles.description}>担当者などの候補情報を読み込んでいます。</p>
       </Panel>
     )
   }
@@ -111,7 +137,7 @@ export function ProjectCreatePage() {
         </Button>
         <h1 className={styles.title}>案件追加</h1>
         <p className={styles.description}>
-          プロジェクト番号、案件名、期間、PM を設定して案件を作成します。案件リンクは任意です。
+          プロジェクト番号、案件名、期間、PM を設定して案件を作成します。案件リンクは任意で複数登録できます。
         </p>
       </Panel>
 
@@ -132,7 +158,7 @@ export function ProjectCreatePage() {
             <input
               className={styles.input}
               onChange={(event) => updateField('name', event.target.value)}
-              placeholder="例: 新規業務システム刷新"
+              placeholder="例: 新営業支援システム刷新"
               value={formData.name}
             />
           </label>
@@ -188,22 +214,60 @@ export function ProjectCreatePage() {
             </select>
           </label>
 
-          <label className={styles.field}>
-            <span className={styles.label}>案件リンク</span>
-            <input
-              className={styles.input}
-              onChange={(event) => updateField('projectLink', event.target.value)}
-              placeholder="例: https://example.com/projects/PRJ-006"
-              type="url"
-              value={formData.projectLink}
-            />
-          </label>
+          <div className={styles.linkSection}>
+            <div className={styles.linkSectionHeader}>
+              <div>
+                <p className={styles.noteTitle}>案件リンク</p>
+                <p className={styles.noteText}>リンク名と URL をセットで登録できます。</p>
+              </div>
+              <Button onClick={addProjectLink} size="small" type="button" variant="secondary">
+                リンク追加
+              </Button>
+            </div>
+
+            <div className={styles.linkList}>
+              {formData.projectLinks.map((link, index) => (
+                <div key={`project-link-${index}`} className={styles.linkRow}>
+                  <label className={styles.field}>
+                    <span className={styles.label}>リンク名 {index + 1}</span>
+                    <input
+                      aria-label={`案件リンク名 ${index + 1}`}
+                      className={styles.input}
+                      onChange={(event) => updateProjectLink(index, { label: event.target.value })}
+                      placeholder="例: Backlog"
+                      value={link.label}
+                    />
+                  </label>
+
+                  <label className={styles.field}>
+                    <span className={styles.label}>URL {index + 1}</span>
+                    <input
+                      aria-label={`案件リンクURL ${index + 1}`}
+                      className={styles.input}
+                      onChange={(event) => updateProjectLink(index, { url: event.target.value })}
+                      placeholder="https://example.com/projects/PRJ-006"
+                      type="url"
+                      value={link.url}
+                    />
+                  </label>
+
+                  <Button
+                    onClick={() => removeProjectLink(index)}
+                    size="small"
+                    type="button"
+                    variant="danger"
+                  >
+                    削除
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className={styles.noteCard}>
             <p className={styles.noteTitle}>初期設定ルール</p>
             <p className={styles.noteText}>
-              登録時に基礎検討、基本設計、詳細設計、テスト、移行の 5 フェーズを自動作成します。
-              PM は初期担当として設定されます。
+              登録時に基礎検討、基本設計、詳細設計、テスト、移行の 5 フェーズを自動生成します。PM は初期体制として設定されます。
             </p>
           </div>
 

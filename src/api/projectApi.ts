@@ -7,7 +7,7 @@ import type {
   ProjectAssignment,
   UpdateMemberInput,
   UpdatePhaseInput,
-  UpdateProjectLinkInput,
+  UpdateProjectLinksInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
@@ -98,7 +98,10 @@ function normalizeProject(project: Project): Project {
     endDate: project.endDate,
     status: project.status,
     pmMemberId: project.pmMemberId,
-    projectLink: project.projectLink ?? null,
+    projectLinks: (project.projectLinks ?? []).map((link) => ({
+      label: link.label,
+      url: link.url,
+    })),
   }
 }
 
@@ -387,13 +390,13 @@ export async function updateProjectScheduleRequest(
   return normalizeProjectDetail(detail)
 }
 
-export async function updateProjectLinkRequest(
+export async function updateProjectLinksRequest(
   projectId: string,
-  input: UpdateProjectLinkInput,
+  input: UpdateProjectLinksInput,
   signal?: AbortSignal,
 ): Promise<ProjectDataPayload> {
-  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectLinkInput>(
-    `/api/projects/${projectId}/link`,
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectLinksInput>(
+    `/api/projects/${projectId}/links`,
     'PATCH',
     input,
     signal,

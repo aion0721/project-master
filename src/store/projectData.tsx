@@ -7,7 +7,7 @@ import {
   updateMemberRequest,
   updatePhaseRequest,
   updateProjectCurrentPhaseRequest,
-  updateProjectLinkRequest,
+  updateProjectLinksRequest,
   updateProjectPhasesRequest,
   updateProjectScheduleRequest,
   updateProjectStructureRequest,
@@ -21,7 +21,7 @@ import type {
   ProjectAssignment,
   UpdateMemberInput,
   UpdatePhaseInput,
-  UpdateProjectLinkInput,
+  UpdateProjectLinksInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
@@ -148,8 +148,8 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       return updatedProject
     },
-    updateProjectLink: async (projectId: string, input: UpdateProjectLinkInput) => {
-      const payload = await updateProjectLinkRequest(projectId, input)
+    updateProjectLinks: async (projectId: string, input: UpdateProjectLinksInput) => {
+      const payload = await updateProjectLinksRequest(projectId, input)
       const updatedProject = payload.projects[0]
 
       if (!updatedProject) {

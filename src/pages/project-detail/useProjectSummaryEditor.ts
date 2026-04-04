@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Phase, Project } from '../../types/project'
-import { isValidOptionalUrl } from './projectDetailTypes'
+import type { Phase, Project, ProjectLink } from '../../types/project'
+import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
 
 interface UpdateProjectCurrentPhase {
   (projectId: string, phaseId: string): Promise<unknown>
@@ -10,8 +10,8 @@ interface UpdateProjectSchedule {
   (projectId: string, input: { startDate: string; endDate: string }): Promise<unknown>
 }
 
-interface UpdateProjectLink {
-  (projectId: string, input: { projectLink: string }): Promise<unknown>
+interface UpdateProjectLinks {
+  (projectId: string, input: { projectLinks: ProjectLink[] }): Promise<unknown>
 }
 
 export function useProjectSummaryEditor(
@@ -19,7 +19,7 @@ export function useProjectSummaryEditor(
   currentPhase: Phase | undefined,
   updateProjectCurrentPhase: UpdateProjectCurrentPhase,
   updateProjectSchedule: UpdateProjectSchedule,
-  updateProjectLink: UpdateProjectLink,
+  updateProjectLinks: UpdateProjectLinks,
 ) {
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
   const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
@@ -31,10 +31,10 @@ export function useProjectSummaryEditor(
   const [scheduleError, setScheduleError] = useState<string | null>(null)
   const [isSavingSchedule, setIsSavingSchedule] = useState(false)
 
-  const [isProjectLinkEditing, setIsProjectLinkEditing] = useState(false)
-  const [projectLinkDraft, setProjectLinkDraft] = useState('')
-  const [projectLinkError, setProjectLinkError] = useState<string | null>(null)
-  const [isSavingProjectLink, setIsSavingProjectLink] = useState(false)
+  const [isProjectLinksEditing, setIsProjectLinksEditing] = useState(false)
+  const [projectLinksDraft, setProjectLinksDraft] = useState<ProjectLink[]>([createEmptyProjectLink()])
+  const [projectLinksError, setProjectLinksError] = useState<string | null>(null)
+  const [isSavingProjectLinks, setIsSavingProjectLinks] = useState(false)
 
   useEffect(() => {
     if (!project) {
@@ -43,8 +43,12 @@ export function useProjectSummaryEditor(
 
     setScheduleDraft({ startDate: project.startDate, endDate: project.endDate })
     setScheduleError(null)
-    setProjectLinkDraft(project.projectLink ?? '')
-    setProjectLinkError(null)
+    setProjectLinksDraft(
+      project.projectLinks.length > 0
+        ? project.projectLinks.map((link) => ({ ...link }))
+        : [createEmptyProjectLink()],
+    )
+    setProjectLinksError(null)
   }, [project])
 
   useEffect(() => {
@@ -55,7 +59,10 @@ export function useProjectSummaryEditor(
   const scheduleChanged = project
     ? scheduleDraft.startDate !== project.startDate || scheduleDraft.endDate !== project.endDate
     : false
-  const projectLinkChanged = project ? projectLinkDraft !== (project.projectLink ?? '') : false
+  const projectLinksChanged = project
+    ? JSON.stringify(validateProjectLinks(projectLinksDraft).links) !==
+      JSON.stringify(project.projectLinks)
+    : false
   const currentPhaseChanged = currentPhaseDraftId !== (currentPhase?.id ?? '')
 
   function openScheduleEditor() {
@@ -143,40 +150,67 @@ export function useProjectSummaryEditor(
     }
   }
 
-  function openProjectLinkEditor() {
-    setProjectLinkDraft(project?.projectLink ?? '')
-    setProjectLinkError(null)
-    setIsProjectLinkEditing(true)
+  function openProjectLinksEditor() {
+    setProjectLinksDraft(
+      project && project.projectLinks.length > 0
+        ? project.projectLinks.map((link) => ({ ...link }))
+        : [createEmptyProjectLink()],
+    )
+    setProjectLinksError(null)
+    setIsProjectLinksEditing(true)
   }
 
-  function closeProjectLinkEditor() {
-    setProjectLinkDraft(project?.projectLink ?? '')
-    setProjectLinkError(null)
-    setIsProjectLinkEditing(false)
+  function closeProjectLinksEditor() {
+    setProjectLinksDraft(
+      project && project.projectLinks.length > 0
+        ? project.projectLinks.map((link) => ({ ...link }))
+        : [createEmptyProjectLink()],
+    )
+    setProjectLinksError(null)
+    setIsProjectLinksEditing(false)
   }
 
-  async function saveProjectLink() {
+  function updateProjectLinkDraft(index: number, patch: Partial<ProjectLink>) {
+    setProjectLinksDraft((current) =>
+      current.map((link, currentIndex) => (currentIndex === index ? { ...link, ...patch } : link)),
+    )
+  }
+
+  function addProjectLinkDraft() {
+    setProjectLinksDraft((current) => [...current, createEmptyProjectLink()])
+  }
+
+  function removeProjectLinkDraft(index: number) {
+    setProjectLinksDraft((current) => {
+      const nextLinks = current.filter((_, currentIndex) => currentIndex !== index)
+      return nextLinks.length > 0 ? nextLinks : [createEmptyProjectLink()]
+    })
+  }
+
+  async function saveProjectLinks() {
     if (!project) {
       return
     }
 
-    if (!isValidOptionalUrl(projectLinkDraft)) {
-      setProjectLinkError('案件リンクは有効な URL を入力してください。')
+    const validatedLinks = validateProjectLinks(projectLinksDraft)
+
+    if (validatedLinks.error) {
+      setProjectLinksError(validatedLinks.error)
       return
     }
 
-    setIsSavingProjectLink(true)
-    setProjectLinkError(null)
+    setIsSavingProjectLinks(true)
+    setProjectLinksError(null)
 
     try {
-      await updateProjectLink(project.projectNumber, { projectLink: projectLinkDraft.trim() })
-      setIsProjectLinkEditing(false)
+      await updateProjectLinks(project.projectNumber, { projectLinks: validatedLinks.links })
+      setIsProjectLinksEditing(false)
     } catch (caughtError) {
-      setProjectLinkError(
+      setProjectLinksError(
         caughtError instanceof Error ? caughtError.message : '案件リンクの更新に失敗しました。',
       )
     } finally {
-      setIsSavingProjectLink(false)
+      setIsSavingProjectLinks(false)
     }
   }
 
@@ -185,28 +219,30 @@ export function useProjectSummaryEditor(
     currentPhaseChanged,
     currentPhaseError,
     isCurrentPhaseEditing,
-    isProjectLinkEditing,
+    isProjectLinksEditing,
     isSavingCurrentPhase,
-    isSavingProjectLink,
+    isSavingProjectLinks,
     isSavingSchedule,
     isScheduleEditing,
-    projectLinkChanged,
-    projectLinkDraft,
-    projectLinkError,
+    projectLinksChanged,
+    projectLinksDraft,
+    projectLinksError,
     scheduleChanged,
     scheduleDraft,
     scheduleError,
+    addProjectLinkDraft,
     closeCurrentPhaseEditor,
-    closeProjectLinkEditor,
+    closeProjectLinksEditor,
     closeScheduleEditor,
     openCurrentPhaseEditor,
-    openProjectLinkEditor,
+    openProjectLinksEditor,
     openScheduleEditor,
+    removeProjectLinkDraft,
     saveCurrentPhase,
-    saveProjectLink,
+    saveProjectLinks,
     saveSchedule,
     setCurrentPhaseDraftId,
-    setProjectLinkDraft,
     setScheduleDraft,
+    updateProjectLinkDraft,
   }
 }

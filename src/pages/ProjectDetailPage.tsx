@@ -25,7 +25,7 @@ export function ProjectDetailPage() {
     isLoading,
     error,
     updateProjectCurrentPhase,
-    updateProjectLink,
+    updateProjectLinks,
     updateProjectPhases,
     updateProjectSchedule,
     updateProjectStructure,
@@ -55,7 +55,7 @@ export function ProjectDetailPage() {
     currentPhase,
     updateProjectCurrentPhase,
     updateProjectSchedule,
-    updateProjectLink,
+    updateProjectLinks,
   )
   const phaseEditor = useProjectPhaseEditor(project, projectPhases, workStatusOptions, updateProjectPhases)
   const structureEditor = useProjectStructureEditor(
@@ -108,23 +108,25 @@ export function ProjectDetailPage() {
         currentUser={currentUser}
         isBookmarked={isBookmarked(project.projectNumber)}
         isCurrentPhaseEditing={summaryEditor.isCurrentPhaseEditing}
-        isProjectLinkEditing={summaryEditor.isProjectLinkEditing}
+        isProjectLinksEditing={summaryEditor.isProjectLinksEditing}
         isSavingCurrentPhase={summaryEditor.isSavingCurrentPhase}
-        isSavingProjectLink={summaryEditor.isSavingProjectLink}
+        isSavingProjectLinks={summaryEditor.isSavingProjectLinks}
         isSavingSchedule={summaryEditor.isSavingSchedule}
         isScheduleEditing={summaryEditor.isScheduleEditing}
+        onAddProjectLink={summaryEditor.addProjectLinkDraft}
         onCurrentPhaseCancel={summaryEditor.closeCurrentPhaseEditor}
         onCurrentPhaseDraftChange={summaryEditor.setCurrentPhaseDraftId}
         onCurrentPhaseEdit={summaryEditor.openCurrentPhaseEditor}
         onCurrentPhaseSave={() => {
           void summaryEditor.saveCurrentPhase()
         }}
-        onProjectLinkCancel={summaryEditor.closeProjectLinkEditor}
-        onProjectLinkDraftChange={summaryEditor.setProjectLinkDraft}
-        onProjectLinkEdit={summaryEditor.openProjectLinkEditor}
-        onProjectLinkSave={() => {
-          void summaryEditor.saveProjectLink()
+        onProjectLinkDraftChange={summaryEditor.updateProjectLinkDraft}
+        onProjectLinksCancel={summaryEditor.closeProjectLinksEditor}
+        onProjectLinksEdit={summaryEditor.openProjectLinksEditor}
+        onProjectLinksSave={() => {
+          void summaryEditor.saveProjectLinks()
         }}
+        onRemoveProjectLink={summaryEditor.removeProjectLinkDraft}
         onScheduleCancel={summaryEditor.closeScheduleEditor}
         onScheduleDraftChange={(patch) => {
           summaryEditor.setScheduleDraft((current) => ({ ...current, ...patch }))
@@ -138,9 +140,9 @@ export function ProjectDetailPage() {
         }}
         pmName={pm?.name}
         project={project}
-        projectLinkChanged={summaryEditor.projectLinkChanged}
-        projectLinkDraft={summaryEditor.projectLinkDraft}
-        projectLinkError={summaryEditor.projectLinkError}
+        projectLinksChanged={summaryEditor.projectLinksChanged}
+        projectLinksDraft={summaryEditor.projectLinksDraft}
+        projectLinksError={summaryEditor.projectLinksError}
         projectPhases={projectPhases}
         scheduleChanged={summaryEditor.scheduleChanged}
         scheduleDraft={summaryEditor.scheduleDraft}

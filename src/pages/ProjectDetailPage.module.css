@@ -87,6 +87,44 @@
   text-decoration: underline;
 }
 
+.projectLinksDisplay {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.projectLinksList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projectLinksHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metaHelperText {
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.projectLinksEditorList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.projectLinkEditorRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
 .phaseMetaDisplay {
   display: flex;
   align-items: center;
@@ -282,7 +320,13 @@
     flex-direction: column;
   }
 
-  .assignmentRow {
+  .assignmentRow,
+  .projectLinkEditorRow,
+  .projectLinksDisplay {
     grid-template-columns: 1fr;
+  }
+
+  .projectLinksDisplay {
+    display: grid;
   }
 }

@@ -8,7 +8,7 @@ import type {
   ProjectAssignment,
   UpdateMemberInput,
   UpdatePhaseInput,
-  UpdateProjectLinkInput,
+  UpdateProjectLinksInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
@@ -28,7 +28,7 @@ export interface ProjectDataContextValue {
   deleteMember: (memberId: string) => Promise<void>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
   updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
-  updateProjectLink: (projectId: string, input: UpdateProjectLinkInput) => Promise<Project>
+  updateProjectLinks: (projectId: string, input: UpdateProjectLinksInput) => Promise<Project>
   updateProjectPhases: (projectId: string, input: UpdateProjectPhasesInput) => Promise<Project>
   updateProjectCurrentPhase: (projectId: string, phaseId: string) => Promise<Project>
   updateProjectStructure: (projectId: string, input: UpdateProjectStructureInput) => Promise<Project>

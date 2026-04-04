@@ -21,7 +21,7 @@ describe('ProjectDetailPage', () => {
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
-    expect(screen.getByTestId('project-link-anchor')).toHaveAttribute('href', project.projectLink)
+    expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute('href', project.projectLinks[0]?.url)
     expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
   })
 
@@ -58,7 +58,7 @@ describe('ProjectDetailPage', () => {
     })
   })
 
-  it('案件リンクを更新できる', async () => {
+  it('案件リンクを複数更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderWithProviders(<ProjectDetailPage />, {
@@ -68,19 +68,42 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
-    fireEvent.click(screen.getByTestId('project-link-edit-button'))
-    fireEvent.change(screen.getByTestId('project-link-input'), {
+    fireEvent.click(screen.getByTestId('project-links-edit-button'))
+    fireEvent.change(screen.getByTestId('project-link-label-0'), {
+      target: { value: 'Review' },
+    })
+    fireEvent.change(screen.getByTestId('project-link-url-0'), {
       target: { value: 'https://example.com/projects/PRJ-001/review' },
     })
-    fireEvent.click(screen.getByTestId('project-link-save-button'))
+    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+    fireEvent.change(screen.getByTestId('project-link-label-2'), {
+      target: { value: 'Minutes' },
+    })
+    fireEvent.change(screen.getByTestId('project-link-url-2'), {
+      target: { value: 'https://example.com/projects/PRJ-001/minutes' },
+    })
+    fireEvent.click(screen.getByTestId('project-links-save-button'))
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/projects/PRJ-001/link'),
+        expect.stringContaining('/api/projects/PRJ-001/links'),
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({
-            projectLink: 'https://example.com/projects/PRJ-001/review',
+            projectLinks: [
+              {
+                label: 'Review',
+                url: 'https://example.com/projects/PRJ-001/review',
+              },
+              {
+                label: '設計資料',
+                url: 'https://example.com/wiki/PRJ-001',
+              },
+              {
+                label: 'Minutes',
+                url: 'https://example.com/projects/PRJ-001/minutes',
+              },
+            ],
           }),
         }),
       )

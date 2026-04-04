@@ -8,7 +8,7 @@ import type {
   Project,
   UpdateMemberInput,
   UpdatePhaseInput,
-  UpdateProjectLinkInput,
+  UpdateProjectLinksInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
@@ -17,7 +17,10 @@ import type { UserProfile } from '../types/user'
 
 function cloneFixtures() {
   return {
-    projects: projects.map((project) => ({ ...project })),
+    projects: projects.map((project) => ({
+      ...project,
+      projectLinks: project.projectLinks.map((link) => ({ ...link })),
+    })),
     phases: phases.map((phase) => ({ ...phase })),
     members: members.map((member) => ({ ...member })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
@@ -289,7 +292,7 @@ export function mockProjectApi() {
         endDate: body.endDate,
         status: statusLabelByCode[body.status],
         pmMemberId: body.pmMemberId,
-        projectLink: body.projectLink ?? '',
+        projectLinks: body.projectLinks ?? [],
       }
 
       fixtureData.projects.push(project)
@@ -377,10 +380,10 @@ export function mockProjectApi() {
       })
     }
 
-    const linkMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/link$/)
-    if (linkMatch && method === 'PATCH') {
-      const projectNumber = linkMatch[1]
-      const body = JSON.parse(String(init?.body)) as UpdateProjectLinkInput
+    const linksMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/links$/)
+    if (linksMatch && method === 'PATCH') {
+      const projectNumber = linksMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectLinksInput
       const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
 
       if (!project) {
@@ -392,7 +395,10 @@ export function mockProjectApi() {
         })
       }
 
-      project.projectLink = body.projectLink.trim() ? body.projectLink.trim() : null
+      project.projectLinks = body.projectLinks.map((link) => ({
+        label: link.label.trim(),
+        url: link.url.trim(),
+      }))
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

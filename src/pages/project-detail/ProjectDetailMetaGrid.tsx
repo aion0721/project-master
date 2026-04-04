@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
-import type { Phase, Project } from '../../types/project'
+import type { Phase, Project, ProjectLink } from '../../types/project'
 import { formatPeriod } from '../../utils/projectUtils'
 import styles from '../ProjectDetailPage.module.css'
 
@@ -15,28 +15,30 @@ interface ProjectDetailMetaGridProps {
   currentPhaseDraftId: string
   currentPhaseError: string | null
   isCurrentPhaseEditing: boolean
-  isProjectLinkEditing: boolean
+  isProjectLinksEditing: boolean
   isSavingCurrentPhase: boolean
-  isSavingProjectLink: boolean
+  isSavingProjectLinks: boolean
   isSavingSchedule: boolean
   isScheduleEditing: boolean
+  onAddProjectLink: () => void
   onCurrentPhaseCancel: () => void
   onCurrentPhaseDraftChange: (phaseId: string) => void
   onCurrentPhaseEdit: () => void
   onCurrentPhaseSave: () => void
-  onProjectLinkCancel: () => void
-  onProjectLinkDraftChange: (value: string) => void
-  onProjectLinkEdit: () => void
-  onProjectLinkSave: () => void
+  onProjectLinkDraftChange: (index: number, patch: Partial<ProjectLink>) => void
+  onProjectLinksCancel: () => void
+  onProjectLinksEdit: () => void
+  onProjectLinksSave: () => void
+  onRemoveProjectLink: (index: number) => void
   onScheduleCancel: () => void
   onScheduleDraftChange: (patch: Partial<ScheduleDraft>) => void
   onScheduleEdit: () => void
   onScheduleSave: () => void
   pmName?: string
   project: Project
-  projectLinkChanged: boolean
-  projectLinkDraft: string
-  projectLinkError: string | null
+  projectLinksChanged: boolean
+  projectLinksDraft: ProjectLink[]
+  projectLinksError: string | null
   projectPhases: Phase[]
   scheduleChanged: boolean
   scheduleDraft: ScheduleDraft
@@ -58,28 +60,30 @@ export function ProjectDetailMetaGrid({
   currentPhaseDraftId,
   currentPhaseError,
   isCurrentPhaseEditing,
-  isProjectLinkEditing,
+  isProjectLinksEditing,
   isSavingCurrentPhase,
-  isSavingProjectLink,
+  isSavingProjectLinks,
   isSavingSchedule,
   isScheduleEditing,
+  onAddProjectLink,
   onCurrentPhaseCancel,
   onCurrentPhaseDraftChange,
   onCurrentPhaseEdit,
   onCurrentPhaseSave,
-  onProjectLinkCancel,
   onProjectLinkDraftChange,
-  onProjectLinkEdit,
-  onProjectLinkSave,
+  onProjectLinksCancel,
+  onProjectLinksEdit,
+  onProjectLinksSave,
+  onRemoveProjectLink,
   onScheduleCancel,
   onScheduleDraftChange,
   onScheduleEdit,
   onScheduleSave,
   pmName,
   project,
-  projectLinkChanged,
-  projectLinkDraft,
-  projectLinkError,
+  projectLinksChanged,
+  projectLinksDraft,
+  projectLinksError,
   projectPhases,
   scheduleChanged,
   scheduleDraft,
@@ -208,60 +212,100 @@ export function ProjectDetailMetaGrid({
       </MetaCard>
 
       <MetaCard label="案件リンク">
-        {isProjectLinkEditing ? (
+        {isProjectLinksEditing ? (
           <div className={styles.phaseMetaEditor}>
-            <label className={styles.formField}>
-              <span className={styles.visuallyHidden}>案件リンク</span>
-              <input
-                aria-label="案件リンク"
-                className={styles.selectInput}
-                data-testid="project-link-input"
-                onChange={(event) => onProjectLinkDraftChange(event.target.value)}
-                placeholder="https://example.com/projects/PRJ-001"
-                type="url"
-                value={projectLinkDraft}
-              />
-            </label>
+            <div className={styles.projectLinksHeader}>
+              <span className={styles.metaHelperText}>名称と URL をセットで管理できます。</span>
+              <Button onClick={onAddProjectLink} size="small" variant="secondary">
+                追加
+              </Button>
+            </div>
+
+            <div className={styles.projectLinksEditorList}>
+              {projectLinksDraft.map((link, index) => (
+                <div key={`project-link-draft-${index}`} className={styles.projectLinkEditorRow}>
+                  <label className={styles.formField}>
+                    <span className={styles.visuallyHidden}>案件リンク名 {index + 1}</span>
+                    <input
+                      aria-label={`案件リンク名 ${index + 1}`}
+                      className={styles.selectInput}
+                      data-testid={`project-link-label-${index}`}
+                      onChange={(event) =>
+                        onProjectLinkDraftChange(index, { label: event.target.value })
+                      }
+                      placeholder="リンク名"
+                      value={link.label}
+                    />
+                  </label>
+                  <label className={styles.formField}>
+                    <span className={styles.visuallyHidden}>案件リンクURL {index + 1}</span>
+                    <input
+                      aria-label={`案件リンクURL ${index + 1}`}
+                      className={styles.selectInput}
+                      data-testid={`project-link-url-${index}`}
+                      onChange={(event) => onProjectLinkDraftChange(index, { url: event.target.value })}
+                      placeholder="https://example.com/projects/PRJ-001"
+                      type="url"
+                      value={link.url}
+                    />
+                  </label>
+                  <Button
+                    data-testid={`project-link-remove-${index}`}
+                    onClick={() => onRemoveProjectLink(index)}
+                    size="small"
+                    variant="danger"
+                  >
+                    削除
+                  </Button>
+                </div>
+              ))}
+            </div>
+
             <div className={styles.phaseMetaActions}>
               <Button
-                data-testid="project-link-save-button"
-                disabled={isSavingProjectLink || !projectLinkChanged}
-                onClick={onProjectLinkSave}
+                data-testid="project-links-save-button"
+                disabled={isSavingProjectLinks || !projectLinksChanged}
+                onClick={onProjectLinksSave}
                 size="small"
               >
-                {isSavingProjectLink ? '保存中...' : '保存'}
+                {isSavingProjectLinks ? '保存中...' : '保存'}
               </Button>
               <Button
-                data-testid="project-link-cancel-button"
-                onClick={onProjectLinkCancel}
+                data-testid="project-links-cancel-button"
+                onClick={onProjectLinksCancel}
                 size="small"
                 variant="secondary"
               >
                 キャンセル
               </Button>
             </div>
-            {projectLinkError ? <p className={styles.metaError}>{projectLinkError}</p> : null}
+            {projectLinksError ? <p className={styles.metaError}>{projectLinksError}</p> : null}
           </div>
         ) : (
-          <div className={styles.phaseMetaDisplay}>
-            {project.projectLink ? (
-              <a
-                className={styles.externalLink}
-                data-testid="project-link-anchor"
-                href={project.projectLink}
-                rel="noreferrer"
-                target="_blank"
-              >
-                案件リンクを開く
-              </a>
+          <div className={styles.projectLinksDisplay}>
+            {project.projectLinks.length > 0 ? (
+              <div className={styles.projectLinksList}>
+                {project.projectLinks.map((link, index) => (
+                  <a
+                    key={`${link.label}-${link.url}-${index}`}
+                    className={styles.externalLink}
+                    data-testid={`project-link-anchor-${index}`}
+                    href={link.url}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
             ) : (
               <strong className={styles.metaValue} data-testid="project-link-empty">
                 未設定
               </strong>
             )}
             <Button
-              data-testid="project-link-edit-button"
-              onClick={onProjectLinkEdit}
+              data-testid="project-links-edit-button"
+              onClick={onProjectLinksEdit}
               size="small"
               variant="secondary"
             >
