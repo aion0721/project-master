@@ -2,9 +2,11 @@ import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
 import { assignments, members, phases, projects } from '../data/mockData'
 import type {
+  CreateMemberInput,
   CreateProjectInput,
   Phase,
   Project,
+  UpdateMemberInput,
   UpdatePhaseInput,
   UpdateProjectLinkInput,
   UpdateProjectPhasesInput,
@@ -153,6 +155,15 @@ function updateCurrentPhaseState(fixtureData: FixtureData, projectNumber: string
   return buildProjectDetailResponse(fixtureData, projectNumber)
 }
 
+function buildJsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export function mockProjectApi() {
   const fixtureData = cloneFixtures()
 
@@ -161,12 +172,36 @@ export function mockProjectApi() {
     const method = init?.method ?? 'GET'
 
     if (requestUrl.endsWith('/api/members') && method === 'GET') {
-      return new Response(JSON.stringify({ items: fixtureData.members }), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      return buildJsonResponse({ items: fixtureData.members }, 200)
+    }
+
+    if (requestUrl.endsWith('/api/members') && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as CreateMemberInput
+
+      if (!body.id.trim() || !body.name.trim() || !body.role.trim()) {
+        return buildJsonResponse({ message: 'Missing required member fields' }, 400)
+      }
+
+      if (fixtureData.members.some((member) => member.id === body.id.trim())) {
+        return buildJsonResponse({ message: 'Member ID already exists' }, 400)
+      }
+
+      if (
+        body.managerId &&
+        !fixtureData.members.some((member) => member.id === body.managerId)
+      ) {
+        return buildJsonResponse({ message: 'Manager not found' }, 400)
+      }
+
+      const member = {
+        id: body.id.trim(),
+        name: body.name.trim(),
+        role: body.role.trim(),
+        managerId: body.managerId ?? null,
+      }
+
+      fixtureData.members.push(member)
+      return buildJsonResponse({ member }, 201)
     }
 
     if (requestUrl.endsWith('/api/users/login') && method === 'POST') {
@@ -501,6 +536,62 @@ export function mockProjectApi() {
           'Content-Type': 'application/json',
         },
       })
+    }
+
+    const memberMatch = requestUrl.match(/\/api\/members\/([^/]+)$/)
+    if (memberMatch && method === 'PATCH') {
+      const memberId = memberMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateMemberInput
+      const member = fixtureData.members.find((item) => item.id === memberId)
+
+      if (!member) {
+        return buildJsonResponse({ message: 'Member not found' }, 404)
+      }
+
+      if (!body.name.trim() || !body.role.trim()) {
+        return buildJsonResponse({ message: 'Missing required member fields' }, 400)
+      }
+
+      if (body.managerId === memberId) {
+        return buildJsonResponse({ message: 'Member cannot manage themselves' }, 400)
+      }
+
+      if (
+        body.managerId &&
+        !fixtureData.members.some((item) => item.id === body.managerId)
+      ) {
+        return buildJsonResponse({ message: 'Manager not found' }, 400)
+      }
+
+      member.name = body.name.trim()
+      member.role = body.role.trim()
+      member.managerId = body.managerId ?? null
+
+      return buildJsonResponse({ member }, 200)
+    }
+
+    if (memberMatch && method === 'DELETE') {
+      const memberId = memberMatch[1]
+      const member = fixtureData.members.find((item) => item.id === memberId)
+
+      if (!member) {
+        return buildJsonResponse({ message: 'Member not found' }, 404)
+      }
+
+      if (fixtureData.projects.some((project) => project.pmMemberId === memberId)) {
+        return buildJsonResponse({ message: 'PM assigned member cannot be deleted' }, 400)
+      }
+
+      if (fixtureData.assignments.some((assignment) => assignment.memberId === memberId)) {
+        return buildJsonResponse({ message: 'Assigned member cannot be deleted' }, 400)
+      }
+
+      if (fixtureData.members.some((item) => item.managerId === memberId)) {
+        return buildJsonResponse({ message: 'Manager with subordinates cannot be deleted' }, 400)
+      }
+
+      fixtureData.members = fixtureData.members.filter((item) => item.id !== memberId)
+      return buildJsonResponse({ memberId }, 200)
     }
 
     const detailMatch = requestUrl.match(/\/api\/projects\/([^/]+)$/)

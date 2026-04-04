@@ -1,10 +1,12 @@
 import { createContext } from 'react'
 import type {
+  CreateMemberInput,
   CreateProjectInput,
   Member,
   Phase,
   Project,
   ProjectAssignment,
+  UpdateMemberInput,
   UpdatePhaseInput,
   UpdateProjectLinkInput,
   UpdateProjectPhasesInput,
@@ -20,7 +22,10 @@ export interface ProjectDataContextValue {
   isLoading: boolean
   error: string | null
   refresh: () => void
+  createMember: (input: CreateMemberInput) => Promise<Member>
   createProject: (input: CreateProjectInput) => Promise<Project>
+  updateMember: (memberId: string, input: UpdateMemberInput) => Promise<Member>
+  deleteMember: (memberId: string) => Promise<void>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
   updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
   updateProjectLink: (projectId: string, input: UpdateProjectLinkInput) => Promise<Project>

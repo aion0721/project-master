@@ -7,6 +7,7 @@ import styles from './Layout.module.css'
 const navigationItems = [
   { to: '/projects', label: '案件一覧' },
   { to: '/projects/new', label: '案件追加' },
+  { to: '/members', label: 'メンバー管理' },
   { to: '/cross-project', label: '横断ビュー' },
 ]
 

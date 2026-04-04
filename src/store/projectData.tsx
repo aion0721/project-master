@@ -1,7 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
+  createMemberRequest,
   createProjectRequest,
+  deleteMemberRequest,
   loadProjectData,
+  updateMemberRequest,
   updatePhaseRequest,
   updateProjectCurrentPhaseRequest,
   updateProjectLinkRequest,
@@ -10,11 +13,13 @@ import {
   updateProjectStructureRequest,
 } from '../api/projectApi'
 import type {
+  CreateMemberInput,
   CreateProjectInput,
   Member,
   Phase,
   Project,
   ProjectAssignment,
+  UpdateMemberInput,
   UpdatePhaseInput,
   UpdateProjectLinkInput,
   UpdateProjectPhasesInput,
@@ -93,6 +98,11 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     refresh: () => setRefreshKey((current) => current + 1),
+    createMember: async (input: CreateMemberInput) => {
+      const member = await createMemberRequest(input)
+      setMembers((current) => mergeByKey(current, [member], (item) => item.id))
+      return member
+    },
     createProject: async (input: CreateProjectInput) => {
       const payload = await createProjectRequest(input)
       const createdProject = payload.projects[0]
@@ -107,6 +117,15 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
 
       return createdProject
+    },
+    updateMember: async (memberId: string, input: UpdateMemberInput) => {
+      const member = await updateMemberRequest(memberId, input)
+      setMembers((current) => mergeByKey(current, [member], (item) => item.id))
+      return member
+    },
+    deleteMember: async (memberId: string) => {
+      await deleteMemberRequest(memberId)
+      setMembers((current) => current.filter((member) => member.id !== memberId))
     },
     updatePhase: async (phaseId: string, input: UpdatePhaseInput) => {
       const payload = await updatePhaseRequest(phaseId, input)

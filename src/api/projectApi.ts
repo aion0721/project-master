@@ -1,9 +1,11 @@
 import type {
+  CreateMemberInput,
   CreateProjectInput,
   Member,
   Phase,
   Project,
   ProjectAssignment,
+  UpdateMemberInput,
   UpdatePhaseInput,
   UpdateProjectLinkInput,
   UpdateProjectPhasesInput,
@@ -139,7 +141,7 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 
 async function sendJson<TResponse, TRequest>(
   path: string,
-  method: 'POST' | 'PATCH',
+  method: 'POST' | 'PATCH' | 'DELETE',
   body: TRequest,
   signal?: AbortSignal,
 ): Promise<TResponse> {
@@ -266,6 +268,59 @@ export async function createProjectRequest(
   )
 
   return normalizeProjectDetail(detail)
+}
+
+export async function createMemberRequest(
+  input: CreateMemberInput,
+  signal?: AbortSignal,
+): Promise<Member> {
+  const response = await sendJson<{ member: ApiMember }, CreateMemberInput>(
+    '/api/members',
+    'POST',
+    input,
+    signal,
+  )
+
+  const member = normalizeMember(response.member)
+
+  if (!member) {
+    throw new Error('Created member payload is empty')
+  }
+
+  return member
+}
+
+export async function updateMemberRequest(
+  memberId: string,
+  input: UpdateMemberInput,
+  signal?: AbortSignal,
+): Promise<Member> {
+  const response = await sendJson<{ member: ApiMember }, UpdateMemberInput>(
+    `/api/members/${memberId}`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  const member = normalizeMember(response.member)
+
+  if (!member) {
+    throw new Error('Updated member payload is empty')
+  }
+
+  return member
+}
+
+export async function deleteMemberRequest(
+  memberId: string,
+  signal?: AbortSignal,
+): Promise<{ memberId: string }> {
+  return sendJson<{ memberId: string }, Record<string, never>>(
+    `/api/members/${memberId}`,
+    'DELETE',
+    {},
+    signal,
+  )
 }
 
 export async function updatePhaseRequest(
