@@ -1,0 +1,150 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hero,
+.section,
+.notFound {
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero {
+  padding: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 28%),
+    radial-gradient(circle at left bottom, rgba(14, 165, 233, 0.14), transparent 26%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
+}
+
+.heroTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.backTextLink,
+.backLink {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.title,
+.notFoundTitle {
+  margin: 10px 0 0;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+
+.description,
+.notFoundText {
+  margin: 12px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.7;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.metaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--border-subtle);
+}
+
+.metaLabel {
+  font-size: 12px;
+  color: var(--text-subtle);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.metaValue {
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.section {
+  padding: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-strong);
+}
+
+.sectionDescription {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 24px;
+}
+
+.phaseTableWrap {
+  overflow: auto;
+}
+
+.phaseTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.phaseTable th,
+.phaseTable td {
+  padding: 14px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.phaseTable th {
+  background: var(--surface-muted);
+  font-size: 12px;
+  color: var(--text-subtle);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.phaseTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.notFound {
+  padding: 32px;
+}
+
+@media (max-width: 1100px) {
+  .detailGrid,
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+}

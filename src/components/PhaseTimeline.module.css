@@ -1,0 +1,59 @@
+.wrapper {
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.headerRow {
+  display: grid;
+  gap: 8px;
+}
+
+.headerLead,
+.headerCell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 68px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+}
+
+.headerLead {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.headerCell {
+  align-items: center;
+  text-align: center;
+}
+
+.weekLabel {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.weekDate {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.rowGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

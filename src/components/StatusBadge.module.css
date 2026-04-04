@@ -1,0 +1,36 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.notStarted {
+  color: var(--status-not-started-text);
+  background: var(--status-not-started-bg);
+  border-color: var(--status-not-started-border);
+}
+
+.inProgress {
+  color: var(--status-progress-text);
+  background: var(--status-progress-bg);
+  border-color: var(--status-progress-border);
+}
+
+.completed {
+  color: var(--status-completed-text);
+  background: var(--status-completed-bg);
+  border-color: var(--status-completed-border);
+}
+
+.delayed {
+  color: var(--status-delayed-text);
+  background: var(--status-delayed-bg);
+  border-color: var(--status-delayed-border);
+}
