@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ProjectTable } from '../components/ProjectTable'
 import { useProjectData } from '../store/useProjectData'
 import { getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
@@ -46,12 +47,18 @@ export function ProjectListPage() {
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Project Portfolio</p>
-          <h1 className={styles.title}>案件一覧</h1>
-          <p className={styles.description}>
-            進捗と担当体制を案件単位で把握するための一覧です。遅延中の案件や、現在どのフェーズにいるかを同じ表で確認できます。
-          </p>
+        <div className={styles.heroHeader}>
+          <div>
+            <p className={styles.eyebrow}>Project Portfolio</p>
+            <h1 className={styles.title}>案件一覧</h1>
+            <p className={styles.description}>
+              進捗と担当体制を案件単位で把握するための一覧です。遅延中の案件や、現在どのフェーズにいるかを同じ表で確認できます。
+            </p>
+          </div>
+
+          <Link className={styles.primaryAction} to="/projects/new">
+            案件を追加
+          </Link>
         </div>
       </section>
 

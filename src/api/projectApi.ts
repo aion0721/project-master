@@ -1,7 +1,20 @@
-import type { Member, Phase, Project, ProjectAssignment } from '../types/project'
+import type {
+  CreateProjectInput,
+  Member,
+  Phase,
+  Project,
+  ProjectAssignment,
+} from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
+
+const statusCodeMap = {
+  未着手: 'not_started',
+  進行中: 'in_progress',
+  完了: 'completed',
+  遅延: 'delayed',
+} as const
 
 interface ApiMember extends Member {
   managerName?: string | null
@@ -14,6 +27,10 @@ interface ApiProjectListItem extends Project {
 
 interface ApiProjectListResponse {
   items: ApiProjectListItem[]
+}
+
+interface ApiMemberListResponse {
+  items: ApiMember[]
 }
 
 interface ApiProjectDetailResponse {
@@ -105,15 +122,83 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T
 }
 
+async function sendJson<TResponse, TRequest>(
+  path: string,
+  body: TRequest,
+  signal?: AbortSignal,
+): Promise<TResponse> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`)
+  }
+
+  return (await response.json()) as TResponse
+}
+
+function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPayload {
+  const memberMap = new Map<string, Member>()
+
+  detail.members.forEach((member) => {
+    const normalized = normalizeMember(member)
+    if (normalized) {
+      memberMap.set(normalized.id, normalized)
+    }
+  })
+
+  detail.phases.forEach((phase) => {
+    const assignee = normalizeMember(phase.assignee)
+    if (assignee) {
+      memberMap.set(assignee.id, assignee)
+    }
+  })
+
+  detail.assignments.forEach((assignment) => {
+    const member = normalizeMember(assignment.member)
+    if (member) {
+      memberMap.set(member.id, member)
+    }
+  })
+
+  const pm = normalizeMember(detail.project.pm)
+  if (pm) {
+    memberMap.set(pm.id, pm)
+  }
+
+  return {
+    projects: [normalizeProject(detail.project)],
+    phases: detail.phases.map(normalizePhase),
+    assignments: detail.assignments.map(normalizeAssignment),
+    members: [...memberMap.values()],
+  }
+}
+
 export async function loadProjectData(signal?: AbortSignal): Promise<ProjectDataPayload> {
-  const listResponse = await fetchJson<ApiProjectListResponse>('/api/projects', signal)
+  const [listResponse, memberResponse] = await Promise.all([
+    fetchJson<ApiProjectListResponse>('/api/projects', signal),
+    fetchJson<ApiMemberListResponse>('/api/members', signal),
+  ])
+
   const detailResponses = await Promise.all(
     listResponse.items.map((project) =>
       fetchJson<ApiProjectDetailResponse>(`/api/projects/${project.id}`, signal),
     ),
   )
 
-  const memberMap = new Map<string, Member>()
+  const memberMap = new Map(
+    memberResponse.items
+      .map((member) => normalizeMember(member))
+      .filter((member): member is Member => member !== null)
+      .map((member) => [member.id, member] as const),
+  )
   const phaseMap = new Map<string, Phase>()
   const assignmentMap = new Map<string, ProjectAssignment>()
 
@@ -155,6 +240,25 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     members: [...memberMap.values()],
     assignments: [...assignmentMap.values()],
   }
+}
+
+export async function createProjectRequest(
+  input: CreateProjectInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<
+    ApiProjectDetailResponse,
+    Omit<CreateProjectInput, 'status'> & { status: (typeof statusCodeMap)[keyof typeof statusCodeMap] }
+  >(
+    '/api/projects',
+    {
+      ...input,
+      status: statusCodeMap[input.status],
+    },
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
 }
 
 export function buildProjectListResponse(data: ProjectDataPayload) {

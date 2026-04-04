@@ -1,8 +1,24 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { loadProjectData } from '../api/projectApi'
-import type { Member, Phase, Project, ProjectAssignment } from '../types/project'
+import { createProjectRequest, loadProjectData } from '../api/projectApi'
+import type {
+  CreateProjectInput,
+  Member,
+  Phase,
+  Project,
+  ProjectAssignment,
+} from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
 import { ProjectDataContext } from './projectDataContext'
+
+function mergeById<T extends { id: string }>(current: T[], incoming: T[]) {
+  const map = new Map(current.map((item) => [item.id, item]))
+
+  incoming.forEach((item) => {
+    map.set(item.id, item)
+  })
+
+  return [...map.values()]
+}
 
 export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
@@ -55,6 +71,21 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     refresh: () => setRefreshKey((current) => current + 1),
+    createProject: async (input: CreateProjectInput) => {
+      const payload = await createProjectRequest(input)
+      const createdProject = payload.projects[0]
+
+      if (!createdProject) {
+        throw new Error('Created project payload is empty')
+      }
+
+      setProjects((current) => mergeById(current, payload.projects))
+      setPhases((current) => mergeById(current, payload.phases))
+      setMembers((current) => mergeById(current, payload.members))
+      setAssignments((current) => mergeById(current, payload.assignments))
+
+      return createdProject
+    },
     getProjectById: (projectId) => projects.find((project) => project.id === projectId),
     getProjectPhases: (projectId) =>
       phases

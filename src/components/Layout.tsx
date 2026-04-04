@@ -3,6 +3,7 @@ import styles from './Layout.module.css'
 
 const navigationItems = [
   { to: '/projects', label: '案件一覧' },
+  { to: '/projects/new', label: '案件追加' },
   { to: '/cross-project', label: '横断ビュー' },
 ]
 
@@ -34,7 +35,9 @@ export function Layout() {
 
         <div className={styles.sidebarCard}>
           <p className={styles.sidebarCardLabel}>閲覧ポイント</p>
-          <p className={styles.sidebarCardText}>遅延案件、OS担当、上下関係を同じ画面で確認できます。</p>
+          <p className={styles.sidebarCardText}>
+            遅延案件、OS担当、上下関係に加えて、新規案件の初期登録もここから進められます。
+          </p>
         </div>
       </aside>
 

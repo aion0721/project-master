@@ -1,0 +1,144 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hero,
+.section {
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero {
+  padding: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
+}
+
+.section {
+  padding: 28px;
+}
+
+.backLink {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.title {
+  margin: 12px 0 0;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+
+.description {
+  margin: 12px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.7;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.input {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-strong);
+}
+
+.input:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.18);
+  border-color: var(--accent);
+}
+
+.noteCard {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.noteTitle {
+  margin: 0;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.noteText {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+}
+
+.errorText {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.actionRow {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.primaryAction {
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+}
+
+.primaryAction:hover {
+  background: var(--accent-strong);
+}
+
+.primaryAction:disabled {
+  opacity: 0.7;
+}
+
+.secondaryAction {
+  border: 1px solid var(--border-strong);
+  color: var(--text-strong);
+  background: #fff;
+}
+
+@media (max-width: 960px) {
+  .form {
+    grid-template-columns: 1fr;
+  }
+}

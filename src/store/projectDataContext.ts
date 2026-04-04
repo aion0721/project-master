@@ -1,5 +1,11 @@
 import { createContext } from 'react'
-import type { Member, Phase, Project, ProjectAssignment } from '../types/project'
+import type {
+  CreateProjectInput,
+  Member,
+  Phase,
+  Project,
+  ProjectAssignment,
+} from '../types/project'
 
 export interface ProjectDataContextValue {
   projects: Project[]
@@ -9,6 +15,7 @@ export interface ProjectDataContextValue {
   isLoading: boolean
   error: string | null
   refresh: () => void
+  createProject: (input: CreateProjectInput) => Promise<Project>
   getProjectById: (projectId: string) => Project | undefined
   getProjectPhases: (projectId: string) => Phase[]
   getProjectAssignments: (projectId: string) => ProjectAssignment[]

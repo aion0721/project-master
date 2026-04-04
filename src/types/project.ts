@@ -40,3 +40,11 @@ export interface ProjectAssignment {
   memberId: string
   responsibility: string
 }
+
+export interface CreateProjectInput {
+  name: string
+  startDate: string
+  endDate: string
+  status: WorkStatus
+  pmMemberId: string
+}
