@@ -48,6 +48,14 @@ yarn build
 yarn lint
 ```
 
+## Test
+
+```bash
+yarn test
+```
+
+単発実行は `yarn test:run` を利用してください。
+
 ## ディレクトリ構成
 
 ```text
