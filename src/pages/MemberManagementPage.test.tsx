@@ -61,4 +61,5 @@ describe('MemberManagementPage', () => {
       expect(screen.queryByTestId('member-row-m11')).not.toBeInTheDocument()
     })
   })
+
 })

@@ -1,0 +1,103 @@
+.treeWrap {
+  overflow-x: auto;
+}
+
+.rootList,
+.childList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rootList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.childList {
+  margin-top: 12px;
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 2px solid rgba(148, 163, 184, 0.3);
+}
+
+.nodeItem {
+  position: relative;
+}
+
+.nodeItem::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 30px;
+  width: 20px;
+  border-top: 2px solid rgba(148, 163, 184, 0.3);
+}
+
+.rootList > .nodeItem::before {
+  display: none;
+}
+
+.nodeCard {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, #fff, #f8fafc);
+  box-shadow: var(--shadow-soft);
+}
+
+.pathCard {
+  border-color: rgba(14, 165, 233, 0.24);
+}
+
+.selectedCard {
+  border-color: rgba(15, 118, 110, 0.38);
+  background: linear-gradient(180deg, rgba(240, 253, 250, 0.95), #fff);
+}
+
+.nodeHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.memberNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memberName {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.memberMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.selectedBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
