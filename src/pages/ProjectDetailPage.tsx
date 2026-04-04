@@ -1,14 +1,13 @@
-import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { PhaseTimeline } from '../components/PhaseTimeline'
 import { Button } from '../components/ui/Button'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
-import { getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 import { ProjectDetailHero } from './project-detail/ProjectDetailHero'
 import { ProjectPhaseSection } from './project-detail/ProjectPhaseSection'
 import { ProjectStructureSection } from './project-detail/ProjectStructureSection'
+import { useProjectDetailData } from './project-detail/useProjectDetailData'
 import { useProjectPhaseEditor } from './project-detail/useProjectPhaseEditor'
 import { useProjectStructureEditor } from './project-detail/useProjectStructureEditor'
 import { useProjectSummaryEditor } from './project-detail/useProjectSummaryEditor'
@@ -34,43 +33,22 @@ export function ProjectDetailPage() {
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
 
   const project = projectNumber ? getProjectById(projectNumber) : undefined
-  const projectPhases = useMemo(
-    () => (project ? getProjectPhases(project.projectNumber) : []),
-    [getProjectPhases, project],
-  )
-  const projectAssignments = useMemo(
-    () => (project ? getProjectAssignments(project.projectNumber) : []),
-    [getProjectAssignments, project],
-  )
-  const editableAssignments = useMemo(
-    () =>
-      projectAssignments
-        .filter((assignment) => assignment.responsibility !== 'PM')
-        .map((assignment) => ({
-          id: assignment.id,
-          memberId: assignment.memberId,
-          responsibility: assignment.responsibility,
-          reportsToMemberId: assignment.reportsToMemberId ?? '',
-        })),
-    [projectAssignments],
-  )
-  const currentPhase = useMemo(() => getProjectCurrentPhase(projectPhases), [projectPhases])
-  const workStatusOptions = useMemo(
-    () =>
-      Array.from(new Set([...projects.map((item) => item.status), ...projectPhases.map((item) => item.status)])),
-    [projectPhases, projects],
-  )
-  const responsibilityOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          assignments
-            .map((assignment) => assignment.responsibility)
-            .filter((responsibility) => responsibility !== 'PM'),
-        ),
-      ),
-    [assignments],
-  )
+  const {
+    currentPhase,
+    editableAssignments,
+    pm,
+    projectAssignments,
+    projectPhases,
+    responsibilityOptions,
+    workStatusOptions,
+  } = useProjectDetailData({
+    project,
+    projects,
+    members,
+    assignments,
+    getProjectPhases,
+    getProjectAssignments,
+  })
 
   const summaryEditor = useProjectSummaryEditor(
     project,
@@ -119,8 +97,6 @@ export function ProjectDetailPage() {
       </Panel>
     )
   }
-
-  const pm = getProjectPm(project, members)
 
   return (
     <div className={styles.page}>

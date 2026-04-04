@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Phase, Project, WorkStatus } from '../../types/project'
 import { buildPhaseFormState, type PhaseFormState } from './projectDetailTypes'
+import { createNewPhaseDraft, normalizePhaseDrafts } from './phaseEditorUtils'
 
 interface UpdateProjectPhases {
   (
@@ -40,19 +41,9 @@ export function useProjectPhaseEditor(
   }
 
   function addPhaseDraft() {
-    const nextIndex = phaseDrafts.length + 1
-    const previousEndWeek = phaseDrafts.reduce((max, phase) => Math.max(max, Number(phase.endWeek) || 0), 0)
-
     setPhaseDrafts((current) => [
       ...current,
-      {
-        key: `new-${Date.now()}-${nextIndex}`,
-        name: `新規フェーズ${nextIndex}`,
-        startWeek: String(Math.max(previousEndWeek + 1, 1)),
-        endWeek: String(Math.max(previousEndWeek + 1, 1)),
-        status: workStatusOptions[0] ?? project?.status ?? '未着手',
-        progress: '0',
-      },
+      createNewPhaseDraft(current, workStatusOptions, project),
     ])
     setPhaseStructureError(null)
   }
@@ -94,49 +85,11 @@ export function useProjectPhaseEditor(
       return
     }
 
-    if (phaseDrafts.length === 0) {
-      setPhaseStructureError('フェーズは最低 1 件必要です。')
+    const { phases: normalizedPhases, error } = normalizePhaseDrafts(phaseDrafts)
+
+    if (error) {
+      setPhaseStructureError(error)
       return
-    }
-
-    const normalizedPhases: Array<{
-      id?: string
-      name: string
-      startWeek: number
-      endWeek: number
-      status: WorkStatus
-      progress: number
-    }> = []
-
-    for (const phase of phaseDrafts) {
-      const name = phase.name.trim()
-      const startWeek = Number(phase.startWeek)
-      const endWeek = Number(phase.endWeek)
-      const progress = Number(phase.progress)
-
-      if (!name) {
-        setPhaseStructureError('フェーズ名を入力してください。')
-        return
-      }
-
-      if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek) || startWeek < 1 || endWeek < startWeek) {
-        setPhaseStructureError(`「${name}」の開始週・終了週が不正です。`)
-        return
-      }
-
-      if (!Number.isInteger(progress) || progress < 0 || progress > 100) {
-        setPhaseStructureError(`「${name}」の進捗率は 0 から 100 で入力してください。`)
-        return
-      }
-
-      normalizedPhases.push({
-        id: phase.id,
-        name,
-        startWeek,
-        endWeek,
-        status: phase.status,
-        progress,
-      })
     }
 
     setIsSavingPhaseStructure(true)

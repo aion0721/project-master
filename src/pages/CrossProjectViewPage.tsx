@@ -1,63 +1,31 @@
-import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../components/StatusBadge'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
-import {
-  getActivePhasesForWeek,
-  getGlobalWeekSlots,
-  getProjectPm,
-  isDateInWeekSlot,
-} from '../utils/projectUtils'
+import { getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../utils/projectUtils'
+import { getPhaseToneKey, useCrossProjectView } from './cross-project/useCrossProjectView'
 import styles from './CrossProjectViewPage.module.css'
-
-type ViewMode = 'all' | 'bookmarks'
-
-function getToneClassName(phaseName: string) {
-  switch (phaseName) {
-    case '基礎検討':
-      return styles.discovery
-    case '基本設計':
-      return styles.basicDesign
-    case '詳細設計':
-      return styles.detailDesign
-    case 'テスト':
-      return styles.testing
-    case '移行':
-      return styles.migration
-    default:
-      return styles.defaultTone
-  }
-}
 
 export function CrossProjectViewPage() {
   const { projects, members, getProjectPhases, isLoading, error } = useProjectData()
   const { currentUser } = useUserSession()
-  const [viewMode, setViewMode] = useState<ViewMode>('all')
-  const [keyword, setKeyword] = useState('')
-
-  const baseProjects = useMemo(() => {
-    if (viewMode !== 'bookmarks' || !currentUser) {
-      return projects
-    }
-
-    const bookmarkedSet = new Set(currentUser.bookmarkedProjectIds)
-    return projects.filter((project) => bookmarkedSet.has(project.projectNumber))
-  }, [currentUser, projects, viewMode])
-
-  const normalizedKeyword = keyword.trim().toLowerCase()
-
-  const filteredProjects = useMemo(() => {
-    if (!normalizedKeyword) {
-      return baseProjects
-    }
-
-    return baseProjects.filter((project) => {
-      const searchableText = `${project.projectNumber} ${project.name}`.toLowerCase()
-      return searchableText.includes(normalizedKeyword)
-    })
-  }, [baseProjects, normalizedKeyword])
+  const {
+    filteredProjects,
+    globalWeekSlots,
+    hasNoProjectsInMode,
+    hasNoSearchResults,
+    isBookmarkMode,
+    keyword,
+    peakBusy,
+    setKeyword,
+    setViewMode,
+    viewMode,
+  } = useCrossProjectView({
+    currentUser,
+    getProjectPhases,
+    projects,
+  })
 
   if (isLoading) {
     return (
@@ -76,21 +44,6 @@ export function CrossProjectViewPage() {
       </Panel>
     )
   }
-
-  const globalWeekSlots = getGlobalWeekSlots(filteredProjects)
-  const peakBusy = Math.max(
-    ...filteredProjects.flatMap((project) =>
-      globalWeekSlots.map(
-        (slot) =>
-          getActivePhasesForWeek(project, getProjectPhases(project.projectNumber), slot.startDate)
-            .length,
-      ),
-    ),
-    0,
-  )
-  const isBookmarkMode = viewMode === 'bookmarks'
-  const hasNoProjectsInMode = baseProjects.length === 0
-  const hasNoSearchResults = baseProjects.length > 0 && filteredProjects.length === 0
 
   return (
     <div className={styles.page}>
@@ -231,7 +184,7 @@ export function CrossProjectViewPage() {
                                 {activePhases.map((phase) => (
                                   <span
                                     key={phase.id}
-                                    className={`${styles.phaseChip} ${getToneClassName(phase.name)}`}
+                                    className={`${styles.phaseChip} ${styles[getPhaseToneKey(phase.name)]}`}
                                   >
                                     {phase.name}
                                   </span>
