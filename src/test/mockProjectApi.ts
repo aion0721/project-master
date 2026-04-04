@@ -1,7 +1,11 @@
 import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
 import { assignments, members, phases, projects } from '../data/mockData'
-import type { CreateProjectInput, UpdatePhaseScheduleInput } from '../types/project'
+import type {
+  CreateProjectInput,
+  UpdatePhaseScheduleInput,
+  UpdateProjectStructureInput,
+} from '../types/project'
 
 function cloneFixtures() {
   return {
@@ -26,6 +30,21 @@ const statusLabelByCode = {
   completed: '完了',
   delayed: '遅延',
 } as const
+
+function createAssignmentIdGenerator(projectId: string, currentIds: string[]) {
+  let nextSuffix =
+    currentIds
+      .filter((id) => id.startsWith(`as-${projectId}-`))
+      .map((id) => Number(id.split('-').at(-1)))
+      .filter((value) => Number.isFinite(value))
+      .reduce((max, value) => Math.max(max, value), 0) + 1
+
+  return () => {
+    const nextId = `as-${projectId}-${nextSuffix}`
+    nextSuffix += 1
+    return nextId
+  }
+}
 
 export function mockProjectApi() {
   const fixtureData = cloneFixtures()
@@ -88,6 +107,60 @@ export function mockProjectApi() {
 
       return new Response(JSON.stringify(detail), {
         status: 201,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const structureMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/structure$/)
+    if (structureMatch && method === 'PATCH') {
+      const projectId = structureMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectStructureInput
+      const project = fixtureData.projects.find((item) => item.id === projectId)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.pmMemberId = body.pmMemberId
+
+      const currentProjectAssignments = fixtureData.assignments.filter(
+        (assignment) => assignment.projectId === projectId,
+      )
+      const existingIds = currentProjectAssignments.map((assignment) => assignment.id)
+
+      const nextAssignmentId = createAssignmentIdGenerator(projectId, existingIds)
+      const nextAssignments = [
+        {
+          id:
+            currentProjectAssignments.find((assignment) => assignment.responsibility === 'PM')?.id ??
+            nextAssignmentId(),
+          projectId,
+          memberId: body.pmMemberId,
+          responsibility: 'PM',
+        },
+        ...body.assignments.map((assignment) => ({
+          id: assignment.id ?? nextAssignmentId(),
+          projectId,
+          memberId: assignment.memberId,
+          responsibility: assignment.responsibility,
+        })),
+      ]
+
+      fixtureData.assignments = fixtureData.assignments
+        .filter((assignment) => assignment.projectId !== projectId)
+        .concat(nextAssignments)
+
+      const detail = buildProjectDetailResponse(fixtureData, projectId)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
         },

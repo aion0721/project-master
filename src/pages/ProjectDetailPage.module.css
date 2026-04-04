@@ -143,6 +143,31 @@
   padding: 32px;
 }
 
+.structureEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--surface-muted);
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.selectInput,
 .weekInput {
   width: 84px;
   min-height: 40px;
@@ -154,6 +179,11 @@
   font: inherit;
 }
 
+.selectInput {
+  width: 100%;
+}
+
+.selectInput:focus,
 .weekInput:focus {
   outline: 2px solid rgba(14, 165, 233, 0.25);
   outline-offset: 1px;
@@ -198,9 +228,83 @@
   line-height: 1.5;
 }
 
+.assignmentEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentHeader,
+.structureActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.structureActions {
+  justify-content: flex-end;
+}
+
+.assignmentTitle {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-strong);
+}
+
+.assignmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.secondaryButton,
+.removeButton {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.removeButton {
+  color: #b42318;
+}
+
+.sectionError,
+.emptyText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+.sectionError {
+  color: #b42318;
+  font-size: 13px;
+}
+
+.treeSection {
+  margin-top: 18px;
+}
+
 @media (max-width: 1100px) {
   .detailGrid,
   .metaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .assignmentRow {
     grid-template-columns: 1fr;
   }
 }

@@ -13,9 +13,17 @@ import {
 } from '../utils/projectUtils'
 import styles from './ProjectDetailPage.module.css'
 
+const responsibilityOptions = ['OS', '基礎検討', '基本設計', '詳細設計', 'テスト', '移行', 'インフラ統括']
+
 interface PhaseFormState {
   startWeek: string
   endWeek: string
+}
+
+interface StructureAssignmentDraft {
+  id?: string
+  memberId: string
+  responsibility: string
 }
 
 function buildPhaseFormState(startWeek: number, endWeek: number): PhaseFormState {
@@ -35,15 +43,36 @@ export function ProjectDetailPage() {
     isLoading,
     error,
     updatePhaseSchedule,
+    updateProjectStructure,
   } = useProjectData()
-  const [drafts, setDrafts] = useState<Record<string, PhaseFormState>>({})
+  const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseFormState>>({})
   const [savingPhaseId, setSavingPhaseId] = useState<string | null>(null)
-  const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
+  const [phaseRowErrors, setPhaseRowErrors] = useState<Record<string, string>>({})
+  const [isStructureEditing, setIsStructureEditing] = useState(false)
+  const [structurePmMemberId, setStructurePmMemberId] = useState('')
+  const [structureAssignments, setStructureAssignments] = useState<StructureAssignmentDraft[]>([])
+  const [structureError, setStructureError] = useState<string | null>(null)
+  const [isSavingStructure, setIsSavingStructure] = useState(false)
 
   const project = projectId ? getProjectById(projectId) : undefined
   const projectPhases = useMemo(
     () => (project ? getProjectPhases(project.id) : []),
     [getProjectPhases, project],
+  )
+  const projectAssignments = useMemo(
+    () => (project ? getProjectAssignments(project.id) : []),
+    [getProjectAssignments, project],
+  )
+  const editableAssignments = useMemo(
+    () =>
+      projectAssignments
+        .filter((assignment) => assignment.responsibility !== 'PM')
+        .map((assignment) => ({
+          id: assignment.id,
+          memberId: assignment.memberId,
+          responsibility: assignment.responsibility,
+        })),
+    [projectAssignments],
   )
 
   useEffect(() => {
@@ -51,7 +80,7 @@ export function ProjectDetailPage() {
       return
     }
 
-    setDrafts((current) => {
+    setPhaseDrafts((current) => {
       const next = { ...current }
 
       projectPhases.forEach((phase) => {
@@ -69,6 +98,16 @@ export function ProjectDetailPage() {
       return next
     })
   }, [projectPhases])
+
+  useEffect(() => {
+    if (!project) {
+      return
+    }
+
+    setStructurePmMemberId(project.pmMemberId)
+    setStructureAssignments(editableAssignments)
+    setStructureError(null)
+  }, [editableAssignments, project])
 
   if (isLoading) {
     return (
@@ -105,12 +144,31 @@ export function ProjectDetailPage() {
     )
   }
 
-  const projectAssignments = getProjectAssignments(project.id)
-  const pm = getProjectPm(project, members)
+  const currentProject = project
+  const pm = getProjectPm(currentProject, members)
   const osOwners = getOsOwners(projectAssignments, members)
+  const structureChanged =
+    structurePmMemberId !== currentProject.pmMemberId ||
+    JSON.stringify(structureAssignments) !== JSON.stringify(editableAssignments)
+
+  function resetStructureEditor() {
+    setStructurePmMemberId(currentProject.pmMemberId)
+    setStructureAssignments(editableAssignments)
+    setStructureError(null)
+  }
+
+  function openStructureEditor() {
+    resetStructureEditor()
+    setIsStructureEditing(true)
+  }
+
+  function closeStructureEditor() {
+    resetStructureEditor()
+    setIsStructureEditing(false)
+  }
 
   async function handlePhaseSave(phaseId: string) {
-    const draft = drafts[phaseId]
+    const draft = phaseDrafts[phaseId]
 
     if (!draft) {
       return
@@ -120,7 +178,7 @@ export function ProjectDetailPage() {
     const endWeek = Number(draft.endWeek)
 
     if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek)) {
-      setRowErrors((current) => ({
+      setPhaseRowErrors((current) => ({
         ...current,
         [phaseId]: '開始週と終了週は整数で入力してください。',
       }))
@@ -128,7 +186,7 @@ export function ProjectDetailPage() {
     }
 
     if (startWeek < 1) {
-      setRowErrors((current) => ({
+      setPhaseRowErrors((current) => ({
         ...current,
         [phaseId]: '開始週は 1 以上で入力してください。',
       }))
@@ -136,7 +194,7 @@ export function ProjectDetailPage() {
     }
 
     if (endWeek < startWeek) {
-      setRowErrors((current) => ({
+      setPhaseRowErrors((current) => ({
         ...current,
         [phaseId]: '終了週は開始週以上で入力してください。',
       }))
@@ -144,7 +202,7 @@ export function ProjectDetailPage() {
     }
 
     setSavingPhaseId(phaseId)
-    setRowErrors((current) => {
+    setPhaseRowErrors((current) => {
       const next = { ...current }
       delete next[phaseId]
       return next
@@ -152,18 +210,58 @@ export function ProjectDetailPage() {
 
     try {
       const updatedPhase = await updatePhaseSchedule(phaseId, { startWeek, endWeek })
-      setDrafts((current) => ({
+      setPhaseDrafts((current) => ({
         ...current,
         [phaseId]: buildPhaseFormState(updatedPhase.startWeek, updatedPhase.endWeek),
       }))
     } catch (caughtError) {
-      setRowErrors((current) => ({
+      setPhaseRowErrors((current) => ({
         ...current,
         [phaseId]:
           caughtError instanceof Error ? caughtError.message : 'フェーズ期間の更新に失敗しました。',
       }))
     } finally {
       setSavingPhaseId((current) => (current === phaseId ? null : current))
+    }
+  }
+
+  async function handleStructureSave() {
+    setStructureError(null)
+
+    if (!structurePmMemberId) {
+      setStructureError('PM を選択してください。')
+      return
+    }
+
+    const normalizedAssignments = structureAssignments.map((assignment) => ({
+      id: assignment.id,
+      memberId: assignment.memberId,
+      responsibility: assignment.responsibility.trim(),
+    }))
+
+    const hasInvalidAssignment = normalizedAssignments.some(
+      (assignment) => !assignment.memberId || !assignment.responsibility,
+    )
+
+    if (hasInvalidAssignment) {
+      setStructureError('各役割行に担当者と責務を入力してください。')
+      return
+    }
+
+    setIsSavingStructure(true)
+
+    try {
+      await updateProjectStructure(currentProject.id, {
+        pmMemberId: structurePmMemberId,
+        assignments: normalizedAssignments,
+      })
+      setIsStructureEditing(false)
+    } catch (caughtError) {
+      setStructureError(
+        caughtError instanceof Error ? caughtError.message : 'プロジェクト体制の更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingStructure(false)
     }
   }
 
@@ -241,7 +339,7 @@ export function ProjectDetailPage() {
               <tbody>
                 {projectPhases.map((phase) => {
                   const range = getPhaseActualRange(project, phase)
-                  const draft = drafts[phase.id] ?? buildPhaseFormState(phase.startWeek, phase.endWeek)
+                  const draft = phaseDrafts[phase.id] ?? buildPhaseFormState(phase.startWeek, phase.endWeek)
                   const isSaving = savingPhaseId === phase.id
                   const hasChanges =
                     draft.startWeek !== String(phase.startWeek) || draft.endWeek !== String(phase.endWeek)
@@ -265,7 +363,7 @@ export function ProjectDetailPage() {
                           value={draft.startWeek}
                           onChange={(event) => {
                             const value = event.target.value
-                            setDrafts((current) => ({
+                            setPhaseDrafts((current) => ({
                               ...current,
                               [phase.id]: {
                                 ...draft,
@@ -285,7 +383,7 @@ export function ProjectDetailPage() {
                           value={draft.endWeek}
                           onChange={(event) => {
                             const value = event.target.value
-                            setDrafts((current) => ({
+                            setPhaseDrafts((current) => ({
                               ...current,
                               [phase.id]: {
                                 ...draft,
@@ -307,8 +405,8 @@ export function ProjectDetailPage() {
                           >
                             {isSaving ? '保存中...' : '保存'}
                           </button>
-                          {rowErrors[phase.id] ? (
-                            <p className={styles.rowError}>{rowErrors[phase.id]}</p>
+                          {phaseRowErrors[phase.id] ? (
+                            <p className={styles.rowError}>{phaseRowErrors[phase.id]}</p>
                           ) : null}
                         </div>
                       </td>
@@ -325,16 +423,157 @@ export function ProjectDetailPage() {
             <div>
               <h2 className={styles.sectionTitle}>プロジェクト体制</h2>
               <p className={styles.sectionDescription}>
-                PM、OS 担当、各役割担当、上司・部下の関係をツリーで表示します。
+                PM と役割担当を管理できます。上司・部下の関係はメンバー定義に基づく参照表示です。
               </p>
             </div>
+
+            {isStructureEditing ? (
+              <button className={styles.secondaryButton} type="button" onClick={closeStructureEditor}>
+                編集を閉じる
+              </button>
+            ) : (
+              <button className={styles.secondaryButton} type="button" onClick={openStructureEditor}>
+                編集
+              </button>
+            )}
           </div>
 
-          <MemberTree
-            members={members}
-            projectAssignments={projectAssignments}
-            pmMemberId={project.pmMemberId}
-          />
+          {isStructureEditing ? (
+            <div className={styles.structureEditor}>
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>PM</span>
+                <select
+                  className={styles.selectInput}
+                  aria-label="PMを選択"
+                  value={structurePmMemberId}
+                  onChange={(event) => setStructurePmMemberId(event.target.value)}
+                >
+                  <option value="">選択してください</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name} ({member.role})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className={styles.assignmentEditor}>
+                <div className={styles.assignmentHeader}>
+                  <h3 className={styles.assignmentTitle}>役割担当</h3>
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    onClick={() =>
+                      setStructureAssignments((current) => [
+                        ...current,
+                        {
+                          memberId: '',
+                          responsibility: responsibilityOptions[0]!,
+                        },
+                      ])
+                    }
+                  >
+                    役割を追加
+                  </button>
+                </div>
+
+                <div className={styles.assignmentList}>
+                  {structureAssignments.length === 0 ? (
+                    <p className={styles.emptyText}>役割担当はまだ登録されていません。</p>
+                  ) : null}
+
+                  {structureAssignments.map((assignment, index) => (
+                    <div key={assignment.id ?? `new-${index}`} className={styles.assignmentRow}>
+                      <label className={styles.formField}>
+                        <span className={styles.formLabel}>責務</span>
+                        <select
+                          className={styles.selectInput}
+                          aria-label={`役割${index + 1}の責務`}
+                          value={assignment.responsibility}
+                          onChange={(event) => {
+                            const value = event.target.value
+                            setStructureAssignments((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, responsibility: value } : item,
+                              ),
+                            )
+                          }}
+                        >
+                          {responsibilityOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className={styles.formField}>
+                        <span className={styles.formLabel}>担当者</span>
+                        <select
+                          className={styles.selectInput}
+                          aria-label={`役割${index + 1}の担当者`}
+                          value={assignment.memberId}
+                          onChange={(event) => {
+                            const value = event.target.value
+                            setStructureAssignments((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, memberId: value } : item,
+                              ),
+                            )
+                          }}
+                        >
+                          <option value="">選択してください</option>
+                          {members.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name} ({member.role})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <button
+                        className={styles.removeButton}
+                        type="button"
+                        onClick={() =>
+                          setStructureAssignments((current) =>
+                            current.filter((_, itemIndex) => itemIndex !== index),
+                          )
+                        }
+                      >
+                        削除
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {structureError ? <p className={styles.sectionError}>{structureError}</p> : null}
+
+              <div className={styles.structureActions}>
+                <button className={styles.secondaryButton} type="button" onClick={closeStructureEditor}>
+                  キャンセル
+                </button>
+                <button
+                  className={styles.saveButton}
+                  type="button"
+                  onClick={() => {
+                    void handleStructureSave()
+                  }}
+                  disabled={isSavingStructure || !structureChanged}
+                >
+                  {isSavingStructure ? '保存中...' : '体制を保存'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className={styles.treeSection}>
+            <MemberTree
+              members={members}
+              projectAssignments={projectAssignments}
+              pmMemberId={project.pmMemberId}
+            />
+          </div>
         </section>
       </div>
     </div>

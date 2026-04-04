@@ -15,6 +15,7 @@ const responsibilityPriority = [
   '詳細設計',
   '基礎検討',
   'テスト',
+  '移行',
   'インフラ統括',
 ]
 

@@ -3,6 +3,7 @@ import {
   createProjectRequest,
   loadProjectData,
   updatePhaseScheduleRequest,
+  updateProjectStructureRequest,
 } from '../api/projectApi'
 import type {
   CreateProjectInput,
@@ -11,6 +12,7 @@ import type {
   Project,
   ProjectAssignment,
   UpdatePhaseScheduleInput,
+  UpdateProjectStructureInput,
 } from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
 import { ProjectDataContext } from './projectDataContext'
@@ -23,6 +25,14 @@ function mergeById<T extends { id: string }>(current: T[], incoming: T[]) {
   })
 
   return [...map.values()]
+}
+
+function replaceAssignmentsForProject(
+  current: ProjectAssignment[],
+  projectId: string,
+  incoming: ProjectAssignment[],
+) {
+  return current.filter((assignment) => assignment.projectId !== projectId).concat(incoming)
 }
 
 export function ProjectDataProvider({ children }: { children: ReactNode }) {
@@ -95,6 +105,21 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       const updatedPhase = await updatePhaseScheduleRequest(phaseId, input)
       setPhases((current) => mergeById(current, [updatedPhase]))
       return updatedPhase
+    },
+    updateProjectStructure: async (projectId: string, input: UpdateProjectStructureInput) => {
+      const payload = await updateProjectStructureRequest(projectId, input)
+      const updatedProject = payload.projects[0]
+
+      if (!updatedProject) {
+        throw new Error('Updated project payload is empty')
+      }
+
+      setProjects((current) => mergeById(current, payload.projects))
+      setPhases((current) => mergeById(current, payload.phases))
+      setMembers((current) => mergeById(current, payload.members))
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+
+      return updatedProject
     },
     getProjectById: (projectId) => projects.find((project) => project.id === projectId),
     getProjectPhases: (projectId) =>

@@ -5,6 +5,7 @@ import type {
   Project,
   ProjectAssignment,
   UpdatePhaseScheduleInput,
+  UpdateProjectStructureInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 
@@ -283,6 +284,21 @@ export async function updatePhaseScheduleRequest(
   )
 
   return normalizePhase(response.phase)
+}
+
+export async function updateProjectStructureRequest(
+  projectId: string,
+  input: UpdateProjectStructureInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectStructureInput>(
+    `/api/projects/${projectId}/structure`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
 }
 
 export function buildProjectListResponse(data: ProjectDataPayload) {

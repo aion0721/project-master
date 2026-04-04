@@ -19,6 +19,8 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByText('OS タスク担当')).toBeInTheDocument()
     expect(screen.getAllByLabelText('基本設計の開始週')[0]).toHaveValue(3)
     expect(screen.getAllByLabelText('基本設計の終了週')[0]).toHaveValue(5)
+    expect(screen.queryByLabelText('PMを選択')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '編集' })).toBeInTheDocument()
   })
 
   it('フェーズの開始週と終了週を更新できる', async () => {
@@ -45,6 +47,40 @@ describe('ProjectDetailPage', () => {
           body: JSON.stringify({ startWeek: 4, endWeek: 6 }),
         }),
       )
+    })
+  })
+
+  it('プロジェクト体制を編集モードで更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/p1'],
+      routePath: '/projects/:projectId',
+    })
+
+    fireEvent.click((await screen.findAllByRole('button', { name: '編集' }))[0]!)
+    fireEvent.change(screen.getByLabelText('PMを選択'), {
+      target: { value: 'm6' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '体制を保存' }))
+
+    await waitFor(() => {
+      const structureCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/p1/structure') && init?.method === 'PATCH'
+      })
+
+      expect(structureCall).toBeDefined()
+      const body = JSON.parse(String(structureCall?.[1]?.body))
+      expect(body.pmMemberId).toBe('m6')
+      expect(body.assignments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ responsibility: '基本設計', memberId: 'm2' }),
+        ]),
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('PMを選択')).not.toBeInTheDocument()
     })
   })
 })
