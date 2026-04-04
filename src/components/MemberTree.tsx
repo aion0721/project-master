@@ -37,9 +37,30 @@ function buildTree(
 ) {
   const memberIdSet = new Set(relevantMembers.map((member) => member.id))
   const childrenByManager = new Map<string | null, Member[]>()
+  const managerByMemberId = new Map<string, string | null>()
+
+  projectAssignments.forEach((assignment) => {
+    if (assignment.memberId === pmMemberId) {
+      managerByMemberId.set(assignment.memberId, null)
+      return
+    }
+
+    if (managerByMemberId.has(assignment.memberId)) {
+      return
+    }
+
+    const nextManagerId =
+      assignment.reportsToMemberId && memberIdSet.has(assignment.reportsToMemberId)
+        ? assignment.reportsToMemberId
+        : null
+
+    managerByMemberId.set(assignment.memberId, nextManagerId)
+  })
+
+  managerByMemberId.set(pmMemberId, null)
 
   relevantMembers.forEach((member) => {
-    const managerKey = member.managerId && memberIdSet.has(member.managerId) ? member.managerId : null
+    const managerKey = managerByMemberId.get(member.id) ?? null
     const bucket = childrenByManager.get(managerKey) ?? []
     bucket.push(member)
     childrenByManager.set(managerKey, bucket)
@@ -103,7 +124,12 @@ interface MemberTreeProps {
 }
 
 export function MemberTree({ members, projectAssignments, pmMemberId }: MemberTreeProps) {
-  const memberIds = new Set(projectAssignments.map((assignment) => assignment.memberId).concat(pmMemberId))
+  const memberIds = new Set(
+    projectAssignments
+      .flatMap((assignment) => [assignment.memberId, assignment.reportsToMemberId ?? undefined])
+      .filter((memberId): memberId is string => Boolean(memberId))
+      .concat(pmMemberId),
+  )
   const relevantMembers = members.filter((member) => memberIds.has(member.id))
   const tree = buildTree(relevantMembers, projectAssignments, pmMemberId)
 

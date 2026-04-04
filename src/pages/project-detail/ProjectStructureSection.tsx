@@ -44,6 +44,15 @@ export function ProjectStructureSection({
   onRemoveAssignment,
   onSave,
 }: ProjectStructureSectionProps) {
+  const reportingOptions = [
+    ...members.filter((member) => member.id === structurePmMemberId),
+    ...members.filter((member) =>
+      structureAssignments.some((assignment) => assignment.memberId === member.id),
+    ),
+  ].filter(
+    (member, index, array) => array.findIndex((candidate) => candidate.id === member.id) === index,
+  )
+
   return (
     <Panel className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -143,6 +152,28 @@ export function ProjectStructureSection({
                           {member.name} ({member.role})
                         </option>
                       ))}
+                    </select>
+                  </label>
+
+                  <label className={styles.formField}>
+                    <span className={styles.formLabel}>上位メンバー</span>
+                    <select
+                      aria-label={`役割${index + 1} の上位メンバー`}
+                      className={styles.selectInput}
+                      data-testid={`structure-reports-to-${index}`}
+                      onChange={(event) => {
+                        onUpdateAssignment(index, { reportsToMemberId: event.target.value })
+                      }}
+                      value={assignment.reportsToMemberId}
+                    >
+                      <option value="">未設定</option>
+                      {reportingOptions
+                        .filter((member) => member.id !== assignment.memberId)
+                        .map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name} ({member.role})
+                          </option>
+                        ))}
                     </select>
                   </label>
 

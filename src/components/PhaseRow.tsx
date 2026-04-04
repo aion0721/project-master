@@ -1,5 +1,5 @@
 import type { Phase } from '../types/project'
-import type { WeekSlot } from '../utils/projectUtils'
+import { isDateInWeekSlot, type WeekSlot } from '../utils/projectUtils'
 import { StatusBadge } from './StatusBadge'
 import styles from './PhaseRow.module.css'
 
@@ -42,9 +42,10 @@ export function PhaseRow({ phase, weekSlots }: PhaseRowProps) {
 
       {weekSlots.map((slot) => {
         const active = slot.index >= phase.startWeek && slot.index <= phase.endWeek
+        const isCurrentWeek = isDateInWeekSlot(slot.startDate)
         const cellClassName = active
-          ? `${styles.weekCell} ${styles.active} ${getStatusClassName(phase.status)}`
-          : `${styles.weekCell} ${styles.inactive}`
+          ? `${styles.weekCell} ${styles.active} ${getStatusClassName(phase.status)} ${isCurrentWeek ? styles.currentWeek : ''}`
+          : `${styles.weekCell} ${styles.inactive} ${isCurrentWeek ? styles.currentWeek : ''}`
 
         return (
           <div key={`${phase.id}-${slot.index}`} className={cellClassName}>

@@ -22,10 +22,17 @@ export function parseDate(value: string) {
   return new Date(`${value}T00:00:00`)
 }
 
+export function formatDateInputValue(value: Date) {
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function addDays(value: string, days: number) {
   const next = parseDate(value)
   next.setDate(next.getDate() + days)
-  return next.toISOString().slice(0, 10)
+  return formatDateInputValue(next)
 }
 
 export function addWeeks(value: string, weeks: number) {
@@ -100,6 +107,14 @@ export function getGlobalWeekSlots(projects: Project[]): WeekSlot[] {
       subLabel: formatShortDate(startDate),
     }
   })
+}
+
+export function isDateInWeekSlot(slotStartDate: string, targetDate = formatDateInputValue(new Date())) {
+  const targetTime = parseDate(targetDate).getTime()
+  const startTime = parseDate(slotStartDate).getTime()
+  const endTime = parseDate(addDays(slotStartDate, 6)).getTime()
+
+  return targetTime >= startTime && targetTime <= endTime
 }
 
 export function getPhaseActualRange(project: Project, phase: Phase) {

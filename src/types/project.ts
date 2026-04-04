@@ -33,6 +33,7 @@ export interface ProjectAssignment {
   projectId: string
   memberId: string
   responsibility: string
+  reportsToMemberId?: string | null
 }
 
 export interface CreateProjectInput {
@@ -89,6 +90,7 @@ export interface ProjectStructureAssignmentInput {
   id?: string
   memberId: string
   responsibility: string
+  reportsToMemberId?: string | null
 }
 
 export interface UpdateProjectStructureInput {

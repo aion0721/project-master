@@ -14,6 +14,7 @@ export interface StructureAssignmentDraft {
   id?: string
   memberId: string
   responsibility: string
+  reportsToMemberId: string
 }
 
 export function buildPhaseFormState(phase: Phase): PhaseFormState {
@@ -33,6 +34,7 @@ export function normalizeAssignments(assignments: StructureAssignmentDraft[]) {
     id: assignment.id,
     memberId: assignment.memberId,
     responsibility: assignment.responsibility.trim(),
+    reportsToMemberId: assignment.reportsToMemberId.trim() || null,
   }))
 }
 

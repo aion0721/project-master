@@ -4,7 +4,12 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
-import { getActivePhasesForWeek, getGlobalWeekSlots, getProjectPm } from '../utils/projectUtils'
+import {
+  getActivePhasesForWeek,
+  getGlobalWeekSlots,
+  getProjectPm,
+  isDateInWeekSlot,
+} from '../utils/projectUtils'
 import styles from './CrossProjectViewPage.module.css'
 
 type ViewMode = 'all' | 'bookmarks'
@@ -172,12 +177,21 @@ export function CrossProjectViewPage() {
               <thead>
                 <tr>
                   <th className={styles.stickyColumn}>案件名</th>
-                  {globalWeekSlots.map((slot) => (
-                    <th key={slot.index}>
-                      <span className={styles.weekLabel}>{slot.label}</span>
-                      <span className={styles.weekDate}>{slot.subLabel}</span>
-                    </th>
-                  ))}
+                  {globalWeekSlots.map((slot) => {
+                    const isCurrentWeek = isDateInWeekSlot(slot.startDate)
+
+                    return (
+                      <th
+                        key={slot.index}
+                        className={isCurrentWeek ? styles.currentWeekHeader : undefined}
+                        data-testid={isCurrentWeek ? `cross-project-current-week-${slot.index}` : undefined}
+                      >
+                        <span className={styles.weekLabel}>{slot.label}</span>
+                        <span className={styles.weekDate}>{slot.subLabel}</span>
+                        {isCurrentWeek ? <span className={styles.currentWeekBadge}>今週</span> : null}
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -201,11 +215,16 @@ export function CrossProjectViewPage() {
                       {globalWeekSlots.map((slot) => {
                         const activePhases = getActivePhasesForWeek(project, projectPhases, slot.startDate)
                         const busy = activePhases.length > 1
+                        const isCurrentWeek = isDateInWeekSlot(slot.startDate)
 
                         return (
                           <td
                             key={`${project.projectNumber}-${slot.index}`}
-                            className={busy ? `${styles.cell} ${styles.busy}` : styles.cell}
+                            className={
+                              busy
+                                ? `${styles.cell} ${styles.busy} ${isCurrentWeek ? styles.currentWeekCell : ''}`
+                                : `${styles.cell} ${isCurrentWeek ? styles.currentWeekCell : ''}`
+                            }
                           >
                             {activePhases.length > 0 ? (
                               <div className={styles.phaseChipList}>

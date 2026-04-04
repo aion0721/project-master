@@ -196,6 +196,9 @@ describe('ProjectDetailPage', () => {
     fireEvent.change(screen.getByTestId('structure-pm-select'), {
       target: { value: 'm6' },
     })
+    fireEvent.change(screen.getByTestId('structure-reports-to-0'), {
+      target: { value: 'm2' },
+    })
     fireEvent.click(screen.getByTestId('structure-save-button'))
 
     await waitFor(() => {
@@ -209,8 +212,14 @@ describe('ProjectDetailPage', () => {
       expect(body.assignments).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
+            responsibility: '基礎検討',
+            memberId: 'm8',
+            reportsToMemberId: 'm2',
+          }),
+          expect.objectContaining({
             responsibility: editableAssignment.responsibility,
             memberId: editableAssignment.memberId,
+            reportsToMemberId: 'm1',
           }),
         ]),
       )

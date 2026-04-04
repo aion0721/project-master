@@ -121,6 +121,7 @@ function normalizeAssignment(assignment: ProjectAssignment): ProjectAssignment {
     projectId: assignment.projectId,
     memberId: assignment.memberId,
     responsibility: assignment.responsibility,
+    reportsToMemberId: assignment.reportsToMemberId ?? null,
   }
 }
 
@@ -449,6 +450,9 @@ export function buildProjectDetailResponse(
   const memberIds = new Set([
     project.pmMemberId,
     ...projectAssignments.map((assignment) => assignment.memberId),
+    ...projectAssignments
+      .map((assignment) => assignment.reportsToMemberId)
+      .filter((memberId): memberId is string => Boolean(memberId)),
   ])
 
   return {

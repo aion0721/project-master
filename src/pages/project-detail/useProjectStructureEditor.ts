@@ -14,6 +14,7 @@ interface UpdateProjectStructure {
         id?: string
         memberId: string
         responsibility: string
+        reportsToMemberId?: string | null
       }>
     },
   ): Promise<unknown>
@@ -81,6 +82,7 @@ export function useProjectStructureEditor(
       {
         memberId: '',
         responsibility: responsibilityOptions[0] ?? 'OS',
+        reportsToMemberId: '',
       },
     ])
   }
@@ -110,6 +112,15 @@ export function useProjectStructureEditor(
 
     if (hasInvalidAssignment) {
       setStructureError('各役割に担当者と責務を入力してください。')
+      return
+    }
+
+    const hasSelfReference = normalizedAssignments.some(
+      (assignment) => assignment.memberId === assignment.reportsToMemberId,
+    )
+
+    if (hasSelfReference) {
+      setStructureError('同じメンバーを自分の上位には設定できません。')
       return
     }
 

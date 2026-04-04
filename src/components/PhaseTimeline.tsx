@@ -1,5 +1,5 @@
 import type { Phase, Project } from '../types/project'
-import { getProjectWeekSlots } from '../utils/projectUtils'
+import { getProjectWeekSlots, isDateInWeekSlot } from '../utils/projectUtils'
 import { PhaseRow } from './PhaseRow'
 import styles from './PhaseTimeline.module.css'
 
@@ -17,12 +17,25 @@ export function PhaseTimeline({ project, phases }: PhaseTimelineProps) {
       <div className={styles.grid}>
         <div className={styles.headerRow} style={{ gridTemplateColumns: columns }}>
           <div className={styles.headerLead}>フェーズ / 進捗 / 期間</div>
-          {weekSlots.map((slot) => (
-            <div key={slot.index} className={styles.headerCell}>
-              <span className={styles.weekLabel}>{slot.label}</span>
-              <span className={styles.weekDate}>{slot.subLabel}</span>
-            </div>
-          ))}
+          {weekSlots.map((slot) => {
+            const isCurrentWeek = isDateInWeekSlot(slot.startDate)
+
+            return (
+              <div
+                key={slot.index}
+                className={
+                  isCurrentWeek
+                    ? `${styles.headerCell} ${styles.currentWeek}`
+                    : styles.headerCell
+                }
+                data-testid={isCurrentWeek ? `project-current-week-${slot.index}` : undefined}
+              >
+                <span className={styles.weekLabel}>{slot.label}</span>
+                <span className={styles.weekDate}>{slot.subLabel}</span>
+                {isCurrentWeek ? <span className={styles.currentWeekBadge}>今週</span> : null}
+              </div>
+            )
+          })}
         </div>
 
         <div className={styles.rowGroup}>

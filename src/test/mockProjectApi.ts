@@ -300,6 +300,7 @@ export function mockProjectApi() {
         projectId: body.projectNumber,
         memberId: body.pmMemberId,
         responsibility: 'PM',
+        reportsToMemberId: null,
       })
 
       phaseTemplates.forEach((phase, index) => {
@@ -476,12 +477,14 @@ export function mockProjectApi() {
           projectId: projectNumber,
           memberId: body.pmMemberId,
           responsibility: 'PM',
+          reportsToMemberId: null,
         },
         ...body.assignments.map((assignment) => ({
           id: assignment.id ?? nextAssignmentId(),
           projectId: projectNumber,
           memberId: assignment.memberId,
           responsibility: assignment.responsibility,
+          reportsToMemberId: assignment.reportsToMemberId ?? null,
         })),
       ]
 
@@ -584,6 +587,10 @@ export function mockProjectApi() {
 
       if (fixtureData.assignments.some((assignment) => assignment.memberId === memberId)) {
         return buildJsonResponse({ message: 'Assigned member cannot be deleted' }, 400)
+      }
+
+      if (fixtureData.assignments.some((assignment) => assignment.reportsToMemberId === memberId)) {
+        return buildJsonResponse({ message: 'Member is used in a project hierarchy' }, 400)
       }
 
       if (fixtureData.members.some((item) => item.managerId === memberId)) {

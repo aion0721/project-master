@@ -50,6 +50,7 @@ export function ProjectDetailPage() {
           id: assignment.id,
           memberId: assignment.memberId,
           responsibility: assignment.responsibility,
+          reportsToMemberId: assignment.reportsToMemberId ?? '',
         })),
     [projectAssignments],
   )

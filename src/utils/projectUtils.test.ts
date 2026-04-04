@@ -4,6 +4,7 @@ import {
   getActivePhasesForWeek,
   getProjectCurrentPhase,
   getProjectWeekSlots,
+  isDateInWeekSlot,
 } from './projectUtils'
 
 describe('projectUtils', () => {
@@ -41,5 +42,11 @@ describe('projectUtils', () => {
     const activePhases = getActivePhasesForWeek(project, projectPhases, '2026-05-04')
 
     expect(activePhases.map((phase) => phase.name)).toEqual(['基本設計', '詳細設計'])
+  })
+
+  it('指定日が週スロットに含まれるか判定できる', () => {
+    expect(isDateInWeekSlot('2026-04-20', '2026-04-20')).toBe(true)
+    expect(isDateInWeekSlot('2026-04-20', '2026-04-26')).toBe(true)
+    expect(isDateInWeekSlot('2026-04-20', '2026-04-27')).toBe(false)
   })
 })
