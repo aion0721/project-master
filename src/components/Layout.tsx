@@ -12,10 +12,12 @@ export function Layout() {
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
-          <span className={styles.brandBadge}>MVP</span>
+          <img alt="Project Master" className={styles.brandLogo} src="/logo.svg" />
           <div>
-            <p className={styles.brandTitle}>案件管理ダッシュボード</p>
-            <p className={styles.brandText}>進捗、担当、体制を同じ視点で確認</p>
+            <p className={styles.brandTitle}>Project Master</p>
+            <p className={styles.brandText}>
+              案件の進捗、担当体制、週次フェーズを一画面で確認できる管理アプリ
+            </p>
           </div>
         </div>
 
@@ -34,9 +36,9 @@ export function Layout() {
         </nav>
 
         <div className={styles.sidebarCard}>
-          <p className={styles.sidebarCardLabel}>閲覧ポイント</p>
+          <p className={styles.sidebarCardLabel}>運用メモ</p>
           <p className={styles.sidebarCardText}>
-            遅延案件、OS担当、上下関係に加えて、新規案件の初期登録もここから進められます。
+            案件追加後は詳細画面からフェーズ期間とプロジェクト体制を更新できます。横断ビューで週次の重なりも確認できます。
           </p>
         </div>
       </aside>
