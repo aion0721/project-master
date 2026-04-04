@@ -186,6 +186,7 @@ export function ProjectDetailPage() {
         <ProjectPhaseSection
           isSavingPhaseStructure={phaseEditor.isSavingPhaseStructure}
           onAddPhase={phaseEditor.addPhaseDraft}
+          onMovePhase={phaseEditor.movePhaseDraft}
           onRemovePhase={phaseEditor.removePhaseDraft}
           onSave={() => {
             void phaseEditor.savePhaseStructure()

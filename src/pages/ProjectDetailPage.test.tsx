@@ -157,6 +157,31 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('フェーズを上下移動して保存順を変更できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(await screen.findByTestId('phase-move-up-ph-p1-3'))
+    fireEvent.click(screen.getByTestId('phase-structure-save-button'))
+
+    await waitFor(() => {
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/phases') && init?.method === 'PATCH'
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body.phases[1]?.id).toBe('ph-p1-3')
+      expect(body.phases[2]?.id).toBe('ph-p1-2')
+    })
+  })
+
   it('プロジェクト体制を編集モードで更新できる', async () => {
     const fetchSpy = mockProjectApi()
 

@@ -192,10 +192,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       return updatedProject
     },
     getProjectById: (projectId) => projects.find((project) => project.projectNumber === projectId),
-    getProjectPhases: (projectId) =>
-      phases
-        .filter((phase) => phase.projectId === projectId)
-        .sort((left, right) => left.startWeek - right.startWeek),
+    getProjectPhases: (projectId) => phases.filter((phase) => phase.projectId === projectId),
     getProjectAssignments: (projectId) =>
       assignments.filter((assignment) => assignment.projectId === projectId),
     getMemberById: (memberId) => members.find((member) => member.id === memberId),

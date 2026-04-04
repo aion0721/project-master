@@ -15,6 +15,7 @@ interface ProjectPhaseSectionProps {
   phaseStructureError: string | null
   isSavingPhaseStructure: boolean
   onAddPhase: () => void
+  onMovePhase: (key: string, direction: 'up' | 'down') => void
   onUpdatePhase: (key: string, patch: Partial<PhaseFormState>) => void
   onRemovePhase: (key: string) => void
   onSave: () => void
@@ -27,6 +28,7 @@ export function ProjectPhaseSection({
   phaseStructureError,
   isSavingPhaseStructure,
   onAddPhase,
+  onMovePhase,
   onUpdatePhase,
   onRemovePhase,
   onSave,
@@ -160,6 +162,26 @@ export function ProjectPhaseSection({
                     />
                   </td>
                   <td className={styles.actionCell}>
+                    <Button
+                      aria-label={`${phase.name || 'phase'} move up`}
+                      data-testid={`phase-move-up-${phase.key}`}
+                      disabled={phaseDrafts[0]?.key === phase.key}
+                      onClick={() => onMovePhase(phase.key, 'up')}
+                      size="small"
+                      variant="secondary"
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      aria-label={`${phase.name || 'phase'} move down`}
+                      data-testid={`phase-move-down-${phase.key}`}
+                      disabled={phaseDrafts[phaseDrafts.length - 1]?.key === phase.key}
+                      onClick={() => onMovePhase(phase.key, 'down')}
+                      size="small"
+                      variant="secondary"
+                    >
+                      ↓
+                    </Button>
                     <Button
                       data-testid={`phase-remove-${phase.key}`}
                       onClick={() => onRemovePhase(phase.key)}

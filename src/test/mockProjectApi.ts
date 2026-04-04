@@ -33,7 +33,6 @@ type FixtureData = ReturnType<typeof cloneFixtures>
 
 const phaseTemplates = phases
   .filter((phase) => phase.projectId === 'PRJ-001')
-  .sort((left, right) => left.startWeek - right.startWeek)
   .map(({ name, startWeek, endWeek }) => ({
     name,
     startWeek,
@@ -103,9 +102,7 @@ function deriveProjectStatus(projectPhases: Array<{ status: string }>) {
 }
 
 function getOrderedProjectPhases(fixtureData: FixtureData, projectNumber: string) {
-  return fixtureData.phases
-    .filter((phase) => phase.projectId === projectNumber)
-    .sort((left, right) => left.startWeek - right.startWeek)
+  return fixtureData.phases.filter((phase) => phase.projectId === projectNumber)
 }
 
 function updateProjectStatus(fixtureData: FixtureData, projectNumber: string) {
