@@ -1,11 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { createProjectRequest, loadProjectData } from '../api/projectApi'
+import {
+  createProjectRequest,
+  loadProjectData,
+  updatePhaseScheduleRequest,
+} from '../api/projectApi'
 import type {
   CreateProjectInput,
   Member,
   Phase,
   Project,
   ProjectAssignment,
+  UpdatePhaseScheduleInput,
 } from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
 import { ProjectDataContext } from './projectDataContext'
@@ -85,6 +90,11 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setAssignments((current) => mergeById(current, payload.assignments))
 
       return createdProject
+    },
+    updatePhaseSchedule: async (phaseId: string, input: UpdatePhaseScheduleInput) => {
+      const updatedPhase = await updatePhaseScheduleRequest(phaseId, input)
+      setPhases((current) => mergeById(current, [updatedPhase]))
+      return updatedPhase
     },
     getProjectById: (projectId) => projects.find((project) => project.id === projectId),
     getProjectPhases: (projectId) =>

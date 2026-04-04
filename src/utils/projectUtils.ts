@@ -54,9 +54,7 @@ export function getMemberName(memberId: string, members: Member[]) {
 
 export function getProjectCurrentPhase(projectPhases: Phase[]) {
   return (
-    projectPhases.find(
-      (phase) => phase.status === '進行中' || phase.status === '遅延',
-    ) ??
+    projectPhases.find((phase) => phase.status === '進行中' || phase.status === '遅延') ??
     projectPhases.find((phase) => phase.status === '未着手') ??
     projectPhases[projectPhases.length - 1]
   )

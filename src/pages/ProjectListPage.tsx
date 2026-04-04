@@ -52,7 +52,7 @@ export function ProjectListPage() {
             <p className={styles.eyebrow}>Project Portfolio</p>
             <h1 className={styles.title}>案件一覧</h1>
             <p className={styles.description}>
-              進捗と担当体制を案件単位で把握するための一覧です。遅延中の案件や、現在どのフェーズにいるかを同じ表で確認できます。
+              進捗と担当体制を俯瞰するための一覧画面です。進行中の案件や、現在どのフェーズにいるかを高密度に確認できます。
             </p>
           </div>
 
@@ -86,7 +86,7 @@ export function ProjectListPage() {
           <div>
             <h2 className={styles.sectionTitle}>案件ステータス一覧</h2>
             <p className={styles.sectionDescription}>
-              案件ごとのPM、現在フェーズ、開始/終了予定日を確認できます。
+              案件ごとの PM、現在フェーズ、状態、開始日、終了予定日を確認できます。
             </p>
           </div>
         </div>

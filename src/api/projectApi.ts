@@ -4,6 +4,7 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
+  UpdatePhaseScheduleInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 
@@ -52,6 +53,10 @@ interface ApiProjectDetailResponse {
     }
   >
   members: ApiMember[]
+}
+
+interface ApiPhaseResponse {
+  phase: Phase
 }
 
 export interface ProjectDataPayload {
@@ -124,11 +129,12 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 
 async function sendJson<TResponse, TRequest>(
   path: string,
+  method: 'POST' | 'PATCH',
   body: TRequest,
   signal?: AbortSignal,
 ): Promise<TResponse> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
+    method,
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -248,9 +254,12 @@ export async function createProjectRequest(
 ): Promise<ProjectDataPayload> {
   const detail = await sendJson<
     ApiProjectDetailResponse,
-    Omit<CreateProjectInput, 'status'> & { status: (typeof statusCodeMap)[keyof typeof statusCodeMap] }
+    Omit<CreateProjectInput, 'status'> & {
+      status: (typeof statusCodeMap)[keyof typeof statusCodeMap]
+    }
   >(
     '/api/projects',
+    'POST',
     {
       ...input,
       status: statusCodeMap[input.status],
@@ -259,6 +268,21 @@ export async function createProjectRequest(
   )
 
   return normalizeProjectDetail(detail)
+}
+
+export async function updatePhaseScheduleRequest(
+  phaseId: string,
+  input: UpdatePhaseScheduleInput,
+  signal?: AbortSignal,
+): Promise<Phase> {
+  const response = await sendJson<ApiPhaseResponse, UpdatePhaseScheduleInput>(
+    `/api/phases/${phaseId}`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizePhase(response.phase)
 }
 
 export function buildProjectListResponse(data: ProjectDataPayload) {

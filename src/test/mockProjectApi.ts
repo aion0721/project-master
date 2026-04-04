@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
 import { assignments, members, phases, projects } from '../data/mockData'
-import type { CreateProjectInput } from '../types/project'
+import type { CreateProjectInput, UpdatePhaseScheduleInput } from '../types/project'
 
 function cloneFixtures() {
   return {
@@ -87,6 +87,32 @@ export function mockProjectApi() {
       const detail = buildProjectDetailResponse(fixtureData, nextProjectId)
 
       return new Response(JSON.stringify(detail), {
+        status: 201,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const phaseMatch = requestUrl.match(/\/api\/phases\/([^/]+)$/)
+    if (phaseMatch && method === 'PATCH') {
+      const phaseId = phaseMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdatePhaseScheduleInput
+      const targetPhase = fixtureData.phases.find((phase) => phase.id === phaseId)
+
+      if (!targetPhase) {
+        return new Response(JSON.stringify({ message: 'Phase not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      targetPhase.startWeek = body.startWeek
+      targetPhase.endWeek = body.endWeek
+
+      return new Response(JSON.stringify({ phase: targetPhase }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',

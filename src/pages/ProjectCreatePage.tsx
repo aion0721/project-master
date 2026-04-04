@@ -51,7 +51,7 @@ export function ProjectCreatePage() {
       const createdProject = await createProject(formData)
       navigate(`/projects/${createdProject.id}`)
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件登録に失敗しました。')
+      setSubmitError(caughtError instanceof Error ? caughtError.message : '案件追加に失敗しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -61,7 +61,7 @@ export function ProjectCreatePage() {
     return (
       <section className={styles.section}>
         <h1 className={styles.title}>案件追加画面を準備中です</h1>
-        <p className={styles.description}>担当者情報を取得しています。</p>
+        <p className={styles.description}>担当者候補を取得しています。</p>
       </section>
     )
   }
@@ -83,7 +83,7 @@ export function ProjectCreatePage() {
         </Link>
         <h1 className={styles.title}>案件追加</h1>
         <p className={styles.description}>
-          案件の基本情報を登録します。登録後は詳細画面で初期フェーズと体制を確認できます。
+          案件の基本情報を登録します。登録後は詳細画面でフェーズと体制を確認できます。
         </p>
       </section>
 
@@ -95,7 +95,7 @@ export function ProjectCreatePage() {
               className={styles.input}
               value={formData.name}
               onChange={(event) => updateField('name', event.target.value)}
-              placeholder="例: 販売管理システム刷新"
+              placeholder="例: 物流会計システム刷新"
             />
           </label>
 
@@ -151,9 +151,9 @@ export function ProjectCreatePage() {
           </label>
 
           <div className={styles.noteCard}>
-            <p className={styles.noteTitle}>登録時の初期化ルール</p>
+            <p className={styles.noteTitle}>登録時の初期ルール</p>
             <p className={styles.noteText}>
-              登録すると、5つの標準フェーズを未着手状態で自動生成し、PM を初期担当者として割り当てます。
+              登録時は標準 5 フェーズを未着手で自動生成し、PM を初期担当として紐付けます。
             </p>
           </div>
 

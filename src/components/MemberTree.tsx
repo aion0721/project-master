@@ -8,7 +8,15 @@ interface MemberNode {
   children: MemberNode[]
 }
 
-const responsibilityPriority = ['PM', 'OS', '基本設計', '詳細設計', '基礎検討', 'テスト', 'インフラ統括']
+const responsibilityPriority = [
+  'PM',
+  'OS',
+  '基本設計',
+  '詳細設計',
+  '基礎検討',
+  'テスト',
+  'インフラ統括',
+]
 
 function sortResponsibilities(values: string[]) {
   return [...values].sort((left, right) => {

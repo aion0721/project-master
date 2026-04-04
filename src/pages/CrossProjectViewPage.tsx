@@ -28,7 +28,7 @@ export function CrossProjectViewPage() {
     return (
       <section className={styles.section}>
         <h1 className={styles.title}>複数案件横断ビューを読み込み中です</h1>
-        <p className={styles.description}>バックエンドから週次データを取得しています。</p>
+        <p className={styles.description}>バックエンドから横断データを取得しています。</p>
       </section>
     )
   }
@@ -59,7 +59,7 @@ export function CrossProjectViewPage() {
           <p className={styles.eyebrow}>Cross Project Timeline</p>
           <h1 className={styles.title}>複数案件横断ビュー</h1>
           <p className={styles.description}>
-            各案件がどの週にどのフェーズへ入っているかを横断で確認できます。設計フェーズやテストが重なる週を見つけやすくしています。
+            各案件がどの週にどのフェーズへ入っているかを横断で確認できます。設計フェーズやテストが集中する時期を見つけやすくしています。
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export function CrossProjectViewPage() {
             <strong className={styles.statValue}>{projects.length}</strong>
           </article>
           <article className={styles.statCard}>
-            <span className={styles.statLabel}>最大同時稼働</span>
+            <span className={styles.statLabel}>最大同時進行</span>
             <strong className={styles.statValue}>{peakBusy} Phase / Week</strong>
           </article>
         </div>

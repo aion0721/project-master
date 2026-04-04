@@ -13,7 +13,7 @@ describe('projectUtils', () => {
     expect(getProjectCurrentPhase(projectPhases)?.name).toBe('詳細設計')
   })
 
-  it('案件の週スロットを終了週まで生成する', () => {
+  it('案件の週スロットを最大週まで生成する', () => {
     const project = projects.find((item) => item.id === 'p1')
     const projectPhases = phases.filter((phase) => phase.projectId === 'p1')
 
@@ -29,7 +29,7 @@ describe('projectUtils', () => {
     expect(weekSlots[11]?.label).toBe('W12')
   })
 
-  it('同じ週に重複するフェーズを正しく抽出する', () => {
+  it('重なる週に該当するフェーズを正しく返す', () => {
     const project = projects.find((item) => item.id === 'p1')
     const projectPhases = phases.filter((phase) => phase.projectId === 'p1')
 
