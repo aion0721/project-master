@@ -374,6 +374,13 @@ export function MemberManagementPage() {
                         ) : (
                           <>
                             <Button
+                              size="small"
+                              to={`/members/hierarchy?memberId=${member.id}`}
+                              variant="secondary"
+                            >
+                              体制図
+                            </Button>
+                            <Button
                               data-testid={`edit-member-${member.id}`}
                               disabled={isSubmitting}
                               onClick={() => {

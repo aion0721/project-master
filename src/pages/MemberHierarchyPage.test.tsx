@@ -5,6 +5,17 @@ import { renderWithProviders } from '../test/renderWithProviders'
 import { MemberHierarchyPage } from './MemberHierarchyPage'
 
 describe('MemberHierarchyPage', () => {
+  it('クエリの memberId を初期選択に使える', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<MemberHierarchyPage />, {
+      initialEntries: ['/members/hierarchy?memberId=m4'],
+    })
+
+    expect(await screen.findByRole('heading', { name: 'メンバー体制図' })).toBeInTheDocument()
+    expect(screen.getByTestId('member-hierarchy-select')).toHaveValue('m4')
+  })
+
   it('選択したメンバーの上下関係を表示できる', async () => {
     mockProjectApi()
 

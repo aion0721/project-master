@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MemberHierarchyTree } from '../components/MemberHierarchyTree'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
@@ -8,15 +9,16 @@ import styles from './MemberHierarchyPage.module.css'
 
 export function MemberHierarchyPage() {
   const { members, isLoading, error } = useProjectData()
-  const [selectedMemberId, setSelectedMemberId] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const sortedMembers = useMemo(
     () => [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
     [members],
   )
+  const requestedMemberId = searchParams.get('memberId') ?? ''
   const activeMemberId =
-    selectedMemberId && sortedMembers.some((member) => member.id === selectedMemberId)
-      ? selectedMemberId
+    requestedMemberId && sortedMembers.some((member) => member.id === requestedMemberId)
+      ? requestedMemberId
       : (sortedMembers[0]?.id ?? '')
 
   if (isLoading) {
@@ -63,7 +65,9 @@ export function MemberHierarchyPage() {
             <select
               className={formStyles.control}
               data-testid="member-hierarchy-select"
-              onChange={(event) => setSelectedMemberId(event.target.value)}
+              onChange={(event) => {
+                setSearchParams(event.target.value ? { memberId: event.target.value } : {})
+              }}
               value={activeMemberId}
             >
               {sortedMembers.map((member) => (

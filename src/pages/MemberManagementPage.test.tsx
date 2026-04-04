@@ -15,6 +15,10 @@ describe('MemberManagementPage', () => {
     expect(await screen.findByRole('heading', { name: 'メンバー管理' })).toBeInTheDocument()
     expect(screen.getByTestId('member-row-m1')).toBeInTheDocument()
     expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
+    expect(within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '体制図' })).toHaveAttribute(
+      'href',
+      '/members/hierarchy?memberId=m1',
+    )
   })
 
   it('メンバーを追加して編集し、削除できる', async () => {
