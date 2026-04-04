@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <rect width="1024" height="1024" rx="224" fill="#F8FAFC"/>
+  <rect x="168" y="208" width="688" height="608" rx="72" fill="white" stroke="#0F172A" stroke-width="28"/>
+
+  <!-- top bar -->
+  <rect x="224" y="264" width="128" height="28" rx="14" fill="#CBD5E1"/>
+  <rect x="376" y="264" width="96" height="28" rx="14" fill="#E2E8F0"/>
+  <rect x="496" y="264" width="160" height="28" rx="14" fill="#E2E8F0"/>
+
+  <!-- left panel: progress cards -->
+  <rect x="224" y="336" width="272" height="156" rx="32" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="12"/>
+  <rect x="256" y="372" width="96" height="20" rx="10" fill="#94A3B8"/>
+  <rect x="256" y="420" width="208" height="24" rx="12" fill="#E2E8F0"/>
+  <rect x="256" y="420" width="132" height="24" rx="12" fill="#2563EB"/>
+  <circle cx="280" cy="468" r="16" fill="#0F172A"/>
+  <circle cx="320" cy="468" r="16" fill="#94A3B8"/>
+  <circle cx="360" cy="468" r="16" fill="#CBD5E1"/>
+
+  <rect x="224" y="528" width="272" height="156" rx="32" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="12"/>
+  <rect x="256" y="564" width="80" height="20" rx="10" fill="#94A3B8"/>
+  <rect x="256" y="612" width="208" height="24" rx="12" fill="#E2E8F0"/>
+  <rect x="256" y="612" width="172" height="24" rx="12" fill="#0F172A"/>
+  <circle cx="280" cy="660" r="16" fill="#2563EB"/>
+  <circle cx="320" cy="660" r="16" fill="#94A3B8"/>
+
+  <!-- right panel: org structure -->
+  <rect x="544" y="336" width="256" height="348" rx="32" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="12"/>
+
+  <line x1="672" y1="420" x2="672" y2="484" stroke="#94A3B8" stroke-width="18" stroke-linecap="round"/>
+  <line x1="608" y1="532" x2="736" y2="532" stroke="#94A3B8" stroke-width="18" stroke-linecap="round"/>
+  <line x1="608" y1="532" x2="608" y2="580" stroke="#94A3B8" stroke-width="18" stroke-linecap="round"/>
+  <line x1="736" y1="532" x2="736" y2="580" stroke="#94A3B8" stroke-width="18" stroke-linecap="round"/>
+
+  <circle cx="672" cy="396" r="34" fill="#0F172A"/>
+  <rect x="628" y="442" width="88" height="30" rx="15" fill="#0F172A"/>
+
+  <circle cx="608" cy="620" r="28" fill="#2563EB"/>
+  <rect x="572" y="658" width="72" height="24" rx="12" fill="#2563EB"/>
+
+  <circle cx="736" cy="620" r="28" fill="#2563EB" opacity="0.9"/>
+  <rect x="700" y="658" width="72" height="24" rx="12" fill="#2563EB" opacity="0.9"/>
+
+  <!-- subtle outer signal -->
+  <rect x="816" y="336" width="40" height="348" rx="20" fill="#E2E8F0"/>
+  <rect x="816" y="440" width="40" height="140" rx="20" fill="#2563EB"/>
+</svg>

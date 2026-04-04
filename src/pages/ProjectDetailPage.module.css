@@ -1,20 +1,8 @@
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.hero,
-.section,
-.notFound {
-  border: 1px solid var(--border-strong);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  composes: page from '../styles/page.module.css';
 }
 
 .hero {
-  padding: 28px;
   background:
     radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 28%),
     radial-gradient(circle at left bottom, rgba(14, 165, 233, 0.14), transparent 26%),
@@ -28,25 +16,29 @@
   gap: 16px;
 }
 
-.backTextLink,
-.backLink {
-  color: var(--accent);
-  font-weight: 700;
+.backTextLink {
+  composes: backLink from '../styles/page.module.css';
 }
 
-.title,
+.title {
+  composes: title from '../styles/page.module.css';
+  margin-top: 10px;
+}
+
+.description {
+  composes: description from '../styles/page.module.css';
+}
+
+.notFound {
+  padding: 32px;
+}
+
 .notFoundTitle {
-  margin: 10px 0 0;
-  font-size: 34px;
-  line-height: 1.2;
-  color: var(--text-strong);
+  composes: emptyStateTitle from '../styles/page.module.css';
 }
 
-.description,
 .notFoundText {
-  margin: 12px 0 0;
-  color: var(--text-subtle);
-  line-height: 1.7;
+  composes: emptyStateText from '../styles/page.module.css';
 }
 
 .metaGrid {
@@ -79,28 +71,16 @@
   color: var(--text-strong);
 }
 
-.section {
-  padding: 24px;
-}
-
 .sectionHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  composes: sectionHeader from '../styles/page.module.css';
 }
 
 .sectionTitle {
-  margin: 0;
-  font-size: 22px;
-  color: var(--text-strong);
+  composes: sectionTitle from '../styles/page.module.css';
 }
 
 .sectionDescription {
-  margin: 8px 0 0;
-  color: var(--text-subtle);
-  line-height: 1.6;
+  composes: sectionDescription from '../styles/page.module.css';
 }
 
 .detailGrid {
@@ -115,7 +95,6 @@
 
 .phaseTable {
   width: 100%;
-  border-collapse: collapse;
 }
 
 .phaseTable th,
@@ -139,8 +118,33 @@
   border-bottom: 0;
 }
 
-.notFound {
-  padding: 32px;
+.actionCell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.formField {
+  composes: field from '../styles/form.module.css';
+}
+
+.formLabel {
+  composes: label from '../styles/form.module.css';
+}
+
+.selectInput {
+  composes: control from '../styles/form.module.css';
+}
+
+.weekInput {
+  composes: control from '../styles/form.module.css';
+  width: 84px;
+}
+
+.rowError {
+  composes: errorText from '../styles/form.module.css';
+  font-size: 12px;
 }
 
 .structureEditor {
@@ -153,97 +157,17 @@
   background: var(--surface-muted);
 }
 
-.formField {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.formLabel {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-subtle);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.selectInput,
-.weekInput {
-  width: 84px;
-  min-height: 40px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--text-strong);
-  font: inherit;
-}
-
-.selectInput {
-  width: 100%;
-}
-
-.selectInput:focus,
-.weekInput:focus {
-  outline: 2px solid rgba(14, 165, 233, 0.25);
-  outline-offset: 1px;
-  border-color: var(--accent);
-}
-
-.actionCell {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 120px;
-}
-
-.saveButton {
-  min-height: 40px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--accent);
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    opacity 0.15s ease;
-}
-
-.saveButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.rowError {
-  margin: 0;
-  color: #b42318;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .assignmentEditor {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.assignmentHeader,
-.structureActions {
+.assignmentHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.structureActions {
-  justify-content: flex-end;
 }
 
 .assignmentTitle {
@@ -265,33 +189,21 @@
   align-items: end;
 }
 
-.secondaryButton,
-.removeButton {
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border-strong);
-  background: #fff;
-  color: var(--text-strong);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
+.sectionError {
+  composes: errorText from '../styles/form.module.css';
 }
 
-.removeButton {
-  color: #b42318;
-}
-
-.sectionError,
 .emptyText {
   margin: 0;
   color: var(--text-subtle);
   line-height: 1.6;
 }
 
-.sectionError {
-  color: #b42318;
-  font-size: 13px;
+.structureActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .treeSection {

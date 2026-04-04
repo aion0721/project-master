@@ -1,0 +1,67 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.base:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.base:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.medium {
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+.small {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.primary {
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.secondary {
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.danger {
+  border: 1px solid #fecaca;
+  background: #fff5f5;
+  color: #b42318;
+}
+
+.danger:hover:not(:disabled) {
+  background: #fee2e2;
+}

@@ -1,0 +1,22 @@
+.base {
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero {
+  padding: 28px;
+}
+
+.section {
+  padding: 24px;
+}
+
+.compact {
+  padding: 20px;
+}
+
+.plain {
+  padding: 0;
+}

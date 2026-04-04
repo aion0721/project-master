@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
 import type { Project } from '../types/project'
 import { formatDate } from '../utils/projectUtils'
 import { StatusBadge } from './StatusBadge'
+import { Button } from './ui/Button'
 import styles from './ProjectTable.module.css'
 
 interface ProjectTableRow {
@@ -42,9 +42,9 @@ export function ProjectTable({ rows }: { rows: ProjectTableRow[] }) {
               <td>{formatDate(project.startDate)}</td>
               <td>{formatDate(project.endDate)}</td>
               <td>
-                <Link className={styles.linkButton} to={`/projects/${project.id}`}>
+                <Button size="small" to={`/projects/${project.id}`}>
                   詳細を見る
-                </Link>
+                </Button>
               </td>
             </tr>
           ))}

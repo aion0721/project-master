@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '../components/ui/Button'
+import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import type { CreateProjectInput, WorkStatus } from '../types/project'
 import styles from './ProjectCreatePage.module.css'
@@ -59,35 +61,35 @@ export function ProjectCreatePage() {
 
   if (isLoading) {
     return (
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <h1 className={styles.title}>案件追加画面を準備中です</h1>
-        <p className={styles.description}>担当者候補を取得しています。</p>
-      </section>
+        <p className={styles.description}>担当候補メンバーを取得しています。</p>
+      </Panel>
     )
   }
 
   if (error) {
     return (
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <h1 className={styles.title}>案件追加画面を表示できませんでした</h1>
         <p className={styles.description}>{error}</p>
-      </section>
+      </Panel>
     )
   }
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <Link className={styles.backLink} to="/projects">
+      <Panel className={styles.hero} variant="hero">
+        <Button className={styles.backButton} size="small" to="/projects" variant="secondary">
           案件一覧へ戻る
-        </Link>
+        </Button>
         <h1 className={styles.title}>案件追加</h1>
         <p className={styles.description}>
           案件の基本情報を登録します。登録後は詳細画面でフェーズと体制を確認できます。
         </p>
-      </section>
+      </Panel>
 
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.field}>
             <span className={styles.label}>案件名</span>
@@ -160,15 +162,15 @@ export function ProjectCreatePage() {
           {submitError ? <p className={styles.errorText}>{submitError}</p> : null}
 
           <div className={styles.actionRow}>
-            <Link className={styles.secondaryAction} to="/projects">
+            <Button to="/projects" variant="secondary">
               キャンセル
-            </Link>
-            <button className={styles.primaryAction} type="submit" disabled={isSubmitting}>
+            </Button>
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting ? '登録中...' : '案件を登録'}
-            </button>
+            </Button>
           </div>
         </form>
-      </section>
+      </Panel>
     </div>
   )
 }

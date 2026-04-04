@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
 import { ProjectTable } from '../components/ProjectTable'
+import { Button } from '../components/ui/Button'
+import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 import styles from './ProjectListPage.module.css'
@@ -9,19 +10,19 @@ export function ProjectListPage() {
 
   if (isLoading) {
     return (
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <h1 className={styles.sectionTitle}>案件一覧を読み込み中です</h1>
         <p className={styles.sectionDescription}>バックエンドから案件データを取得しています。</p>
-      </section>
+      </Panel>
     )
   }
 
   if (error) {
     return (
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <h1 className={styles.sectionTitle}>案件一覧を取得できませんでした</h1>
         <p className={styles.sectionDescription}>{error}</p>
-      </section>
+      </Panel>
     )
   }
 
@@ -46,7 +47,7 @@ export function ProjectListPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
+      <Panel className={styles.hero} variant="hero">
         <div className={styles.heroHeader}>
           <div>
             <p className={styles.eyebrow}>Project Portfolio</p>
@@ -56,32 +57,30 @@ export function ProjectListPage() {
             </p>
           </div>
 
-          <Link className={styles.primaryAction} to="/projects/new">
-            案件を追加
-          </Link>
+          <Button to="/projects/new">案件を追加</Button>
         </div>
-      </section>
+      </Panel>
 
       <section className={styles.summaryGrid}>
-        <article className={styles.summaryCard}>
+        <Panel as="article" className={styles.summaryCard} variant="compact">
           <span className={styles.summaryLabel}>総案件数</span>
           <strong className={styles.summaryValue}>{summary.total}</strong>
-        </article>
-        <article className={styles.summaryCard}>
+        </Panel>
+        <Panel as="article" className={styles.summaryCard} variant="compact">
           <span className={styles.summaryLabel}>進行中</span>
           <strong className={styles.summaryValue}>{summary.inProgress}</strong>
-        </article>
-        <article className={styles.summaryCard}>
+        </Panel>
+        <Panel as="article" className={styles.summaryCard} variant="compact">
           <span className={styles.summaryLabel}>遅延</span>
           <strong className={styles.summaryValue}>{summary.delayed}</strong>
-        </article>
-        <article className={styles.summaryCard}>
+        </Panel>
+        <Panel as="article" className={styles.summaryCard} variant="compact">
           <span className={styles.summaryLabel}>完了</span>
           <strong className={styles.summaryValue}>{summary.completed}</strong>
-        </article>
+        </Panel>
       </section>
 
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <div className={styles.sectionHeader}>
           <div>
             <h2 className={styles.sectionTitle}>案件ステータス一覧</h2>
@@ -92,7 +91,7 @@ export function ProjectListPage() {
         </div>
 
         <ProjectTable rows={rows} />
-      </section>
+      </Panel>
     </div>
   )
 }

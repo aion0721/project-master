@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { MemberTree } from '../components/MemberTree'
 import { PhaseTimeline } from '../components/PhaseTimeline'
 import { StatusBadge } from '../components/StatusBadge'
+import { Button } from '../components/ui/Button'
+import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import {
   formatPeriod,
@@ -111,36 +113,36 @@ export function ProjectDetailPage() {
 
   if (isLoading) {
     return (
-      <section className={styles.notFound}>
+      <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件詳細を読み込み中です</h1>
         <p className={styles.notFoundText}>バックエンドから案件詳細を取得しています。</p>
-      </section>
+      </Panel>
     )
   }
 
   if (error) {
     return (
-      <section className={styles.notFound}>
+      <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件詳細を取得できませんでした</h1>
         <p className={styles.notFoundText}>{error}</p>
-        <Link className={styles.backLink} to="/projects">
+        <Button size="small" to="/projects" variant="secondary">
           一覧へ戻る
-        </Link>
-      </section>
+        </Button>
+      </Panel>
     )
   }
 
   if (!project) {
     return (
-      <section className={styles.notFound}>
+      <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件が見つかりません</h1>
         <p className={styles.notFoundText}>
           指定された案件 ID は存在しません。案件一覧から選び直してください。
         </p>
-        <Link className={styles.backLink} to="/projects">
+        <Button size="small" to="/projects" variant="secondary">
           一覧へ戻る
-        </Link>
-      </section>
+        </Button>
+      </Panel>
     )
   }
 
@@ -267,19 +269,19 @@ export function ProjectDetailPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
+      <Panel className={styles.hero} variant="hero">
         <div className={styles.heroTop}>
           <div>
             <Link className={styles.backTextLink} to="/projects">
               案件一覧へ戻る
             </Link>
-            <h1 className={styles.title}>{project.name}</h1>
+            <h1 className={styles.title}>{currentProject.name}</h1>
             <p className={styles.description}>
               PM、フェーズ進捗、担当体制をまとめて確認できる案件詳細画面です。
             </p>
           </div>
 
-          <StatusBadge status={project.status} />
+          <StatusBadge status={currentProject.status} />
         </div>
 
         <div className={styles.metaGrid}>
@@ -289,16 +291,18 @@ export function ProjectDetailPage() {
           </article>
           <article className={styles.metaCard}>
             <span className={styles.metaLabel}>期間</span>
-            <strong className={styles.metaValue}>{formatPeriod(project.startDate, project.endDate)}</strong>
+            <strong className={styles.metaValue}>
+              {formatPeriod(currentProject.startDate, currentProject.endDate)}
+            </strong>
           </article>
           <article className={styles.metaCard}>
             <span className={styles.metaLabel}>OS タスク担当</span>
             <strong className={styles.metaValue}>{osOwners.join(' / ') || '未設定'}</strong>
           </article>
         </div>
-      </section>
+      </Panel>
 
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <div className={styles.sectionHeader}>
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
@@ -308,11 +312,11 @@ export function ProjectDetailPage() {
           </div>
         </div>
 
-        <PhaseTimeline project={project} phases={projectPhases} members={members} />
-      </section>
+        <PhaseTimeline project={currentProject} phases={projectPhases} members={members} />
+      </Panel>
 
       <div className={styles.detailGrid}>
-        <section className={styles.section}>
+        <Panel className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
               <h2 className={styles.sectionTitle}>フェーズ別担当者</h2>
@@ -338,7 +342,7 @@ export function ProjectDetailPage() {
               </thead>
               <tbody>
                 {projectPhases.map((phase) => {
-                  const range = getPhaseActualRange(project, phase)
+                  const range = getPhaseActualRange(currentProject, phase)
                   const draft = phaseDrafts[phase.id] ?? buildPhaseFormState(phase.startWeek, phase.endWeek)
                   const isSaving = savingPhaseId === phase.id
                   const hasChanges =
@@ -355,12 +359,10 @@ export function ProjectDetailPage() {
                       <td>{phase.progress}%</td>
                       <td>
                         <input
-                          className={styles.weekInput}
-                          type="number"
-                          min={1}
-                          inputMode="numeric"
                           aria-label={`${phase.name}の開始週`}
-                          value={draft.startWeek}
+                          className={styles.weekInput}
+                          inputMode="numeric"
+                          min={1}
                           onChange={(event) => {
                             const value = event.target.value
                             setPhaseDrafts((current) => ({
@@ -371,16 +373,16 @@ export function ProjectDetailPage() {
                               },
                             }))
                           }}
+                          type="number"
+                          value={draft.startWeek}
                         />
                       </td>
                       <td>
                         <input
-                          className={styles.weekInput}
-                          type="number"
-                          min={1}
-                          inputMode="numeric"
                           aria-label={`${phase.name}の終了週`}
-                          value={draft.endWeek}
+                          className={styles.weekInput}
+                          inputMode="numeric"
+                          min={1}
                           onChange={(event) => {
                             const value = event.target.value
                             setPhaseDrafts((current) => ({
@@ -391,20 +393,21 @@ export function ProjectDetailPage() {
                               },
                             }))
                           }}
+                          type="number"
+                          value={draft.endWeek}
                         />
                       </td>
                       <td>
                         <div className={styles.actionCell}>
-                          <button
-                            className={styles.saveButton}
-                            type="button"
+                          <Button
+                            disabled={isSaving || !hasChanges}
                             onClick={() => {
                               void handlePhaseSave(phase.id)
                             }}
-                            disabled={isSaving || !hasChanges}
+                            size="small"
                           >
                             {isSaving ? '保存中...' : '保存'}
-                          </button>
+                          </Button>
                           {phaseRowErrors[phase.id] ? (
                             <p className={styles.rowError}>{phaseRowErrors[phase.id]}</p>
                           ) : null}
@@ -416,9 +419,9 @@ export function ProjectDetailPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </Panel>
 
-        <section className={styles.section}>
+        <Panel className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
               <h2 className={styles.sectionTitle}>プロジェクト体制</h2>
@@ -428,13 +431,13 @@ export function ProjectDetailPage() {
             </div>
 
             {isStructureEditing ? (
-              <button className={styles.secondaryButton} type="button" onClick={closeStructureEditor}>
+              <Button onClick={closeStructureEditor} size="small" variant="secondary">
                 編集を閉じる
-              </button>
+              </Button>
             ) : (
-              <button className={styles.secondaryButton} type="button" onClick={openStructureEditor}>
+              <Button onClick={openStructureEditor} size="small" variant="secondary">
                 編集
-              </button>
+              </Button>
             )}
           </div>
 
@@ -443,10 +446,10 @@ export function ProjectDetailPage() {
               <label className={styles.formField}>
                 <span className={styles.formLabel}>PM</span>
                 <select
-                  className={styles.selectInput}
                   aria-label="PMを選択"
-                  value={structurePmMemberId}
+                  className={styles.selectInput}
                   onChange={(event) => setStructurePmMemberId(event.target.value)}
+                  value={structurePmMemberId}
                 >
                   <option value="">選択してください</option>
                   {members.map((member) => (
@@ -460,9 +463,7 @@ export function ProjectDetailPage() {
               <div className={styles.assignmentEditor}>
                 <div className={styles.assignmentHeader}>
                   <h3 className={styles.assignmentTitle}>役割担当</h3>
-                  <button
-                    className={styles.secondaryButton}
-                    type="button"
+                  <Button
                     onClick={() =>
                       setStructureAssignments((current) => [
                         ...current,
@@ -472,9 +473,11 @@ export function ProjectDetailPage() {
                         },
                       ])
                     }
+                    size="small"
+                    variant="secondary"
                   >
                     役割を追加
-                  </button>
+                  </Button>
                 </div>
 
                 <div className={styles.assignmentList}>
@@ -487,9 +490,8 @@ export function ProjectDetailPage() {
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>責務</span>
                         <select
-                          className={styles.selectInput}
                           aria-label={`役割${index + 1}の責務`}
-                          value={assignment.responsibility}
+                          className={styles.selectInput}
                           onChange={(event) => {
                             const value = event.target.value
                             setStructureAssignments((current) =>
@@ -498,6 +500,7 @@ export function ProjectDetailPage() {
                               ),
                             )
                           }}
+                          value={assignment.responsibility}
                         >
                           {responsibilityOptions.map((option) => (
                             <option key={option} value={option}>
@@ -510,9 +513,8 @@ export function ProjectDetailPage() {
                       <label className={styles.formField}>
                         <span className={styles.formLabel}>担当者</span>
                         <select
-                          className={styles.selectInput}
                           aria-label={`役割${index + 1}の担当者`}
-                          value={assignment.memberId}
+                          className={styles.selectInput}
                           onChange={(event) => {
                             const value = event.target.value
                             setStructureAssignments((current) =>
@@ -521,6 +523,7 @@ export function ProjectDetailPage() {
                               ),
                             )
                           }}
+                          value={assignment.memberId}
                         >
                           <option value="">選択してください</option>
                           {members.map((member) => (
@@ -531,17 +534,17 @@ export function ProjectDetailPage() {
                         </select>
                       </label>
 
-                      <button
-                        className={styles.removeButton}
-                        type="button"
+                      <Button
                         onClick={() =>
                           setStructureAssignments((current) =>
                             current.filter((_, itemIndex) => itemIndex !== index),
                           )
                         }
+                        size="small"
+                        variant="danger"
                       >
                         削除
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -550,19 +553,17 @@ export function ProjectDetailPage() {
               {structureError ? <p className={styles.sectionError}>{structureError}</p> : null}
 
               <div className={styles.structureActions}>
-                <button className={styles.secondaryButton} type="button" onClick={closeStructureEditor}>
+                <Button onClick={closeStructureEditor} variant="secondary">
                   キャンセル
-                </button>
-                <button
-                  className={styles.saveButton}
-                  type="button"
+                </Button>
+                <Button
+                  disabled={isSavingStructure || !structureChanged}
                   onClick={() => {
                     void handleStructureSave()
                   }}
-                  disabled={isSavingStructure || !structureChanged}
                 >
                   {isSavingStructure ? '保存中...' : '体制を保存'}
-                </button>
+                </Button>
               </div>
             </div>
           ) : null}
@@ -570,11 +571,11 @@ export function ProjectDetailPage() {
           <div className={styles.treeSection}>
             <MemberTree
               members={members}
+              pmMemberId={currentProject.pmMemberId}
               projectAssignments={projectAssignments}
-              pmMemberId={project.pmMemberId}
             />
           </div>
-        </section>
+        </Panel>
       </div>
     </div>
   )

@@ -1,0 +1,65 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+
+.description {
+  margin: 12px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.7;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-strong);
+}
+
+.sectionDescription {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+.backLink {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.emptyStateTitle {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+
+.emptyStateText {
+  margin: 12px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.7;
+}

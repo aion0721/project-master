@@ -1,20 +1,8 @@
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.hero,
-.section,
-.summaryCard {
-  border: 1px solid var(--border-strong);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  composes: page from '../styles/page.module.css';
 }
 
 .hero {
-  padding: 28px;
   background:
     radial-gradient(circle at top right, rgba(14, 165, 233, 0.18), transparent 32%),
     linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(255, 255, 255, 0.98));
@@ -28,43 +16,16 @@
 }
 
 .eyebrow {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #0f766e;
+  composes: eyebrow from '../styles/page.module.css';
 }
 
 .title {
-  margin: 0;
-  font-size: 34px;
-  line-height: 1.2;
-  color: var(--text-strong);
+  composes: title from '../styles/page.module.css';
 }
 
 .description {
+  composes: description from '../styles/page.module.css';
   max-width: 760px;
-  margin: 12px 0 0;
-  color: var(--text-subtle);
-  line-height: 1.7;
-}
-
-.primaryAction {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 12px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.primaryAction:hover {
-  background: var(--accent-strong);
 }
 
 .summaryGrid {
@@ -77,7 +38,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 20px;
 }
 
 .summaryLabel {
@@ -94,28 +54,16 @@
   color: var(--text-strong);
 }
 
-.section {
-  padding: 24px;
-}
-
 .sectionHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  composes: sectionHeader from '../styles/page.module.css';
 }
 
 .sectionTitle {
-  margin: 0;
-  font-size: 22px;
-  color: var(--text-strong);
+  composes: sectionTitle from '../styles/page.module.css';
 }
 
 .sectionDescription {
-  margin: 8px 0 0;
-  color: var(--text-subtle);
-  line-height: 1.6;
+  composes: sectionDescription from '../styles/page.module.css';
 }
 
 @media (max-width: 960px) {

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../components/StatusBadge'
+import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { getActivePhasesForWeek, getGlobalWeekSlots, getProjectPm } from '../utils/projectUtils'
 import styles from './CrossProjectViewPage.module.css'
@@ -26,19 +27,19 @@ export function CrossProjectViewPage() {
 
   if (isLoading) {
     return (
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <h1 className={styles.title}>複数案件横断ビューを読み込み中です</h1>
         <p className={styles.description}>バックエンドから横断データを取得しています。</p>
-      </section>
+      </Panel>
     )
   }
 
   if (error) {
     return (
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <h1 className={styles.title}>複数案件横断ビューを取得できませんでした</h1>
         <p className={styles.description}>{error}</p>
-      </section>
+      </Panel>
     )
   }
 
@@ -54,7 +55,7 @@ export function CrossProjectViewPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
+      <Panel className={styles.hero} variant="hero">
         <div>
           <p className={styles.eyebrow}>Cross Project Timeline</p>
           <h1 className={styles.title}>複数案件横断ビュー</h1>
@@ -64,18 +65,18 @@ export function CrossProjectViewPage() {
         </div>
 
         <div className={styles.heroStats}>
-          <article className={styles.statCard}>
+          <Panel as="article" className={styles.statCard} variant="compact">
             <span className={styles.statLabel}>対象案件</span>
             <strong className={styles.statValue}>{projects.length}</strong>
-          </article>
-          <article className={styles.statCard}>
+          </Panel>
+          <Panel as="article" className={styles.statCard} variant="compact">
             <span className={styles.statLabel}>最大同時進行</span>
             <strong className={styles.statValue}>{peakBusy} Phase / Week</strong>
-          </article>
+          </Panel>
         </div>
-      </section>
+      </Panel>
 
-      <section className={styles.section}>
+      <Panel className={styles.section}>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
@@ -138,7 +139,7 @@ export function CrossProjectViewPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </Panel>
     </div>
   )
 }
