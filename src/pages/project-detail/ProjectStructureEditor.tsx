@@ -40,6 +40,7 @@ export function ProjectStructureEditor({
     structurePmMemberId,
     structureAssignments,
   )
+  const responsibilityListId = 'project-structure-responsibilities'
 
   return (
     <div className={styles.structureEditor} data-testid="structure-editor">
@@ -78,20 +79,16 @@ export function ProjectStructureEditor({
             <div key={assignment.id ?? `new-${index}`} className={styles.assignmentRow}>
               <label className={styles.formField}>
                 <span className={styles.formLabel}>責務</span>
-                <select
+                <input
                   aria-label={`役割${index + 1} の責務`}
                   className={styles.selectInput}
+                  data-testid={`structure-responsibility-${index}`}
+                  list={responsibilityListId}
                   onChange={(event) => {
                     onUpdateAssignment(index, { responsibility: event.target.value })
                   }}
                   value={assignment.responsibility}
-                >
-                  {responsibilityOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
 
               <label className={styles.formField}>
@@ -142,6 +139,12 @@ export function ProjectStructureEditor({
           ))}
         </div>
       </div>
+
+      <datalist id={responsibilityListId}>
+        {responsibilityOptions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
 
       {structureError ? <p className={styles.sectionError}>{structureError}</p> : null}
 

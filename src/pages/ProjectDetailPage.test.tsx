@@ -196,6 +196,9 @@ describe('ProjectDetailPage', () => {
     fireEvent.change(screen.getByTestId('structure-pm-select'), {
       target: { value: 'm6' },
     })
+    fireEvent.change(screen.getByTestId('structure-responsibility-0'), {
+      target: { value: 'Review Lead' },
+    })
     fireEvent.change(screen.getByTestId('structure-reports-to-0'), {
       target: { value: 'm2' },
     })
@@ -209,19 +212,19 @@ describe('ProjectDetailPage', () => {
       expect(structureCall).toBeDefined()
       const body = JSON.parse(String(structureCall?.[1]?.body))
       expect(body.pmMemberId).toBe('m6')
-      expect(body.assignments).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            responsibility: '基礎検討',
-            memberId: 'm8',
-            reportsToMemberId: 'm2',
-          }),
-          expect.objectContaining({
-            responsibility: editableAssignment.responsibility,
-            memberId: editableAssignment.memberId,
-            reportsToMemberId: 'm1',
-          }),
-        ]),
+      expect(body.assignments).toContainEqual(
+        expect.objectContaining({
+          responsibility: 'Review Lead',
+          memberId: 'm8',
+          reportsToMemberId: 'm2',
+        }),
+      )
+      expect(body.assignments).toContainEqual(
+        expect.objectContaining({
+          responsibility: editableAssignment.responsibility,
+          memberId: editableAssignment.memberId,
+          reportsToMemberId: 'm1',
+        }),
       )
     })
   })
