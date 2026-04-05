@@ -11,6 +11,7 @@ import type {
   UpdateMemberInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
+  UpdateProjectSystemsInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
@@ -502,6 +503,33 @@ export function mockProjectApi() {
         label: link.label.trim(),
         url: link.url.trim(),
       }))
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const systemsMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/systems$/)
+    if (systemsMatch && method === 'PATCH') {
+      const projectNumber = systemsMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectSystemsInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.relatedSystemIds = [...new Set(body.relatedSystemIds)]
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

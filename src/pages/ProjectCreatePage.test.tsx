@@ -1,4 +1,4 @@
-import { fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { mockProjectApi } from '../test/mockProjectApi'
 import { renderWithProviders } from '../test/renderWithProviders'
@@ -8,44 +8,36 @@ describe('ProjectCreatePage', () => {
   it('案件追加フォームを送信して登録 API を呼び出す', async () => {
     const fetchMock = mockProjectApi()
 
-    const { container } = renderWithProviders(<ProjectCreatePage />, {
+    renderWithProviders(<ProjectCreatePage />, {
       initialEntries: ['/projects/new'],
       routePath: '*',
     })
 
-    await waitFor(() => {
-      expect(container.querySelectorAll('input')).toHaveLength(6)
-      expect(container.querySelectorAll('select')).toHaveLength(2)
-    })
+    await screen.findByRole('heading', { name: '案件追加' })
 
-    const inputs = container.querySelectorAll('input')
-    const selects = container.querySelectorAll('select')
-    const submitButton = container.querySelector('button[type="submit"]')
-
-    expect(submitButton).not.toBeNull()
-
-    fireEvent.change(inputs[0]!, {
+    fireEvent.change(screen.getByLabelText('プロジェクト番号'), {
       target: { value: 'PRJ-006' },
     })
-    fireEvent.change(inputs[1]!, {
+    fireEvent.change(screen.getByLabelText('案件名'), {
       target: { value: '新規案件A' },
     })
-    fireEvent.change(selects[0]!, {
+    fireEvent.change(screen.getByLabelText('PM'), {
       target: { value: 'm1' },
     })
-    fireEvent.change(inputs[2]!, {
+    fireEvent.change(screen.getByLabelText('開始日'), {
       target: { value: '2026-08-03' },
     })
-    fireEvent.change(inputs[3]!, {
+    fireEvent.change(screen.getByLabelText('終了予定日'), {
       target: { value: '2026-10-30' },
     })
-    fireEvent.change(inputs[4]!, {
+    fireEvent.click(screen.getByTestId('create-project-system-sys-accounting'))
+    fireEvent.change(screen.getByLabelText('案件リンク名 1'), {
       target: { value: 'Backlog' },
     })
-    fireEvent.change(inputs[5]!, {
+    fireEvent.change(screen.getByLabelText('案件リンクURL 1'), {
       target: { value: 'https://example.com/projects/PRJ-006' },
     })
-    fireEvent.click(submitButton!)
+    fireEvent.click(screen.getByRole('button', { name: '案件を登録' }))
 
     await waitFor(() => {
       const postCall = fetchMock.mock.calls.find(([url, init]) => {
@@ -61,7 +53,7 @@ describe('ProjectCreatePage', () => {
         endDate: '2026-10-30',
         status: 'not_started',
         pmMemberId: 'm1',
-        relatedSystemIds: [],
+        relatedSystemIds: ['sys-accounting'],
         projectLinks: [
           {
             label: 'Backlog',

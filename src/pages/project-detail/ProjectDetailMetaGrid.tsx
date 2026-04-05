@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
-import type { Phase, Project, ProjectLink } from '../../types/project'
+import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
 import { formatPeriod } from '../../utils/projectUtils'
 import styles from '../ProjectDetailPage.module.css'
 
@@ -16,10 +16,13 @@ interface ProjectDetailMetaGridProps {
   currentPhaseError: string | null
   isCurrentPhaseEditing: boolean
   isProjectLinksEditing: boolean
+  isProjectSystemsEditing: boolean
   isSavingCurrentPhase: boolean
   isSavingProjectLinks: boolean
+  isSavingProjectSystems: boolean
   isSavingSchedule: boolean
   isScheduleEditing: boolean
+  availableSystems: ManagedSystem[]
   onAddProjectLink: () => void
   onCurrentPhaseCancel: () => void
   onCurrentPhaseDraftChange: (phaseId: string) => void
@@ -29,6 +32,10 @@ interface ProjectDetailMetaGridProps {
   onProjectLinksCancel: () => void
   onProjectLinksEdit: () => void
   onProjectLinksSave: () => void
+  onProjectSystemsCancel: () => void
+  onProjectSystemsEdit: () => void
+  onProjectSystemsSave: () => void
+  onProjectSystemToggle: (systemId: string) => void
   onRemoveProjectLink: (index: number) => void
   onScheduleCancel: () => void
   onScheduleDraftChange: (patch: Partial<ScheduleDraft>) => void
@@ -40,6 +47,9 @@ interface ProjectDetailMetaGridProps {
   projectLinksDraft: ProjectLink[]
   projectLinksError: string | null
   projectPhases: Phase[]
+  projectSystemIdsDraft: string[]
+  projectSystemsChanged: boolean
+  projectSystemsError: string | null
   scheduleChanged: boolean
   scheduleDraft: ScheduleDraft
   scheduleError: string | null
@@ -61,10 +71,13 @@ export function ProjectDetailMetaGrid({
   currentPhaseError,
   isCurrentPhaseEditing,
   isProjectLinksEditing,
+  isProjectSystemsEditing,
   isSavingCurrentPhase,
   isSavingProjectLinks,
+  isSavingProjectSystems,
   isSavingSchedule,
   isScheduleEditing,
+  availableSystems,
   onAddProjectLink,
   onCurrentPhaseCancel,
   onCurrentPhaseDraftChange,
@@ -74,6 +87,10 @@ export function ProjectDetailMetaGrid({
   onProjectLinksCancel,
   onProjectLinksEdit,
   onProjectLinksSave,
+  onProjectSystemsCancel,
+  onProjectSystemsEdit,
+  onProjectSystemsSave,
+  onProjectSystemToggle,
   onRemoveProjectLink,
   onScheduleCancel,
   onScheduleDraftChange,
@@ -85,10 +102,17 @@ export function ProjectDetailMetaGrid({
   projectLinksDraft,
   projectLinksError,
   projectPhases,
+  projectSystemIdsDraft,
+  projectSystemsChanged,
+  projectSystemsError,
   scheduleChanged,
   scheduleDraft,
   scheduleError,
 }: ProjectDetailMetaGridProps) {
+  const selectedSystems = availableSystems.filter((system) =>
+    (project.relatedSystemIds ?? []).includes(system.id),
+  )
+
   return (
     <div className={styles.metaGrid}>
       <MetaCard label="PM">
@@ -306,6 +330,77 @@ export function ProjectDetailMetaGrid({
             <Button
               data-testid="project-links-edit-button"
               onClick={onProjectLinksEdit}
+              size="small"
+              variant="secondary"
+            >
+              変更
+            </Button>
+          </div>
+        )}
+      </MetaCard>
+
+      <MetaCard label="関連システム">
+        {isProjectSystemsEditing ? (
+          <div className={styles.phaseMetaEditor}>
+            <div className={styles.systemSelectionList}>
+              {availableSystems.length > 0 ? (
+                availableSystems.map((system) => (
+                  <label className={styles.systemSelectionItem} key={system.id}>
+                    <input
+                      checked={projectSystemIdsDraft.includes(system.id)}
+                      className={styles.systemCheckbox}
+                      data-testid={`project-system-checkbox-${system.id}`}
+                      onChange={() => onProjectSystemToggle(system.id)}
+                      type="checkbox"
+                    />
+                    <span className={styles.systemSelectionText}>
+                      <strong>{system.name}</strong>
+                      <span>{system.category}</span>
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <p className={styles.emptyText}>選択できるシステムがありません。</p>
+              )}
+            </div>
+            <div className={styles.phaseMetaActions}>
+              <Button
+                data-testid="project-systems-save-button"
+                disabled={isSavingProjectSystems || !projectSystemsChanged}
+                onClick={onProjectSystemsSave}
+                size="small"
+              >
+                {isSavingProjectSystems ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                data-testid="project-systems-cancel-button"
+                onClick={onProjectSystemsCancel}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+            {projectSystemsError ? <p className={styles.metaError}>{projectSystemsError}</p> : null}
+          </div>
+        ) : (
+          <div className={styles.projectLinksDisplay}>
+            {selectedSystems.length > 0 ? (
+              <div className={styles.systemChipList}>
+                {selectedSystems.map((system) => (
+                  <span className={styles.systemChip} key={system.id}>
+                    {system.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <strong className={styles.metaValue} data-testid="project-system-empty">
+                未設定
+              </strong>
+            )}
+            <Button
+              data-testid="project-systems-edit-button"
+              onClick={onProjectSystemsEdit}
               size="small"
               variant="secondary"
             >

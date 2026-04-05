@@ -29,6 +29,7 @@ interface ProjectDetailHeroProps {
   currentPhase?: Phase
   projectPhases: Phase[]
   relatedSystems: ManagedSystem[]
+  availableSystems: ManagedSystem[]
   isCurrentPhaseEditing: boolean
   currentPhaseDraftId: string
   currentPhaseChanged: boolean
@@ -39,15 +40,24 @@ interface ProjectDetailHeroProps {
   onCurrentPhaseCancel: () => void
   onCurrentPhaseSave: () => void
   isProjectLinksEditing: boolean
+  isProjectSystemsEditing: boolean
   projectLinksDraft: ProjectLink[]
   projectLinksChanged: boolean
   projectLinksError: string | null
+  projectSystemIdsDraft: string[]
+  projectSystemsChanged: boolean
+  projectSystemsError: string | null
   isSavingProjectLinks: boolean
+  isSavingProjectSystems: boolean
   onAddProjectLink: () => void
   onProjectLinkDraftChange: (index: number, patch: Partial<ProjectLink>) => void
   onProjectLinksEdit: () => void
   onProjectLinksCancel: () => void
   onProjectLinksSave: () => void
+  onProjectSystemsEdit: () => void
+  onProjectSystemsCancel: () => void
+  onProjectSystemsSave: () => void
+  onProjectSystemToggle: (systemId: string) => void
   onRemoveProjectLink: (index: number) => void
 }
 
@@ -69,6 +79,7 @@ export function ProjectDetailHero({
   currentPhase,
   projectPhases,
   relatedSystems,
+  availableSystems,
   isCurrentPhaseEditing,
   currentPhaseDraftId,
   currentPhaseChanged,
@@ -79,15 +90,24 @@ export function ProjectDetailHero({
   onCurrentPhaseCancel,
   onCurrentPhaseSave,
   isProjectLinksEditing,
+  isProjectSystemsEditing,
   projectLinksDraft,
   projectLinksChanged,
   projectLinksError,
+  projectSystemIdsDraft,
+  projectSystemsChanged,
+  projectSystemsError,
   isSavingProjectLinks,
+  isSavingProjectSystems,
   onAddProjectLink,
   onProjectLinkDraftChange,
   onProjectLinksEdit,
   onProjectLinksCancel,
   onProjectLinksSave,
+  onProjectSystemsEdit,
+  onProjectSystemsCancel,
+  onProjectSystemsSave,
+  onProjectSystemToggle,
   onRemoveProjectLink,
 }: ProjectDetailHeroProps) {
   return (
@@ -148,6 +168,10 @@ export function ProjectDetailHero({
         onProjectLinkDraftChange={onProjectLinkDraftChange}
         onProjectLinksEdit={onProjectLinksEdit}
         onProjectLinksSave={onProjectLinksSave}
+        onProjectSystemsCancel={onProjectSystemsCancel}
+        onProjectSystemsEdit={onProjectSystemsEdit}
+        onProjectSystemsSave={onProjectSystemsSave}
+        onProjectSystemToggle={onProjectSystemToggle}
         onRemoveProjectLink={onRemoveProjectLink}
         onScheduleCancel={onScheduleCancel}
         onScheduleDraftChange={onScheduleDraftChange}
@@ -159,6 +183,12 @@ export function ProjectDetailHero({
         projectLinksDraft={projectLinksDraft}
         projectLinksError={projectLinksError}
         projectPhases={projectPhases}
+        projectSystemIdsDraft={projectSystemIdsDraft}
+        projectSystemsChanged={projectSystemsChanged}
+        projectSystemsError={projectSystemsError}
+        availableSystems={availableSystems}
+        isProjectSystemsEditing={isProjectSystemsEditing}
+        isSavingProjectSystems={isSavingProjectSystems}
         scheduleChanged={scheduleChanged}
         scheduleDraft={scheduleDraft}
         scheduleError={scheduleError}

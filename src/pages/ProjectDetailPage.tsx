@@ -33,6 +33,7 @@ export function ProjectDetailPage() {
     updateProjectCurrentPhase,
     updateProjectEvents,
     updateProjectLinks,
+    updateProjectSystems,
     updateProjectPhases,
     updateProjectSchedule,
     updateProjectStructure,
@@ -68,9 +69,11 @@ export function ProjectDetailPage() {
   const summaryEditor = useProjectSummaryEditor(
     project,
     currentPhase,
+    systems,
     updateProjectCurrentPhase,
     updateProjectSchedule,
     updateProjectLinks,
+    updateProjectSystems,
   )
   const phaseEditor = useProjectPhaseEditor(
     project,
@@ -219,6 +222,12 @@ export function ProjectDetailPage() {
         onProjectLinksSave={() => {
           void summaryEditor.saveProjectLinks()
         }}
+        onProjectSystemsCancel={summaryEditor.closeProjectSystemsEditor}
+        onProjectSystemsEdit={summaryEditor.openProjectSystemsEditor}
+        onProjectSystemsSave={() => {
+          void summaryEditor.saveProjectSystems()
+        }}
+        onProjectSystemToggle={summaryEditor.toggleProjectSystemDraft}
         onRemoveProjectLink={summaryEditor.removeProjectLinkDraft}
         onScheduleCancel={summaryEditor.closeScheduleEditor}
         onScheduleDraftChange={(patch) => {
@@ -237,6 +246,12 @@ export function ProjectDetailPage() {
         projectLinksDraft={summaryEditor.projectLinksDraft}
         projectLinksError={summaryEditor.projectLinksError}
         projectPhases={projectPhases}
+        projectSystemIdsDraft={summaryEditor.projectSystemIdsDraft}
+        projectSystemsChanged={summaryEditor.projectSystemsChanged}
+        projectSystemsError={summaryEditor.projectSystemsError}
+        availableSystems={systems}
+        isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
+        isSavingProjectSystems={summaryEditor.isSavingProjectSystems}
         relatedSystems={relatedSystems}
         scheduleChanged={summaryEditor.scheduleChanged}
         scheduleDraft={summaryEditor.scheduleDraft}

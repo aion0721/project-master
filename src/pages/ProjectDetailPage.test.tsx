@@ -25,7 +25,7 @@ describe('ProjectDetailPage', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
-    expect(screen.getByText('会計基盤')).toBeInTheDocument()
+    expect(screen.getAllByText('会計基盤').length).toBeGreaterThan(0)
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
     expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute(
       'href',
@@ -114,6 +114,31 @@ describe('ProjectDetailPage', () => {
           url: 'https://example.com/projects/PRJ-001/minutes',
         },
       ])
+    })
+  })
+
+  it('関連システムを更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-systems-edit-button'))
+    fireEvent.click(screen.getByTestId('project-system-checkbox-sys-infra-common'))
+    fireEvent.click(screen.getByTestId('project-system-checkbox-sys-sales-bi'))
+    fireEvent.click(screen.getByTestId('project-systems-save-button'))
+
+    await waitFor(() => {
+      const systemsCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/systems') && init?.method === 'PATCH'
+      })
+
+      expect(systemsCall).toBeDefined()
+      const body = JSON.parse(String(systemsCall?.[1]?.body))
+      expect(body).toEqual({
+        relatedSystemIds: ['sys-accounting', 'sys-sales-bi'],
+      })
     })
   })
 

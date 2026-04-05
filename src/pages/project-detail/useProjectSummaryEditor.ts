@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Phase, Project, ProjectLink } from '../../types/project'
+import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
 import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
 
 interface UpdateProjectCurrentPhase {
@@ -14,12 +14,18 @@ interface UpdateProjectLinks {
   (projectId: string, input: { projectLinks: ProjectLink[] }): Promise<unknown>
 }
 
+interface UpdateProjectSystems {
+  (projectId: string, input: { relatedSystemIds: string[] }): Promise<unknown>
+}
+
 export function useProjectSummaryEditor(
   project: Project | undefined,
   currentPhase: Phase | undefined,
+  availableSystems: ManagedSystem[],
   updateProjectCurrentPhase: UpdateProjectCurrentPhase,
   updateProjectSchedule: UpdateProjectSchedule,
   updateProjectLinks: UpdateProjectLinks,
+  updateProjectSystems: UpdateProjectSystems,
 ) {
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
   const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
@@ -36,6 +42,11 @@ export function useProjectSummaryEditor(
   const [projectLinksError, setProjectLinksError] = useState<string | null>(null)
   const [isSavingProjectLinks, setIsSavingProjectLinks] = useState(false)
 
+  const [isProjectSystemsEditing, setIsProjectSystemsEditing] = useState(false)
+  const [projectSystemIdsDraft, setProjectSystemIdsDraft] = useState<string[]>([])
+  const [projectSystemsError, setProjectSystemsError] = useState<string | null>(null)
+  const [isSavingProjectSystems, setIsSavingProjectSystems] = useState(false)
+
   useEffect(() => {
     if (!project) {
       return
@@ -49,6 +60,8 @@ export function useProjectSummaryEditor(
         : [createEmptyProjectLink()],
     )
     setProjectLinksError(null)
+    setProjectSystemIdsDraft([...(project.relatedSystemIds ?? [])])
+    setProjectSystemsError(null)
   }, [project])
 
   useEffect(() => {
@@ -62,6 +75,10 @@ export function useProjectSummaryEditor(
   const projectLinksChanged = project
     ? JSON.stringify(validateProjectLinks(projectLinksDraft).links) !==
       JSON.stringify(project.projectLinks)
+    : false
+  const projectSystemsChanged = project
+    ? JSON.stringify([...projectSystemIdsDraft].sort()) !==
+      JSON.stringify([...(project.relatedSystemIds ?? [])].sort())
     : false
   const currentPhaseChanged = currentPhaseDraftId !== (currentPhase?.id ?? '')
 
@@ -214,35 +231,92 @@ export function useProjectSummaryEditor(
     }
   }
 
+  function openProjectSystemsEditor() {
+    setProjectSystemIdsDraft([...(project?.relatedSystemIds ?? [])])
+    setProjectSystemsError(null)
+    setIsProjectSystemsEditing(true)
+  }
+
+  function closeProjectSystemsEditor() {
+    setProjectSystemIdsDraft([...(project?.relatedSystemIds ?? [])])
+    setProjectSystemsError(null)
+    setIsProjectSystemsEditing(false)
+  }
+
+  function toggleProjectSystemDraft(systemId: string) {
+    setProjectSystemIdsDraft((current) =>
+      current.includes(systemId)
+        ? current.filter((id) => id !== systemId)
+        : current.concat(systemId),
+    )
+    setProjectSystemsError(null)
+  }
+
+  async function saveProjectSystems() {
+    if (!project) {
+      return
+    }
+
+    const uniqueSystemIds = [...new Set(projectSystemIdsDraft)]
+
+    if (uniqueSystemIds.some((systemId) => !availableSystems.some((system) => system.id === systemId))) {
+      setProjectSystemsError('関連システムに不正な選択が含まれています。')
+      return
+    }
+
+    setIsSavingProjectSystems(true)
+    setProjectSystemsError(null)
+
+    try {
+      await updateProjectSystems(project.projectNumber, { relatedSystemIds: uniqueSystemIds })
+      setIsProjectSystemsEditing(false)
+    } catch (caughtError) {
+      setProjectSystemsError(
+        caughtError instanceof Error ? caughtError.message : '関連システムの更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectSystems(false)
+    }
+  }
+
   return {
     currentPhaseDraftId,
     currentPhaseChanged,
     currentPhaseError,
     isCurrentPhaseEditing,
     isProjectLinksEditing,
+    isProjectSystemsEditing,
     isSavingCurrentPhase,
     isSavingProjectLinks,
+    isSavingProjectSystems,
     isSavingSchedule,
     isScheduleEditing,
     projectLinksChanged,
     projectLinksDraft,
     projectLinksError,
+    projectSystemIdsDraft,
+    projectSystemsChanged,
+    projectSystemsError,
     scheduleChanged,
     scheduleDraft,
     scheduleError,
     addProjectLinkDraft,
     closeCurrentPhaseEditor,
     closeProjectLinksEditor,
+    closeProjectSystemsEditor,
     closeScheduleEditor,
     openCurrentPhaseEditor,
     openProjectLinksEditor,
+    openProjectSystemsEditor,
     openScheduleEditor,
     removeProjectLinkDraft,
     saveCurrentPhase,
     saveProjectLinks,
+    saveProjectSystems,
     saveSchedule,
     setCurrentPhaseDraftId,
     setScheduleDraft,
+    toggleProjectSystemDraft,
     updateProjectLinkDraft,
   }
 }
