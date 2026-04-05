@@ -40,6 +40,29 @@ export function useProjectPhaseEditor(
     )
   }
 
+  function updatePhaseDraftRange(
+    key: string,
+    nextRange: {
+      startWeek: number
+      endWeek: number
+    },
+  ) {
+    setPhaseDrafts((current) =>
+      current.map((phase) => {
+        if (phase.key !== key) {
+          return phase
+        }
+
+        return {
+          ...phase,
+          startWeek: String(nextRange.startWeek),
+          endWeek: String(nextRange.endWeek),
+        }
+      }),
+    )
+    setPhaseStructureError(null)
+  }
+
   function addPhaseDraft() {
     setPhaseDrafts((current) => [
       ...current,
@@ -115,5 +138,6 @@ export function useProjectPhaseEditor(
     removePhaseDraft,
     savePhaseStructure,
     updatePhaseDraft,
+    updatePhaseDraftRange,
   }
 }

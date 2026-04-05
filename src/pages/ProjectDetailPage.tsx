@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PhaseTimeline } from '../components/PhaseTimeline'
 import { Button } from '../components/ui/Button'
@@ -7,6 +8,7 @@ import { useUserSession } from '../store/useUserSession'
 import { ProjectDetailHero } from './project-detail/ProjectDetailHero'
 import { ProjectEventSection } from './project-detail/ProjectEventSection'
 import { ProjectPhaseSection } from './project-detail/ProjectPhaseSection'
+import { buildDraftPhaseForRange } from './project-detail/projectDetailTypes'
 import { ProjectStructureSection } from './project-detail/ProjectStructureSection'
 import { useProjectDetailData } from './project-detail/useProjectDetailData'
 import { useProjectEventEditor } from './project-detail/useProjectEventEditor'
@@ -35,6 +37,12 @@ export function ProjectDetailPage() {
     updateProjectStructure,
   } = useProjectData()
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
+  const [selectedTimelinePhaseId, setSelectedTimelinePhaseId] = useState<string | null>(null)
+  const [timelineEditingRange, setTimelineEditingRange] = useState<{
+    phaseId: string
+    startWeek: number
+    endWeek: number
+  } | null>(null)
 
   const project = projectNumber ? getProjectById(projectNumber) : undefined
   const {
@@ -63,7 +71,12 @@ export function ProjectDetailPage() {
     updateProjectSchedule,
     updateProjectLinks,
   )
-  const phaseEditor = useProjectPhaseEditor(project, projectPhases, workStatusOptions, updateProjectPhases)
+  const phaseEditor = useProjectPhaseEditor(
+    project,
+    projectPhases,
+    workStatusOptions,
+    updateProjectPhases,
+  )
   const eventEditor = useProjectEventEditor(
     project,
     projectEvents,
@@ -78,11 +91,66 @@ export function ProjectDetailPage() {
     updateProjectStructure,
   )
 
+  const timelinePhases = useMemo(() => {
+    if (!project) {
+      return []
+    }
+
+    return phaseEditor.phaseDrafts.map((draft) =>
+      buildDraftPhaseForRange(project.projectNumber, project.pmMemberId, draft),
+    )
+  }, [phaseEditor.phaseDrafts, project])
+
+  function handleTimelinePhaseSelect(phaseId: string) {
+    if (selectedTimelinePhaseId === phaseId) {
+      return
+    }
+
+    const phase = timelinePhases.find((item) => item.id === phaseId)
+
+    if (!phase) {
+      return
+    }
+
+    setSelectedTimelinePhaseId(phaseId)
+    setTimelineEditingRange({
+      phaseId,
+      startWeek: phase.startWeek,
+      endWeek: phase.endWeek,
+    })
+  }
+
+  function handleTimelinePhaseConfirm(phaseId: string) {
+    if (selectedTimelinePhaseId !== phaseId) {
+      return
+    }
+
+    setSelectedTimelinePhaseId(null)
+    setTimelineEditingRange(null)
+  }
+
+  function handleTimelinePhaseCancel(phaseId: string) {
+    if (!timelineEditingRange || timelineEditingRange.phaseId !== phaseId) {
+      setSelectedTimelinePhaseId(null)
+      setTimelineEditingRange(null)
+      return
+    }
+
+    phaseEditor.updatePhaseDraftRange(phaseId, {
+      startWeek: timelineEditingRange.startWeek,
+      endWeek: timelineEditingRange.endWeek,
+    })
+    setSelectedTimelinePhaseId(null)
+    setTimelineEditingRange(null)
+  }
+
   if (isLoading) {
     return (
       <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件詳細を読み込み中です</h1>
-        <p className={styles.notFoundText}>バックエンドから案件情報を取得しています。</p>
+        <p className={styles.notFoundText}>
+          バックエンドから案件情報を取得しています。
+        </p>
       </Panel>
     )
   }
@@ -90,7 +158,7 @@ export function ProjectDetailPage() {
   if (error) {
     return (
       <Panel className={styles.notFound}>
-        <h1 className={styles.notFoundTitle}>案件詳細を取得できませんでした</h1>
+        <h1 className={styles.notFoundTitle}>案件詳細を表示できませんでした</h1>
         <p className={styles.notFoundText}>{error}</p>
         <Button size="small" to="/projects" variant="secondary">
           一覧へ戻る
@@ -103,7 +171,9 @@ export function ProjectDetailPage() {
     return (
       <Panel className={styles.notFound}>
         <h1 className={styles.notFoundTitle}>案件が見つかりません</h1>
-        <p className={styles.notFoundText}>指定されたプロジェクト番号に該当する案件がありません。</p>
+        <p className={styles.notFoundText}>
+          指定されたプロジェクト番号に該当する案件がありません。
+        </p>
         <Button size="small" to="/projects" variant="secondary">
           一覧へ戻る
         </Button>
@@ -167,11 +237,23 @@ export function ProjectDetailPage() {
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
             <p className={styles.sectionDescription}>
-              案件ごとのフェーズ進捗を週単位のガントチャート形式で表示します。
+              行を選ぶと左右端のハンドルで週単位の期間調整ができます。変更内容は下のフェーズ編集と共通で、「フェーズ構成を保存」で反映します。
             </p>
           </div>
         </div>
-        <PhaseTimeline events={projectEvents} phases={projectPhases} project={project} />
+        <PhaseTimeline
+          editable
+          events={projectEvents}
+          onPhaseCancel={handleTimelinePhaseCancel}
+          onPhaseConfirm={handleTimelinePhaseConfirm}
+          onPhaseResize={(phaseId, nextRange) => {
+            phaseEditor.updatePhaseDraftRange(phaseId, nextRange)
+          }}
+          onPhaseSelect={handleTimelinePhaseSelect}
+          phases={timelinePhases}
+          project={project}
+          selectedPhaseId={selectedTimelinePhaseId}
+        />
       </Panel>
 
       <div className={styles.detailGrid}>

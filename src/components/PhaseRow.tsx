@@ -20,14 +20,48 @@ function getStatusClassName(status: Phase['status']) {
 interface PhaseRowProps {
   phase: Phase
   weekSlots: WeekSlot[]
+  editable?: boolean
+  isSelected?: boolean
+  isDragging?: boolean
+  onSelect?: (phaseId: string) => void
+  onConfirm?: (phaseId: string) => void
+  onCancel?: (phaseId: string) => void
+  onResizeStart?: (phaseId: string, edge: 'start' | 'end') => void
+  onResizeHover?: (phaseId: string, week: number) => void
 }
 
-export function PhaseRow({ phase, weekSlots }: PhaseRowProps) {
+export function PhaseRow({
+  phase,
+  weekSlots,
+  editable = false,
+  isSelected = false,
+  isDragging = false,
+  onSelect,
+  onConfirm,
+  onCancel,
+  onResizeStart,
+  onResizeHover,
+}: PhaseRowProps) {
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
+  const rowClassName = isSelected ? `${styles.row} ${styles.selectedRow}` : styles.row
+  const metaClassName = isSelected
+    ? `${styles.metaCell} ${styles.selectedMetaCell}`
+    : styles.metaCell
 
   return (
-    <div className={styles.row} style={{ gridTemplateColumns: columns }}>
-      <div className={styles.metaCell}>
+    <div className={rowClassName} style={{ gridTemplateColumns: columns }}>
+      <div
+        className={metaClassName}
+        onClick={() => onSelect?.(phase.id)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onSelect?.(phase.id)
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
         <div className={styles.metaHeader}>
           <span className={styles.phaseName}>{phase.name}</span>
           <StatusBadge status={phase.status} />
@@ -38,19 +72,81 @@ export function PhaseRow({ phase, weekSlots }: PhaseRowProps) {
           </span>
           <span>進捗: {phase.progress}%</span>
         </div>
+        {editable && isSelected ? (
+          <div className={styles.editControls}>
+            <span className={styles.editHint}>
+              {isDragging ? 'ドラッグ中: 週セル上で期間を調整' : '左右端をドラッグして期間調整'}
+            </span>
+            <div className={styles.editActions}>
+              <button
+                className={styles.confirmButton}
+                data-testid={`timeline-confirm-${phase.id}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onConfirm?.(phase.id)
+                }}
+                type="button"
+              >
+                確定
+              </button>
+              <button
+                className={styles.cancelButton}
+                data-testid={`timeline-cancel-${phase.id}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onCancel?.(phase.id)
+                }}
+                type="button"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {weekSlots.map((slot) => {
         const active = slot.index >= phase.startWeek && slot.index <= phase.endWeek
         const isCurrentWeek = isDateInWeekSlot(slot.startDate)
-        const cellClassName = active
+        const cellStateClassName = active
           ? `${styles.weekCell} ${styles.active} ${getStatusClassName(phase.status)} ${isCurrentWeek ? styles.currentWeek : ''}`
           : `${styles.weekCell} ${styles.inactive} ${isCurrentWeek ? styles.currentWeek : ''}`
+        const cellClassName = isSelected
+          ? `${cellStateClassName} ${styles.selectedCell}`
+          : cellStateClassName
+        const showStartHandle = editable && isSelected && active && slot.index === phase.startWeek
+        const showEndHandle = editable && isSelected && active && slot.index === phase.endWeek
 
         return (
-          <div key={`${phase.id}-${slot.index}`} className={cellClassName}>
+          <div
+            className={cellClassName}
+            data-testid={`timeline-phase-cell-${phase.id}-${slot.index}`}
+            key={`${phase.id}-${slot.index}`}
+            onClick={() => onSelect?.(phase.id)}
+            onMouseEnter={() => onResizeHover?.(phase.id, slot.index)}
+          >
+            {showStartHandle ? (
+              <button
+                aria-label={`${phase.name} 開始週を調整`}
+                className={`${styles.resizeHandle} ${styles.startHandle}`}
+                data-testid={`timeline-resize-start-${phase.id}`}
+                onMouseDown={() => onResizeStart?.(phase.id, 'start')}
+                type="button"
+              />
+            ) : null}
+
             {active && slot.index === phase.startWeek ? (
               <span className={styles.progressLabel}>{phase.progress}%</span>
+            ) : null}
+
+            {showEndHandle ? (
+              <button
+                aria-label={`${phase.name} 終了週を調整`}
+                className={`${styles.resizeHandle} ${styles.endHandle}`}
+                data-testid={`timeline-resize-end-${phase.id}`}
+                onMouseDown={() => onResizeStart?.(phase.id, 'end')}
+                type="button"
+              />
             ) : null}
           </div>
         )

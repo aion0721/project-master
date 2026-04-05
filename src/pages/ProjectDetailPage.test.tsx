@@ -307,4 +307,59 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('タイムライン上でフェーズ期間を調整して保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
+    fireEvent.mouseDown(await screen.findByTestId('timeline-resize-start-ph-p1-2'))
+    fireEvent.mouseEnter(await screen.findByTestId('timeline-phase-cell-ph-p1-2-2'))
+    fireEvent.mouseUp(window)
+    fireEvent.click(screen.getByTestId('timeline-confirm-ph-p1-2'))
+    fireEvent.click(screen.getByTestId('phase-structure-save-button'))
+
+    await waitFor(() => {
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/phases') && init?.method === 'PATCH'
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body.phases).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'ph-p1-2',
+            startWeek: 2,
+            endWeek: 5,
+          }),
+        ]),
+      )
+    })
+  })
+
+  it('タイムライン編集をキャンセルすると開始週を元に戻せる', async () => {
+    renderWithProviders(<ProjectDetailPage />, {
+      initialEntries: ['/projects/PRJ-001'],
+      routePath: '/projects/:projectNumber',
+    })
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
+    fireEvent.mouseDown(await screen.findByTestId('timeline-resize-start-ph-p1-2'))
+    fireEvent.mouseEnter(await screen.findByTestId('timeline-phase-cell-ph-p1-2-2'))
+    fireEvent.mouseUp(window)
+    fireEvent.click(screen.getByTestId('timeline-cancel-ph-p1-2'))
+
+    expect(screen.queryByTestId('timeline-confirm-ph-p1-2')).not.toBeInTheDocument()
+
+    fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
+    expect(await screen.findByTestId('timeline-resize-start-ph-p1-2')).toBeInTheDocument()
+  })
 })
