@@ -1,6 +1,7 @@
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemRelationInput,
   CreateSystemInput,
   ManagedSystem,
   Member,
@@ -8,6 +9,7 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdatePhaseInput,
@@ -50,6 +52,10 @@ interface ApiSystemListResponse {
   items: ManagedSystem[]
 }
 
+interface ApiSystemRelationListResponse {
+  items: SystemRelation[]
+}
+
 interface ApiProjectDetailResponse {
   project: Project & {
     pm: ApiMember | null
@@ -82,6 +88,7 @@ export interface ProjectDataPayload {
   events: ProjectEvent[]
   members: Member[]
   systems: ManagedSystem[]
+  systemRelations: SystemRelation[]
   assignments: ProjectAssignment[]
 }
 
@@ -112,6 +119,15 @@ function normalizeSystem(system: ManagedSystem): ManagedSystem {
     category: system.category,
     ownerMemberId: system.ownerMemberId ?? null,
     note: system.note ?? null,
+  }
+}
+
+function normalizeSystemRelation(relation: SystemRelation): SystemRelation {
+  return {
+    id: relation.id,
+    sourceSystemId: relation.sourceSystemId,
+    targetSystemId: relation.targetSystemId,
+    note: relation.note ?? null,
   }
 }
 
@@ -233,14 +249,16 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
     assignments: detail.assignments.map(normalizeAssignment),
     members: [...memberMap.values()],
     systems: [],
+    systemRelations: [],
   }
 }
 
 export async function loadProjectData(signal?: AbortSignal): Promise<ProjectDataPayload> {
-  const [listResponse, memberResponse, systemResponse] = await Promise.all([
+  const [listResponse, memberResponse, systemResponse, systemRelationResponse] = await Promise.all([
     fetchJson<ApiProjectListResponse>('/api/projects', signal),
     fetchJson<ApiMemberListResponse>('/api/members', signal),
     fetchJson<ApiSystemListResponse>('/api/systems', signal),
+    fetchJson<ApiSystemRelationListResponse>('/api/system-relations', signal),
   ])
 
   const detailResponses = await Promise.all(
@@ -296,6 +314,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     events: [...eventMap.values()],
     members: [...memberMap.values()],
     systems: systemResponse.items.map(normalizeSystem),
+    systemRelations: systemRelationResponse.items.map(normalizeSystemRelation),
     assignments: [...assignmentMap.values()],
   }
 }
@@ -390,6 +409,20 @@ export async function createSystemRequest(
   return normalizeSystem(response.system)
 }
 
+export async function createSystemRelationRequest(
+  input: CreateSystemRelationInput,
+  signal?: AbortSignal,
+): Promise<SystemRelation> {
+  const response = await sendJson<{ relation: SystemRelation }, CreateSystemRelationInput>(
+    '/api/system-relations',
+    'POST',
+    input,
+    signal,
+  )
+
+  return normalizeSystemRelation(response.relation)
+}
+
 export async function updateSystemRequest(
   systemId: string,
   input: UpdateSystemInput,
@@ -411,6 +444,18 @@ export async function deleteSystemRequest(
 ): Promise<{ systemId: string }> {
   return sendJson<{ systemId: string }, Record<string, never>>(
     `/api/systems/${systemId}`,
+    'DELETE',
+    {},
+    signal,
+  )
+}
+
+export async function deleteSystemRelationRequest(
+  relationId: string,
+  signal?: AbortSignal,
+): Promise<{ relationId: string }> {
+  return sendJson<{ relationId: string }, Record<string, never>>(
+    `/api/system-relations/${relationId}`,
     'DELETE',
     {},
     signal,

@@ -18,6 +18,7 @@ function renderLayout(initialEntries: string[]) {
               <Route path="/members" element={<div>members</div>} />
               <Route path="/members/hierarchy" element={<div>hierarchy</div>} />
               <Route path="/systems" element={<div>systems</div>} />
+              <Route path="/systems/diagram" element={<div>system diagram</div>} />
               <Route path="/cross-project" element={<div>cross project</div>} />
             </Route>
           </Routes>
@@ -28,7 +29,7 @@ function renderLayout(initialEntries: string[]) {
 }
 
 describe('Layout', () => {
-  it('案件管理、メンバー管理、システム管理の導線を表示する', () => {
+  it('各管理メニューを表示する', () => {
     renderLayout(['/projects'])
 
     expect(screen.getByText('案件管理')).toBeInTheDocument()
@@ -41,6 +42,7 @@ describe('Layout', () => {
 
     expect(screen.getByText('システム管理')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'システム一覧' })).toHaveAttribute('href', '/systems')
+    expect(screen.getByRole('link', { name: '関連図' })).toHaveAttribute('href', '/systems/diagram')
   })
 
   it('案件詳細では案件管理の一覧をアクティブ表示する', () => {

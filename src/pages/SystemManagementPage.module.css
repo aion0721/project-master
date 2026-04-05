@@ -91,6 +91,12 @@
   font-weight: 700;
 }
 
+.arrowCell {
+  font-weight: 700;
+  color: #0f4c5c;
+  white-space: nowrap;
+}
+
 .rowActions {
   display: flex;
   flex-wrap: wrap;

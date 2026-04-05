@@ -2,6 +2,7 @@ import { createContext } from 'react'
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemRelationInput,
   CreateSystemInput,
   ManagedSystem,
   Member,
@@ -9,6 +10,7 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdatePhaseInput,
@@ -26,6 +28,7 @@ export interface ProjectDataContextValue {
   events: ProjectEvent[]
   members: Member[]
   systems: ManagedSystem[]
+  systemRelations: SystemRelation[]
   assignments: ProjectAssignment[]
   isLoading: boolean
   error: string | null
@@ -33,10 +36,12 @@ export interface ProjectDataContextValue {
   createMember: (input: CreateMemberInput) => Promise<Member>
   createProject: (input: CreateProjectInput) => Promise<Project>
   createSystem: (input: CreateSystemInput) => Promise<ManagedSystem>
+  createSystemRelation: (input: CreateSystemRelationInput) => Promise<SystemRelation>
   updateMember: (memberId: string, input: UpdateMemberInput) => Promise<Member>
   updateSystem: (systemId: string, input: UpdateSystemInput) => Promise<ManagedSystem>
   deleteMember: (memberId: string) => Promise<void>
   deleteSystem: (systemId: string) => Promise<void>
+  deleteSystemRelation: (relationId: string) => Promise<void>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
   updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
   updateProjectLinks: (projectId: string, input: UpdateProjectLinksInput) => Promise<Project>

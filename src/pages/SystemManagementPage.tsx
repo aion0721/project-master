@@ -2,7 +2,12 @@ import { useMemo, useState } from 'react'
 import { Button } from '../components/ui/Button'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
-import type { CreateSystemInput, ManagedSystem, UpdateSystemInput } from '../types/project'
+import type {
+  CreateSystemInput,
+  CreateSystemRelationInput,
+  ManagedSystem,
+  UpdateSystemInput,
+} from '../types/project'
 import formStyles from '../styles/form.module.css'
 import pageStyles from '../styles/page.module.css'
 import styles from './SystemManagementPage.module.css'
@@ -15,11 +20,23 @@ interface SystemFormState {
   note: string
 }
 
+interface SystemRelationFormState {
+  sourceSystemId: string
+  targetSystemId: string
+  note: string
+}
+
 const initialCreateForm: SystemFormState = {
   id: '',
   name: '',
   category: '',
   ownerMemberId: '',
+  note: '',
+}
+
+const initialRelationForm: SystemRelationFormState = {
+  sourceSystemId: '',
+  targetSystemId: '',
   note: '',
 }
 
@@ -38,9 +55,21 @@ function toNullableValue(value: string) {
 }
 
 export function SystemManagementPage() {
-  const { systems, members, projects, isLoading, error, createSystem, updateSystem, deleteSystem } =
-    useProjectData()
+  const {
+    systems,
+    systemRelations,
+    members,
+    projects,
+    isLoading,
+    error,
+    createSystem,
+    createSystemRelation,
+    updateSystem,
+    deleteSystem,
+    deleteSystemRelation,
+  } = useProjectData()
   const [createForm, setCreateForm] = useState<SystemFormState>(initialCreateForm)
+  const [relationForm, setRelationForm] = useState<SystemRelationFormState>(initialRelationForm)
   const [editingSystemId, setEditingSystemId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<SystemFormState | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -50,10 +79,22 @@ export function SystemManagementPage() {
     () => new Map(members.map((member) => [member.id, member.name])),
     [members],
   )
-
+  const systemNameById = useMemo(
+    () => new Map(systems.map((system) => [system.id, system.name])),
+    [systems],
+  )
   const sortedSystems = useMemo(
     () => [...systems].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
     [systems],
+  )
+  const sortedRelations = useMemo(
+    () =>
+      [...systemRelations].sort((left, right) => {
+        const leftKey = `${systemNameById.get(left.sourceSystemId) ?? left.sourceSystemId}-${systemNameById.get(left.targetSystemId) ?? left.targetSystemId}`
+        const rightKey = `${systemNameById.get(right.sourceSystemId) ?? right.sourceSystemId}-${systemNameById.get(right.targetSystemId) ?? right.targetSystemId}`
+        return leftKey.localeCompare(rightKey, 'ja')
+      }),
+    [systemNameById, systemRelations],
   )
 
   const projectNamesBySystemId = useMemo(() => {
@@ -77,6 +118,16 @@ export function SystemManagementPage() {
     }))
   }
 
+  function updateRelationField<Key extends keyof SystemRelationFormState>(
+    key: Key,
+    value: SystemRelationFormState[Key],
+  ) {
+    setRelationForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
   function updateEditField<Key extends keyof SystemFormState>(key: Key, value: SystemFormState[Key]) {
     setEditForm((current) => (current ? { ...current, [key]: value } : current))
   }
@@ -84,6 +135,18 @@ export function SystemManagementPage() {
   function validateSystemInput(input: Pick<SystemFormState, 'id' | 'name' | 'category'>) {
     if (!input.id.trim() || !input.name.trim() || !input.category.trim()) {
       return 'システムID、名称、カテゴリを入力してください。'
+    }
+
+    return null
+  }
+
+  function validateRelationInput(input: SystemRelationFormState) {
+    if (!input.sourceSystemId || !input.targetSystemId) {
+      return '接続元システムと接続先システムを選択してください。'
+    }
+
+    if (input.sourceSystemId === input.targetSystemId) {
+      return '同じシステム同士は関連付けできません。'
     }
 
     return null
@@ -113,6 +176,35 @@ export function SystemManagementPage() {
       setCreateForm(initialCreateForm)
     } catch (caughtError) {
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'システム追加に失敗しました。')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleCreateRelationSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSubmitError(null)
+
+    const validationMessage = validateRelationInput(relationForm)
+    if (validationMessage) {
+      setSubmitError(validationMessage)
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const input: CreateSystemRelationInput = {
+        sourceSystemId: relationForm.sourceSystemId,
+        targetSystemId: relationForm.targetSystemId,
+        note: toNullableValue(relationForm.note),
+      }
+      await createSystemRelation(input)
+      setRelationForm(initialRelationForm)
+    } catch (caughtError) {
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : '関連システム登録に失敗しました。',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -168,6 +260,21 @@ export function SystemManagementPage() {
     }
   }
 
+  async function handleDeleteRelation(relationId: string) {
+    setSubmitError(null)
+    setIsSubmitting(true)
+
+    try {
+      await deleteSystemRelation(relationId)
+    } catch (caughtError) {
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : '関連システム削除に失敗しました。',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <Panel>
@@ -192,7 +299,8 @@ export function SystemManagementPage() {
         <p className={pageStyles.eyebrow}>System Directory</p>
         <h1 className={pageStyles.title}>システム管理</h1>
         <p className={pageStyles.description}>
-          案件が関係するシステムを一覧で管理します。システムオーナーとカテゴリ、関連案件数をまとめて確認できます。
+          案件が関係するシステムを一覧で管理します。システム間のつながりも登録して、
+          関連図で仕向け・被仕向けの向きを確認できます。
         </p>
       </Panel>
 
@@ -201,7 +309,7 @@ export function SystemManagementPage() {
           <div>
             <h2 className={pageStyles.sectionTitle}>システム追加</h2>
             <p className={pageStyles.sectionDescription}>
-              システムID、名称、カテゴリ、オーナー、メモを登録できます。
+              システムID、名称、カテゴリ、オーナー、メモを登録します。
             </p>
           </div>
         </div>
@@ -233,7 +341,7 @@ export function SystemManagementPage() {
               <input
                 className={formStyles.control}
                 onChange={(event) => updateCreateField('category', event.target.value)}
-                placeholder="例: 基幹"
+                placeholder="例: 基盤"
                 value={createForm.category}
               />
             </label>
@@ -278,9 +386,74 @@ export function SystemManagementPage() {
       <Panel>
         <div className={pageStyles.sectionHeader}>
           <div>
+            <h2 className={pageStyles.sectionTitle}>関連システム登録</h2>
+            <p className={pageStyles.sectionDescription}>
+              接続元から接続先へ向かう流れを登録します。関連図では矢印で表示します。
+            </p>
+          </div>
+        </div>
+
+        <form className={styles.form} onSubmit={handleCreateRelationSubmit}>
+          <div className={styles.formGrid}>
+            <label className={formStyles.field}>
+              <span className={formStyles.label}>接続元システム</span>
+              <select
+                className={formStyles.control}
+                onChange={(event) => updateRelationField('sourceSystemId', event.target.value)}
+                value={relationForm.sourceSystemId}
+              >
+                <option value="">選択してください</option>
+                {sortedSystems.map((system) => (
+                  <option key={system.id} value={system.id}>
+                    {system.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={formStyles.field}>
+              <span className={formStyles.label}>接続先システム</span>
+              <select
+                className={formStyles.control}
+                onChange={(event) => updateRelationField('targetSystemId', event.target.value)}
+                value={relationForm.targetSystemId}
+              >
+                <option value="">選択してください</option>
+                {sortedSystems.map((system) => (
+                  <option key={system.id} value={system.id}>
+                    {system.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className={formStyles.field}>
+            <span className={formStyles.label}>メモ</span>
+            <textarea
+              className={styles.textarea}
+              onChange={(event) => updateRelationField('note', event.target.value)}
+              placeholder="連携内容や向きの補足を記載"
+              value={relationForm.note}
+            />
+          </label>
+
+          {submitError ? <p className={formStyles.errorText}>{submitError}</p> : null}
+
+          <div className={styles.actionRow}>
+            <Button disabled={isSubmitting} type="submit">
+              {isSubmitting ? '登録中...' : '関連システムを登録'}
+            </Button>
+          </div>
+        </form>
+      </Panel>
+
+      <Panel>
+        <div className={pageStyles.sectionHeader}>
+          <div>
             <h2 className={pageStyles.sectionTitle}>登録済みシステム</h2>
             <p className={pageStyles.sectionDescription}>
-              オーナーと関連案件を横並びで確認できます。案件に紐づいているシステムは削除時にチェックされます。
+              オーナーと関連案件を確認できます。案件に紐づいているシステムや関連図で利用中のシステムは削除できません。
             </p>
           </div>
         </div>
@@ -430,6 +603,59 @@ export function SystemManagementPage() {
                   </tr>
                 )
               })}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className={pageStyles.sectionHeader}>
+          <div>
+            <h2 className={pageStyles.sectionTitle}>登録済みの関連システム</h2>
+            <p className={pageStyles.sectionDescription}>
+              左から右へ向かう矢印でシステム連携を定義しています。
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>接続元</th>
+                <th>向き</th>
+                <th>接続先</th>
+                <th>メモ</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRelations.map((relation) => (
+                <tr data-testid={`system-relation-row-${relation.id}`} key={relation.id}>
+                  <td>{systemNameById.get(relation.sourceSystemId) ?? relation.sourceSystemId}</td>
+                  <td className={styles.arrowCell}>仕向け → 被仕向け</td>
+                  <td>{systemNameById.get(relation.targetSystemId) ?? relation.targetSystemId}</td>
+                  <td className={styles.noteCell}>{relation.note ?? 'なし'}</td>
+                  <td>
+                    <Button
+                      data-testid={`delete-system-relation-${relation.id}`}
+                      disabled={isSubmitting}
+                      onClick={() => void handleDeleteRelation(relation.id)}
+                      size="small"
+                      variant="danger"
+                    >
+                      削除
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {sortedRelations.length === 0 ? (
+                <tr>
+                  <td className={styles.noteCell} colSpan={5}>
+                    関連システムはまだ登録されていません。
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>

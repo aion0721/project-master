@@ -1,0 +1,74 @@
+.diagramWrap {
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.diagram {
+  min-width: 100%;
+}
+
+.edgePath {
+  fill: none;
+  stroke: rgba(15, 76, 92, 0.55);
+  stroke-width: 2.5;
+}
+
+.edgeLabel {
+  fill: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.nodeCard {
+  fill: rgba(255, 255, 255, 0.95);
+  stroke: rgba(14, 116, 144, 0.2);
+  stroke-width: 1.5;
+}
+
+.nodeTitle {
+  fill: var(--text-strong);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.nodeSubtitle {
+  fill: var(--text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nodeMeta {
+  fill: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legendChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.08);
+  color: #0f4c5c;
+  font-weight: 700;
+}
+
+.legendArrow {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f4c5c;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}

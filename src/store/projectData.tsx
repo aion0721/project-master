@@ -2,8 +2,10 @@ import { useEffect, useState, type ReactNode } from 'react'
 import {
   createMemberRequest,
   createProjectRequest,
+  createSystemRelationRequest,
   createSystemRequest,
   deleteMemberRequest,
+  deleteSystemRelationRequest,
   deleteSystemRequest,
   loadProjectData,
   updateMemberRequest,
@@ -20,6 +22,7 @@ import {
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemRelationInput,
   CreateSystemInput,
   ManagedSystem,
   Member,
@@ -27,6 +30,7 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdatePhaseInput,
@@ -68,6 +72,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<ProjectEvent[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [systems, setSystems] = useState<ManagedSystem[]>([])
+  const [systemRelations, setSystemRelations] = useState<SystemRelation[]>([])
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -88,6 +93,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         setEvents(payload.events)
         setMembers(payload.members)
         setSystems(payload.systems)
+        setSystemRelations(payload.systemRelations)
         setAssignments(payload.assignments)
       } catch (caughtError) {
         if (controller.signal.aborted) {
@@ -115,6 +121,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     events,
     members,
     systems,
+    systemRelations,
     assignments,
     isLoading,
     error,
@@ -137,6 +144,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
 
       return createdProject
@@ -145,6 +153,11 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       const system = await createSystemRequest(input)
       setSystems((current) => mergeByKey(current, [system], (item) => item.id))
       return system
+    },
+    createSystemRelation: async (input: CreateSystemRelationInput) => {
+      const relation = await createSystemRelationRequest(input)
+      setSystemRelations((current) => mergeByKey(current, [relation], (item) => item.id))
+      return relation
     },
     updateMember: async (memberId: string, input: UpdateMemberInput) => {
       const member = await updateMemberRequest(memberId, input)
@@ -163,6 +176,10 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     deleteSystem: async (systemId: string) => {
       await deleteSystemRequest(systemId)
       setSystems((current) => current.filter((system) => system.id !== systemId))
+    },
+    deleteSystemRelation: async (relationId: string) => {
+      await deleteSystemRelationRequest(relationId)
+      setSystemRelations((current) => current.filter((relation) => relation.id !== relationId))
     },
     updatePhase: async (phaseId: string, input: UpdatePhaseInput) => {
       const payload = await updatePhaseRequest(phaseId, input)
@@ -183,6 +200,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -200,6 +218,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -217,6 +236,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -234,6 +254,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -253,6 +274,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -270,6 +292,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -287,6 +310,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
       setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject

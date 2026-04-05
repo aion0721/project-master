@@ -54,6 +54,11 @@ const navigationSections: NavigationSection[] = [
         label: 'システム一覧',
         isActive: (pathname) => pathname === '/systems',
       },
+      {
+        to: '/systems/diagram',
+        label: '関連図',
+        isActive: (pathname) => pathname === '/systems/diagram',
+      },
     ],
   },
 ]
@@ -76,7 +81,9 @@ export function Layout() {
       await login(memberKey)
       setMemberKey('')
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : '利用メンバーの選択に失敗しました。')
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : '利用メンバーの選択に失敗しました。',
+      )
     }
   }
 
@@ -88,7 +95,7 @@ export function Layout() {
           <div>
             <p className={styles.brandTitle}>Project Master</p>
             <p className={styles.brandText}>
-              案件の進捗、体制、対象システムを一画面で比較できる管理アプリ
+              案件、体制、システムを一画面で比較できる管理アプリ
             </p>
           </div>
         </div>
@@ -119,7 +126,7 @@ export function Layout() {
         <div className={styles.sidebarCard}>
           <p className={styles.sidebarCardLabel}>表示メモ</p>
           <p className={styles.sidebarCardText}>
-            案件一覧では進捗とPM、横断ビューでは週ごとの重なり、システム一覧では影響範囲を確認できます。
+            案件一覧では進捗とPM、横断ビューでは案件の重なり、システム一覧では影響範囲を比較できます。
           </p>
         </div>
 
@@ -135,10 +142,10 @@ export function Layout() {
                 </span>
               </div>
               <p className={styles.userCardText}>
-                一覧と横断ビューで、ブックマーク案件と既定フィルターを利用できます。
+                一覧と横断ビューでブックマーク案件と既定フィルターを利用できます。
               </p>
               <Button onClick={logout} size="small" variant="secondary">
-                利用終了
+                利用解除
               </Button>
             </>
           ) : (
@@ -156,7 +163,7 @@ export function Layout() {
                 {isLoading ? '選択中...' : '利用開始'}
               </Button>
               <p className={styles.userCardText}>
-                利用メンバーを選ぶと、ブックマーク案件と既定の状態フィルターを使えます。
+                利用メンバーを選ぶと、ブックマーク案件と既定フィルターを使えます。
               </p>
             </>
           )}

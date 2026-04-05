@@ -1,9 +1,10 @@
 import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
-import { assignments, events, members, phases, projects, systems } from '../data/mockData'
+import { assignments, events, members, phases, projects, systemRelations, systems } from '../data/mockData'
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemRelationInput,
   Phase,
   Project,
   ProjectEvent,
@@ -33,6 +34,7 @@ function cloneFixtures() {
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
     systems: systems.map((system) => ({ ...system })),
+    systemRelations: systemRelations.map((relation) => ({ ...relation })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
   }
 }
@@ -200,6 +202,10 @@ export function mockProjectApi() {
       return buildJsonResponse({ items: fixtureData.systems }, 200)
     }
 
+    if (requestUrl.endsWith('/api/system-relations') && method === 'GET') {
+      return buildJsonResponse({ items: fixtureData.systemRelations }, 200)
+    }
+
     if (requestUrl.endsWith('/api/members') && method === 'POST') {
       const body = JSON.parse(String(init?.body)) as CreateMemberInput
 
@@ -250,6 +256,22 @@ export function mockProjectApi() {
 
       fixtureData.systems.push(system)
       return buildJsonResponse({ system }, 201)
+    }
+
+    if (requestUrl.endsWith('/api/system-relations') && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as CreateSystemRelationInput
+      const existingIds = fixtureData.systemRelations
+        .map((relation) => Number(relation.id.replace('rel-', '')))
+        .filter((value) => Number.isFinite(value))
+      const relation = {
+        id: `rel-${String((existingIds.length > 0 ? Math.max(...existingIds) : 0) + 1).padStart(3, '0')}`,
+        sourceSystemId: body.sourceSystemId,
+        targetSystemId: body.targetSystemId,
+        note: body.note?.trim() || null,
+      }
+
+      fixtureData.systemRelations.push(relation)
+      return buildJsonResponse({ relation }, 201)
     }
 
     if (requestUrl.endsWith('/api/members/login') && method === 'POST') {
@@ -370,8 +392,28 @@ export function mockProjectApi() {
         return buildJsonResponse({ message: 'System is linked to a project' }, 400)
       }
 
+      if (
+        fixtureData.systemRelations.some(
+          (relation) => relation.sourceSystemId === system.id || relation.targetSystemId === system.id,
+        )
+      ) {
+        return buildJsonResponse({ message: 'System is linked to a system relation' }, 400)
+      }
+
       fixtureData.systems = fixtureData.systems.filter((item) => item.id !== system.id)
       return buildJsonResponse({ systemId: system.id }, 200)
+    }
+
+    const relationMatch = requestUrl.match(/\/api\/system-relations\/([^/]+)$/)
+    if (relationMatch && method === 'DELETE') {
+      const relation = fixtureData.systemRelations.find((item) => item.id === relationMatch[1])
+
+      if (!relation) {
+        return buildJsonResponse({ message: 'System relation not found' }, 404)
+      }
+
+      fixtureData.systemRelations = fixtureData.systemRelations.filter((item) => item.id !== relation.id)
+      return buildJsonResponse({ relationId: relation.id }, 200)
     }
 
     if (requestUrl.endsWith('/api/projects') && method === 'GET') {

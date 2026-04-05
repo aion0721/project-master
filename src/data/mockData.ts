@@ -1,4 +1,12 @@
-import type { ManagedSystem, Member, Phase, Project, ProjectAssignment, ProjectEvent } from '../types/project'
+import type {
+  ManagedSystem,
+  Member,
+  Phase,
+  Project,
+  ProjectAssignment,
+  ProjectEvent,
+  SystemRelation,
+} from '../types/project'
 
 export const members: Member[] = [
   {
@@ -125,6 +133,27 @@ export const systems: ManagedSystem[] = [
     category: '基盤',
     ownerMemberId: 'm4',
     note: '複数案件が利用する共通基盤と運用環境',
+  },
+]
+
+export const systemRelations: SystemRelation[] = [
+  {
+    id: 'rel-001',
+    sourceSystemId: 'sys-portal',
+    targetSystemId: 'sys-accounting',
+    note: 'ポータルから会計基盤へ申請データを連携',
+  },
+  {
+    id: 'rel-002',
+    sourceSystemId: 'sys-logistics',
+    targetSystemId: 'sys-accounting',
+    note: '物流実績を会計仕訳へ受け渡し',
+  },
+  {
+    id: 'rel-003',
+    sourceSystemId: 'sys-mobile-app',
+    targetSystemId: 'sys-sales-bi',
+    note: 'モバイル利用ログを分析基盤へ集約',
   },
 ]
 
