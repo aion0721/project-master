@@ -1,6 +1,217 @@
 .diagramWrap {
+  position: relative;
   overflow: auto;
   padding-bottom: 8px;
+}
+
+.selectorField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  margin-bottom: 20px;
+}
+
+.selectorLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.selectorInput {
+  composes: control from '../styles/form.module.css';
+}
+
+.focusGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr) 88px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.focusColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.focusColumnPrimary {
+  position: relative;
+}
+
+.focusHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.focusEyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.focusTitle {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.focusList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.focusConnector {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 108px;
+  outline: none;
+}
+
+.focusConnectorIdle {
+  opacity: 0.28;
+}
+
+.focusConnector:not(.focusConnectorIdle) {
+  cursor: help;
+}
+
+.focusConnector:focus-visible .focusConnectorLine {
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.16);
+}
+
+.focusConnectorLine {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15, 76, 92, 0.18);
+}
+
+.focusConnectorFlow {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 14px,
+    rgba(15, 76, 92, 0.86) 14px 22px,
+    transparent 22px 34px
+  );
+  background-size: 56px 100%;
+  animation: focusConnectorFlow 1.25s linear infinite;
+}
+
+.focusConnectorArrow {
+  color: #0f4c5c;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.focusConnectorTooltip {
+  position: absolute;
+  top: 102px;
+  left: 50%;
+  z-index: 2;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 12px 14px;
+  border: 1px solid rgba(15, 76, 92, 0.18);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 36%),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 4px));
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.focusConnector:hover .focusConnectorTooltip,
+.focusConnector:focus-visible .focusConnectorTooltip {
+  opacity: 1;
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+.focusConnectorTooltipTitle {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.focusConnectorTooltipList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.focusConnectorTooltipItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.focusConnectorTooltipItemName {
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.focusConnectorTooltipItemText {
+  color: var(--text-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.systemCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 140px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-subtle);
+}
+
+.systemCardPrimary {
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 38%),
+    rgba(255, 255, 255, 0.96);
+  border-color: rgba(14, 116, 144, 0.22);
+}
+
+.systemCardTitle {
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.systemCardMeta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.systemCardNote {
+  margin: 6px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
 }
 
 .diagram {
@@ -9,8 +220,33 @@
 
 .edgePath {
   fill: none;
-  stroke: rgba(15, 76, 92, 0.55);
+  stroke: rgba(15, 76, 92, 0.32);
   stroke-width: 2.5;
+}
+
+.edgePathActive {
+  stroke: rgba(15, 76, 92, 0.5);
+}
+
+.edgeFlow {
+  fill: none;
+  stroke: #0f4c5c;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 8 16;
+  animation: edgeFlow 1.4s linear infinite;
+}
+
+.edgeFlowActive {
+  stroke-width: 3.5;
+}
+
+.edgeHitArea {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+  cursor: pointer;
+  pointer-events: stroke;
 }
 
 .edgeLabel {
@@ -18,6 +254,40 @@
   font-size: 12px;
   font-weight: 700;
   text-anchor: middle;
+}
+
+.edgeLabelActive {
+  fill: #0a3642;
+}
+
+.edgeTooltip {
+  position: absolute;
+  z-index: 2;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 12px 14px;
+  border: 1px solid rgba(15, 76, 92, 0.18);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 36%),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.edgeTooltipTitle {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.edgeTooltipText {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .nodeCard {
@@ -71,4 +341,36 @@
   margin: 0;
   color: var(--text-subtle);
   line-height: 1.6;
+}
+
+@keyframes edgeFlow {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+@keyframes focusConnectorFlow {
+  to {
+    background-position: 56px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edgeFlow {
+    animation: none;
+  }
+
+  .focusConnectorFlow {
+    animation: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .focusGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .focusConnector {
+    display: none;
+  }
 }
