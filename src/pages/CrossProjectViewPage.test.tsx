@@ -21,19 +21,19 @@ describe('CrossProjectViewPage', () => {
 
   it('ブックマーク表示でもフィルターできる', async () => {
     mockProjectApi()
-    window.localStorage.setItem('project-master:user-id', 'u1')
+    window.localStorage.setItem('project-master:user-id', 'm1')
 
     renderWithProviders(<CrossProjectViewPage />, {
       initialEntries: ['/cross-project'],
     })
 
-    expect(await screen.findByText('demo さんのブックマーク 2 件')).toBeInTheDocument()
+    expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'ブックマーク' }))
 
     await waitFor(() => {
       expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-      expect(screen.queryByText('営業統合ダッシュボード')).not.toBeInTheDocument()
+      expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
     })
 
     fireEvent.change(screen.getByLabelText('プロジェクト番号または案件名でフィルター'), {
@@ -41,7 +41,7 @@ describe('CrossProjectViewPage', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText('経費精算モバイル連携')).toBeInTheDocument()
+      expect(screen.getByText('販売促進モバイル連携')).toBeInTheDocument()
       expect(screen.queryByText('基幹会計刷新')).not.toBeInTheDocument()
     })
   })
@@ -56,12 +56,12 @@ describe('CrossProjectViewPage', () => {
     await screen.findByRole('heading', { name: '複数案件横断ビュー' })
 
     fireEvent.change(screen.getByLabelText('プロジェクト番号または案件名でフィルター'), {
-      target: { value: '会計' },
+      target: { value: '基幹会計' },
     })
 
     await waitFor(() => {
       expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-      expect(screen.queryByText('経費精算モバイル連携')).not.toBeInTheDocument()
+      expect(screen.queryByText('販売促進モバイル連携')).not.toBeInTheDocument()
     })
   })
 })

@@ -41,6 +41,7 @@ export interface Member {
   name: string
   role: string
   managerId: string | null
+  bookmarkedProjectIds: string[]
 }
 
 export interface ProjectAssignment {

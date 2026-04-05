@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { loadUserRequest, loginUserRequest, toggleBookmarkRequest } from '../api/userApi'
-import type { UserProfile } from '../types/user'
+import type { Member } from '../types/project'
 import { UserSessionContext, type UserSessionContextValue } from './userSessionContext'
 
 const storageKey = 'project-master:user-id'
 
 export function UserSessionProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
+  const [currentUser, setCurrentUser] = useState<Member | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +19,6 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
     }
 
     const userId = persistedUserId
-
     const controller = new AbortController()
 
     async function loadUser() {
@@ -32,7 +31,9 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
       } catch (caughtError) {
         window.localStorage.removeItem(storageKey)
         setCurrentUser(null)
-        setError(caughtError instanceof Error ? caughtError.message : 'ユーザー情報の取得に失敗しました。')
+        setError(
+          caughtError instanceof Error ? caughtError.message : '利用メンバー情報の取得に失敗しました。',
+        )
       } finally {
         if (!controller.signal.aborted) {
           setIsLoading(false)
@@ -51,16 +52,16 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
     currentUser,
     isLoading,
     error,
-    login: async (username: string) => {
+    login: async (memberKey: string) => {
       setIsLoading(true)
       setError(null)
 
       try {
-        const user = await loginUserRequest(username.trim())
+        const user = await loginUserRequest(memberKey.trim())
         window.localStorage.setItem(storageKey, user.id)
         setCurrentUser(user)
       } catch (caughtError) {
-        setError(caughtError instanceof Error ? caughtError.message : 'ログインに失敗しました。')
+        setError(caughtError instanceof Error ? caughtError.message : '利用メンバーの選択に失敗しました。')
         throw caughtError
       } finally {
         setIsLoading(false)
@@ -73,7 +74,7 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
     },
     toggleBookmark: async (projectId: string) => {
       if (!currentUser) {
-        throw new Error('ログインしてからブックマークしてください。')
+        throw new Error('利用メンバーを選択してからブックマークしてください。')
       }
 
       setError(null)

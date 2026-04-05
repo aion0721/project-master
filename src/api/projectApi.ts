@@ -91,6 +91,7 @@ function normalizeMember(member: ApiMember | null | undefined): Member | null {
     name: member.name,
     role: member.role,
     managerId: member.managerId,
+    bookmarkedProjectIds: [...(member.bookmarkedProjectIds ?? [])],
   }
 }
 

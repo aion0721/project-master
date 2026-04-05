@@ -3,7 +3,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Panel } from '../components/ui/Panel'
 import { useProjectData } from '../store/useProjectData'
 import { useUserSession } from '../store/useUserSession'
-import { getActiveEventsForWeek, getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../utils/projectUtils'
+import { getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../utils/projectUtils'
 import { getPhaseToneKey, useCrossProjectView } from './cross-project/useCrossProjectView'
 import styles from './CrossProjectViewPage.module.css'
 
@@ -40,7 +40,7 @@ export function CrossProjectViewPage() {
   if (error) {
     return (
       <Panel className={styles.section}>
-        <h1 className={styles.title}>複数案件横断ビューを取得できませんでした</h1>
+        <h1 className={styles.title}>複数案件横断ビューを表示できませんでした</h1>
         <p className={styles.description}>{error}</p>
       </Panel>
     )
@@ -53,8 +53,7 @@ export function CrossProjectViewPage() {
           <p className={styles.eyebrow}>Cross Project Timeline</p>
           <h1 className={styles.title}>複数案件横断ビュー</h1>
           <p className={styles.description}>
-            複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを
-            切り替えつつ、プロジェクト番号または案件名で絞り込めます。
+            複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを切り替えると、選択中メンバーのブックマーク案件だけも見られます。
           </p>
 
           <div className={styles.filterRow}>
@@ -67,9 +66,7 @@ export function CrossProjectViewPage() {
                 全案件
               </button>
               <button
-                className={
-                  viewMode === 'bookmarks' ? `${styles.toggle} ${styles.toggleActive}` : styles.toggle
-                }
+                className={viewMode === 'bookmarks' ? `${styles.toggle} ${styles.toggleActive}` : styles.toggle}
                 disabled={!currentUser}
                 onClick={() => setViewMode('bookmarks')}
                 type="button"
@@ -84,7 +81,7 @@ export function CrossProjectViewPage() {
                 aria-label="プロジェクト番号または案件名でフィルター"
                 className={styles.searchInput}
                 onChange={(event) => setKeyword(event.target.value)}
-                placeholder="例: PRJ-001 / 会計"
+                placeholder="例: PRJ-001 / 基幹会計"
                 type="search"
                 value={keyword}
               />
@@ -93,8 +90,8 @@ export function CrossProjectViewPage() {
 
           <p className={styles.filterHint}>
             {currentUser
-              ? `${currentUser.username} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
-              : 'ログインすると、ブックマーク案件だけを横断表示できます。'}
+              ? `${currentUser.name} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
+              : '利用メンバーを選ぶと、ブックマーク案件だけで絞り込めます。'}
           </p>
         </div>
 
@@ -104,7 +101,7 @@ export function CrossProjectViewPage() {
             <strong className={styles.statValue}>{filteredProjects.length}</strong>
           </Panel>
           <Panel as="article" className={styles.statCard} variant="compact">
-            <span className={styles.statLabel}>最大重複数</span>
+            <span className={styles.statLabel}>最大稼働密度</span>
             <strong className={styles.statValue}>{peakBusy} Phase / Week</strong>
           </Panel>
         </div>
@@ -121,9 +118,7 @@ export function CrossProjectViewPage() {
         ) : hasNoSearchResults ? (
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>条件に一致する案件がありません</h2>
-            <p className={styles.emptyStateText}>
-              プロジェクト番号または案件名の検索条件を変更してください。
-            </p>
+            <p className={styles.emptyStateText}>プロジェクト番号または案件名の条件を見直してください。</p>
           </div>
         ) : (
           <div className={styles.tableWrap}>
@@ -169,7 +164,7 @@ export function CrossProjectViewPage() {
 
                       {globalWeekSlots.map((slot) => {
                         const activePhases = getActivePhasesForWeek(project, projectPhases, slot.startDate)
-                        const activeEvents = getActiveEventsForWeek(projectEvents, slot.index)
+                        const activeEvents = projectEvents.filter((event) => event.week === slot.index)
                         const busy = activePhases.length + activeEvents.length > 1
                         const isCurrentWeek = isDateInWeekSlot(slot.startDate)
 

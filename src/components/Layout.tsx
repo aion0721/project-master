@@ -27,8 +27,7 @@ const navigationSections: NavigationSection[] = [
       {
         to: '/projects',
         label: '一覧',
-        isActive: (pathname) =>
-          pathname === '/projects' || /^\/projects\/[^/]+$/.test(pathname),
+        isActive: (pathname) => pathname === '/projects' || /^\/projects\/[^/]+$/.test(pathname),
       },
       {
         to: '/projects/new',
@@ -57,25 +56,23 @@ const navigationSections: NavigationSection[] = [
 export function Layout() {
   const location = useLocation()
   const { currentUser, isLoading, error, login, logout } = useUserSession()
-  const [username, setUsername] = useState('')
+  const [memberKey, setMemberKey] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   async function handleLogin() {
-    if (!username.trim()) {
-      setSubmitError('ユーザー名を入力してください。')
+    if (!memberKey.trim()) {
+      setSubmitError('利用メンバーIDまたは氏名を入力してください。')
       return
     }
 
     setSubmitError(null)
 
     try {
-      await login(username)
-      setUsername('')
+      await login(memberKey)
+      setMemberKey('')
     } catch (caughtError) {
       setSubmitError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'ログインに失敗しました。',
+        caughtError instanceof Error ? caughtError.message : '利用メンバーの選択に失敗しました。',
       )
     }
   }
@@ -105,11 +102,7 @@ export function Layout() {
                     <NavLink
                       key={item.to}
                       to={item.to}
-                      className={() =>
-                        isActive
-                          ? `${styles.navItem} ${styles.active}`
-                          : styles.navItem
-                      }
+                      className={() => (isActive ? `${styles.navItem} ${styles.active}` : styles.navItem)}
                     >
                       {item.label}
                     </NavLink>
@@ -128,46 +121,44 @@ export function Layout() {
         </div>
 
         <div className={styles.userCard}>
-          <p className={styles.userCardLabel}>ユーザー</p>
+          <p className={styles.userCardLabel}>利用メンバー</p>
 
           {currentUser ? (
             <>
               <div className={styles.userSummary}>
-                <strong className={styles.username}>{currentUser.username}</strong>
+                <strong className={styles.username}>{currentUser.name}</strong>
                 <span className={styles.userMeta}>
-                  ブックマーク {currentUser.bookmarkedProjectIds.length} 件
+                  {currentUser.id} / ブックマーク {currentUser.bookmarkedProjectIds.length} 件
                 </span>
               </div>
               <p className={styles.userCardText}>
                 一覧と横断ビューで「ブックマーク」を選ぶと、優先度の高い案件だけに絞れます。
               </p>
               <Button onClick={logout} size="small" variant="secondary">
-                ログアウト
+                利用終了
               </Button>
             </>
           ) : (
             <>
               <label className={styles.userField}>
-                <span className={styles.userFieldLabel}>username</span>
+                <span className={styles.userFieldLabel}>member</span>
                 <input
                   className={styles.userInput}
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="例: demo"
-                  value={username}
+                  onChange={(event) => setMemberKey(event.target.value)}
+                  placeholder="例: m1 / 田中"
+                  value={memberKey}
                 />
               </label>
               <Button disabled={isLoading} onClick={() => void handleLogin()} size="small">
-                {isLoading ? 'ログイン中...' : 'ログイン'}
+                {isLoading ? '選択中...' : '利用開始'}
               </Button>
               <p className={styles.userCardText}>
-                認証はありません。ユーザー名を入れると、その人用のブックマーク案件を使えます。
+                認証はありません。メンバーIDまたは氏名を入力すると、そのメンバーのブックマーク案件を使えます。
               </p>
             </>
           )}
 
-          {submitError || error ? (
-            <p className={styles.userError}>{submitError ?? error}</p>
-          ) : null}
+          {submitError || error ? <p className={styles.userError}>{submitError ?? error}</p> : null}
         </div>
       </aside>
 

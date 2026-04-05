@@ -1,9 +1,9 @@
-import type { UserProfile } from '../types/user'
+import type { Member } from '../types/project'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
 interface UserResponse {
-  user: UserProfile
+  user: Member
 }
 
 async function sendJson<TResponse, TRequest>(
@@ -44,19 +44,18 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T
 }
 
-function normalizeUser(user: UserProfile): UserProfile {
+function normalizeUser(user: Member): Member {
   return {
-    id: user.id,
-    username: user.username,
-    bookmarkedProjectIds: [...user.bookmarkedProjectIds],
+    ...user,
+    bookmarkedProjectIds: [...(user.bookmarkedProjectIds ?? [])],
   }
 }
 
-export async function loginUserRequest(username: string, signal?: AbortSignal) {
-  const response = await sendJson<UserResponse, { username: string }>(
-    '/api/users/login',
+export async function loginUserRequest(memberKey: string, signal?: AbortSignal) {
+  const response = await sendJson<UserResponse, { memberKey: string }>(
+    '/api/members/login',
     'POST',
-    { username },
+    { memberKey },
     signal,
   )
 
@@ -64,7 +63,7 @@ export async function loginUserRequest(username: string, signal?: AbortSignal) {
 }
 
 export async function loadUserRequest(userId: string, signal?: AbortSignal) {
-  const response = await fetchJson<UserResponse>(`/api/users/${userId}`, signal)
+  const response = await fetchJson<UserResponse>(`/api/members/${userId}`, signal)
   return normalizeUser(response.user)
 }
 
@@ -74,7 +73,7 @@ export async function toggleBookmarkRequest(
   signal?: AbortSignal,
 ) {
   const response = await sendJson<UserResponse, { projectId: string }>(
-    `/api/users/${userId}/bookmarks`,
+    `/api/members/${userId}/bookmarks`,
     'PATCH',
     { projectId },
     signal,

@@ -35,7 +35,7 @@ export function ProjectListPage() {
   if (error) {
     return (
       <Panel className={styles.section}>
-        <h1 className={styles.sectionTitle}>案件一覧を取得できませんでした</h1>
+        <h1 className={styles.sectionTitle}>案件一覧を表示できませんでした</h1>
         <p className={styles.sectionDescription}>{error}</p>
       </Panel>
     )
@@ -68,7 +68,7 @@ export function ProjectListPage() {
             <p className={styles.eyebrow}>Project Portfolio</p>
             <h1 className={styles.title}>案件一覧</h1>
             <p className={styles.description}>
-              進捗と責任体制を一覧で確認できます。ログイン中は、自分でブックマークした案件だけに絞り込めます。
+              進捗と担当体制を一覧で確認できます。利用中メンバーを選ぶと、その人のブックマーク案件だけに絞り込めます。
             </p>
           </div>
 
@@ -85,11 +85,7 @@ export function ProjectListPage() {
               全案件
             </button>
             <button
-              className={
-                viewMode === 'bookmarks'
-                  ? `${styles.toggle} ${styles.toggleActive}`
-                  : styles.toggle
-              }
+              className={viewMode === 'bookmarks' ? `${styles.toggle} ${styles.toggleActive}` : styles.toggle}
               disabled={!currentUser}
               onClick={() => setViewMode('bookmarks')}
               type="button"
@@ -99,8 +95,8 @@ export function ProjectListPage() {
           </div>
           <p className={styles.filterHint}>
             {currentUser
-              ? `${currentUser.username} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
-              : '左下でユーザー名を入力すると、ブックマーク案件を使えます。'}
+              ? `${currentUser.name} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
+              : '右上で利用メンバーを選ぶと、ブックマーク案件を使えます。'}
           </p>
         </div>
       </Panel>
@@ -131,7 +127,7 @@ export function ProjectListPage() {
               {viewMode === 'bookmarks' && currentUser ? 'ブックマーク案件一覧' : '案件ステータス一覧'}
             </h2>
             <p className={styles.sectionDescription}>
-              案件ごとの PM、現在フェーズ、状態、開始日、終了予定日を確認できます。
+              案件ごとの PM、現在フェーズ、進捗状況、開始日、終了日を確認できます。
             </p>
           </div>
         </div>

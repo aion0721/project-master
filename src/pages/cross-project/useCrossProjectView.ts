@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
-import type { Phase, Project, ProjectEvent } from '../../types/project'
-import type { UserProfile } from '../../types/user'
+import type { Member, Phase, Project, ProjectEvent } from '../../types/project'
 import { getActiveEventsForWeek, getActivePhasesForWeek, getGlobalWeekSlots } from '../../utils/projectUtils'
 
 export type CrossProjectViewMode = 'all' | 'bookmarks'
 
 interface UseCrossProjectViewParams {
-  currentUser: UserProfile | null
+  currentUser: Member | null
   getProjectPhases: (projectId: string) => Phase[]
   getProjectEvents: (projectId: string) => ProjectEvent[]
   projects: Project[]

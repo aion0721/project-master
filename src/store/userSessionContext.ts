@@ -1,11 +1,11 @@
 import { createContext } from 'react'
-import type { UserProfile } from '../types/user'
+import type { Member } from '../types/project'
 
 export interface UserSessionContextValue {
-  currentUser: UserProfile | null
+  currentUser: Member | null
   isLoading: boolean
   error: string | null
-  login: (username: string) => Promise<void>
+  login: (memberKey: string) => Promise<void>
   logout: () => void
   toggleBookmark: (projectId: string) => Promise<void>
   isBookmarked: (projectId: string) => boolean

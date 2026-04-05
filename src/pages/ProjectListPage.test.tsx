@@ -14,21 +14,21 @@ describe('ProjectListPage', () => {
 
     expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-    expect(screen.getByText('営業統合ダッシュボード')).toBeInTheDocument()
+    expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
     expect(screen.getByText('案件ステータス一覧')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '案件を追加' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: '詳細を見る' }).length).toBeGreaterThan(0)
   })
 
-  it('ログイン済みならブックマーク案件だけに絞り込める', async () => {
+  it('利用メンバー選択済みならブックマーク案件だけに絞り込める', async () => {
     mockProjectApi()
-    window.localStorage.setItem('project-master:user-id', 'u1')
+    window.localStorage.setItem('project-master:user-id', 'm1')
 
     renderWithProviders(<ProjectListPage />, {
       initialEntries: ['/projects'],
     })
 
-    expect(await screen.findByText('demo さんのブックマーク 2 件')).toBeInTheDocument()
+    expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
 
     const bookmarkToggle = screen
       .getAllByRole('button', { name: 'ブックマーク' })
@@ -39,7 +39,7 @@ describe('ProjectListPage', () => {
     await waitFor(() => {
       expect(screen.getByText('ブックマーク案件一覧')).toBeInTheDocument()
       expect(screen.getAllByText('基幹会計刷新').length).toBeGreaterThan(0)
-      expect(screen.queryByText('営業統合ダッシュボード')).not.toBeInTheDocument()
+      expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
     })
   })
 })

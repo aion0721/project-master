@@ -15,7 +15,6 @@ import type {
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
 } from '../types/project'
-import type { UserProfile } from '../types/user'
 
 function cloneFixtures() {
   return {
@@ -25,15 +24,11 @@ function cloneFixtures() {
     })),
     phases: phases.map((phase) => ({ ...phase })),
     events: events.map((event) => ({ ...event })),
-    members: members.map((member) => ({ ...member })),
+    members: members.map((member) => ({
+      ...member,
+      bookmarkedProjectIds: [...member.bookmarkedProjectIds],
+    })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
-    users: [
-      {
-        id: 'u1',
-        username: 'demo',
-        bookmarkedProjectIds: ['PRJ-001', 'PRJ-005'],
-      } satisfies UserProfile,
-    ],
   }
 }
 
@@ -219,41 +214,33 @@ export function mockProjectApi() {
         name: body.name.trim(),
         role: body.role.trim(),
         managerId: body.managerId ?? null,
+        bookmarkedProjectIds: [],
       }
 
       fixtureData.members.push(member)
       return buildJsonResponse({ member }, 201)
     }
 
-    if (requestUrl.endsWith('/api/users/login') && method === 'POST') {
-      const body = JSON.parse(String(init?.body)) as { username: string }
-      const normalizedUsername = body.username.trim()
-      const existingUser = fixtureData.users.find(
-        (user) => user.username.toLocaleLowerCase() === normalizedUsername.toLocaleLowerCase(),
+    if (requestUrl.endsWith('/api/members/login') && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as { memberKey: string }
+      const normalizedMemberKey = body.memberKey.trim().toLocaleLowerCase()
+      const user = fixtureData.members.find(
+        (member) =>
+          member.id.toLocaleLowerCase() === normalizedMemberKey ||
+          member.name.toLocaleLowerCase() === normalizedMemberKey,
       )
-      const user =
-        existingUser ??
-        ({
-          id: `u${fixtureData.users.length + 1}`,
-          username: normalizedUsername,
-          bookmarkedProjectIds: [],
-        } satisfies UserProfile)
 
-      if (!existingUser) {
-        fixtureData.users.push(user)
-      }
-
-      return new Response(JSON.stringify({ user }), {
-        status: 200,
+      return new Response(JSON.stringify(user ? { user } : { message: 'Member not found' }), {
+        status: user ? 200 : 404,
         headers: {
           'Content-Type': 'application/json',
         },
       })
     }
 
-    const getUserMatch = requestUrl.match(/\/api\/users\/([^/]+)$/)
+    const getUserMatch = requestUrl.match(/\/api\/members\/([^/]+)$/)
     if (getUserMatch && method === 'GET') {
-      const user = fixtureData.users.find((item) => item.id === getUserMatch[1])
+      const user = fixtureData.members.find((item) => item.id === getUserMatch[1])
 
       return new Response(JSON.stringify({ user }), {
         status: user ? 200 : 404,
@@ -263,9 +250,9 @@ export function mockProjectApi() {
       })
     }
 
-    const bookmarkMatch = requestUrl.match(/\/api\/users\/([^/]+)\/bookmarks$/)
+    const bookmarkMatch = requestUrl.match(/\/api\/members\/([^/]+)\/bookmarks$/)
     if (bookmarkMatch && method === 'PATCH') {
-      const user = fixtureData.users.find((item) => item.id === bookmarkMatch[1])
+      const user = fixtureData.members.find((item) => item.id === bookmarkMatch[1])
 
       if (!user) {
         return new Response(JSON.stringify({ message: 'User not found' }), {
