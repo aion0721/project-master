@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
+import pageStyles from '../../styles/page.module.css'
 import type { CreateProjectInput, ProjectLink, WorkStatus } from '../../types/project'
 import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
 import styles from './ProjectCreatePage.module.css'
@@ -146,11 +148,16 @@ export function ProjectCreatePage() {
         <Button className={styles.backButton} size="small" to="/projects" variant="secondary">
           案件一覧へ戻る
         </Button>
-        <h1 className={styles.title}>案件追加</h1>
-        <p className={styles.description}>
-          プロジェクト番号、案件名、期間、PM を設定して案件を追加します。
-          関連システムと案件リンクも初期登録できます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="project" />
+          <div className={pageStyles.heroHeadingBody}>
+            <h1 className={styles.title}>案件追加</h1>
+            <p className={styles.description}>
+              プロジェクト番号、案件名、期間、PM を設定して案件を追加します。
+              関連システムと案件リンクも初期登録できます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel className={styles.section}>

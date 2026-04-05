@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
+import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import pageStyles from '../../styles/page.module.css'
 import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
 import { ProjectDetailMetaGrid } from './ProjectDetailMetaGrid'
 import styles from '../projects/ProjectDetailPage.module.css'
@@ -113,25 +115,28 @@ export function ProjectDetailHero({
   return (
     <Panel className={styles.hero} variant="hero">
       <div className={styles.heroTop}>
-        <div>
-          <Link className={styles.backTextLink} to="/projects">
-            案件一覧へ戻る
-          </Link>
-          <h1 className={styles.title}>{project.name}</h1>
-          <p className={styles.description}>
-            プロジェクト番号: {project.projectNumber}
-            <br />
-            PM、進捗、体制、関連システムをまとめて確認できる案件詳細です。
-          </p>
-          {relatedSystems.length > 0 ? (
-            <div className={styles.systemChipList}>
-              {relatedSystems.map((system) => (
-                <span className={styles.systemChip} key={system.id}>
-                  {system.name}
-                </span>
-              ))}
-            </div>
-          ) : null}
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="project" />
+          <div className={pageStyles.heroHeadingBody}>
+            <Link className={styles.backTextLink} to="/projects">
+              案件一覧へ戻る
+            </Link>
+            <h1 className={styles.title}>{project.name}</h1>
+            <p className={styles.description}>
+              プロジェクト番号: {project.projectNumber}
+              <br />
+              PM、進捗、体制、関連システムをまとめて確認できる案件詳細です。
+            </p>
+            {relatedSystems.length > 0 ? (
+              <div className={styles.systemChipList}>
+                {relatedSystems.map((system) => (
+                  <span className={styles.systemChip} key={system.id}>
+                    {system.name}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className={styles.heroActions}>

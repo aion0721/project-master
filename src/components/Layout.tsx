@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useUserSession } from '../store/useUserSession'
+import { EntityIcon, type EntityIconKind } from './EntityIcon'
 import { Button } from './ui/Button'
 import styles from './Layout.module.css'
 
 interface NavigationItem {
   to: string
   label: string
+  icon: EntityIconKind
   isActive: (pathname: string) => boolean
 }
 
@@ -22,11 +24,13 @@ const navigationSections: NavigationSection[] = [
       {
         to: '/projects',
         label: '一覧',
+        icon: 'project',
         isActive: (pathname) => pathname === '/projects' || /^\/projects\/[^/]+$/.test(pathname),
       },
       {
         to: '/cross-project',
         label: '横断ビュー',
+        icon: 'project',
         isActive: (pathname) => pathname === '/cross-project',
       },
     ],
@@ -37,11 +41,13 @@ const navigationSections: NavigationSection[] = [
       {
         to: '/members',
         label: 'メンバー一覧',
+        icon: 'member',
         isActive: (pathname) => pathname === '/members' || pathname === '/members/new',
       },
       {
         to: '/members/hierarchy',
         label: '体制図',
+        icon: 'member',
         isActive: (pathname) => pathname === '/members/hierarchy',
       },
     ],
@@ -52,31 +58,49 @@ const navigationSections: NavigationSection[] = [
       {
         to: '/systems',
         label: 'システム一覧',
+        icon: 'system',
         isActive: (pathname) => pathname === '/systems' || pathname === '/systems/new',
       },
       {
         to: '/systems/relations',
         label: '関係一覧',
+        icon: 'system',
         isActive: (pathname) => pathname === '/systems/relations',
       },
       {
         to: '/systems/diagram',
         label: '関連図',
+        icon: 'system',
         isActive: (pathname) => pathname === '/systems/diagram',
       },
     ],
   },
 ]
 
+const sidebarPinnedStorageKey = 'project-master:sidebar-pinned'
+
 export function Layout() {
   const location = useLocation()
   const { currentUser, isLoading, error, login, logout } = useUserSession()
   const [memberKey, setMemberKey] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isSidebarPinned, setIsSidebarPinned] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return window.localStorage.getItem(sidebarPinnedStorageKey) === 'true'
+  })
+  const [isSidebarPreviewed, setIsSidebarPreviewed] = useState(false)
+  const isSidebarExpanded = isSidebarPinned || isSidebarPreviewed
+
+  useEffect(() => {
+    window.localStorage.setItem(sidebarPinnedStorageKey, String(isSidebarPinned))
+  }, [isSidebarPinned])
 
   async function handleLogin() {
     if (!memberKey.trim()) {
-      setSubmitError('利用メンバーIDまたは名前を入力してください。')
+      setSubmitError('利用メンバー ID または名前を入力してください。')
       return
     }
 
@@ -92,47 +116,85 @@ export function Layout() {
     }
   }
 
+  function previewSidebar() {
+    if (!isSidebarPinned) {
+      setIsSidebarPreviewed(true)
+    }
+  }
+
+  function collapseSidebarPreview() {
+    if (!isSidebarPinned) {
+      setIsSidebarPreviewed(false)
+    }
+  }
+
   return (
-    <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+    <div className={`${styles.shell} ${isSidebarExpanded ? styles.shellExpanded : styles.shellRail}`}>
+      <aside
+        className={`${styles.sidebar} ${
+          isSidebarExpanded ? styles.sidebarExpanded : styles.sidebarRail
+        }`}
+        data-state={isSidebarExpanded ? 'expanded' : 'rail'}
+        onBlur={(event) => {
+          if (!isSidebarPinned && !event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setIsSidebarPreviewed(false)
+          }
+        }}
+        onFocus={previewSidebar}
+        onMouseEnter={previewSidebar}
+        onMouseLeave={collapseSidebarPreview}
+      >
+        <button
+          aria-label={isSidebarPinned ? 'サイドバーの固定を解除する' : 'サイドバーを固定する'}
+          className={styles.sidebarPinButton}
+          data-testid="layout-sidebar-pin"
+          onClick={() => setIsSidebarPinned((current) => !current)}
+          type="button"
+        >
+          <span className={styles.sidebarPinIcon}>{isSidebarPinned ? 'X' : 'PIN'}</span>
+          <span className={styles.sidebarPinLabel}>{isSidebarPinned ? '固定解除' : '固定'}</span>
+        </button>
+
         <div className={styles.brand}>
           <img alt="Project Master" className={styles.brandLogo} src="/logo.svg" />
-          <div>
+          <div className={styles.brandCopy}>
             <p className={styles.brandTitle}>Project Master</p>
-            <p className={styles.brandText}>
-              案件、体制、システムを一画面で比較できる管理アプリ
-            </p>
+            <p className={styles.brandText}>案件、体制、システムを一画面で比較できる管理アプリ</p>
           </div>
         </div>
 
-        <nav className={styles.navigation}>
-          {navigationSections.map((section) => (
-            <div className={styles.navSection} key={section.title}>
-              <p className={styles.navSectionTitle}>{section.title}</p>
-              <div className={styles.navSectionItems}>
-                {section.items.map((item) => {
-                  const isActive = item.isActive(location.pathname)
+        <div className={styles.sidebarScrollable}>
+          <nav className={styles.navigation}>
+            {navigationSections.map((section) => (
+              <div className={styles.navSection} key={section.title}>
+                <p className={styles.navSectionTitle}>{section.title}</p>
+                <div className={styles.navSectionItems}>
+                  {section.items.map((item) => {
+                    const isActive = item.isActive(location.pathname)
 
-                  return (
-                    <NavLink
-                      key={item.to}
-                      className={() => (isActive ? `${styles.navItem} ${styles.active}` : styles.navItem)}
-                      to={item.to}
-                    >
-                      {item.label}
-                    </NavLink>
-                  )
-                })}
+                    return (
+                      <NavLink
+                        aria-label={item.label}
+                        key={item.to}
+                        className={() => (isActive ? `${styles.navItem} ${styles.active}` : styles.navItem)}
+                        to={item.to}
+                      >
+                        <EntityIcon className={styles.navItemIcon} kind={item.icon} />
+                        <span className={styles.navItemLabel}>{item.label}</span>
+                      </NavLink>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
 
-        <div className={styles.sidebarCard}>
-          <p className={styles.sidebarCardLabel}>表示メモ</p>
-          <p className={styles.sidebarCardText}>
-            案件一覧では進捗とPM、横断ビューでは案件の重なり、システム一覧では影響範囲を比較できます。
-          </p>
+          <div className={styles.sidebarCard}>
+            <p className={styles.sidebarCardLabel}>表示メモ</p>
+            <p className={styles.sidebarCardText}>
+              案件一覧では進捗と PM、横断ビューでは案件の重なり、システム一覧では影響範囲を比較できます。
+            </p>
+          </div>
         </div>
 
         <div className={styles.userCard}>
@@ -147,7 +209,7 @@ export function Layout() {
                 </span>
               </div>
               <p className={styles.userCardText}>
-                一覧と横断ビューでブックマーク案件と既定フィルターを利用できます。
+                一覧と横断ビューでブックマーク案件と既定値フィルターを利用できます。
               </p>
               <Button onClick={logout} size="small" variant="secondary">
                 利用解除
@@ -177,7 +239,7 @@ export function Layout() {
         </div>
       </aside>
 
-      <main className={styles.content}>
+      <main className={`${styles.content} ${isSidebarExpanded ? '' : styles.contentExpanded}`}>
         <Outlet />
       </main>
     </div>

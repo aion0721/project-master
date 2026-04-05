@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { EntityIcon } from '../../components/EntityIcon'
 import { MemberHierarchyTree } from '../../components/MemberHierarchyTree'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -156,11 +157,16 @@ export function MemberHierarchyPage() {
   return (
     <div className={pageStyles.page}>
       <Panel variant="hero">
-        <p className={pageStyles.eyebrow}>Organization View</p>
-        <h1 className={pageStyles.title}>メンバー体制図</h1>
-        <p className={pageStyles.description}>
-          メンバーを 1 人選ぶと、その人までの上位系統と配下メンバーを組織ツリーで表示します。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="member" />
+          <div className={pageStyles.heroHeadingBody}>
+            <p className={pageStyles.eyebrow}>Organization View</p>
+            <h1 className={pageStyles.title}>メンバー体制図</h1>
+            <p className={pageStyles.description}>
+              メンバーを 1 人選ぶと、その人までの上位系統と配下メンバーを組織ツリーで表示します。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel>

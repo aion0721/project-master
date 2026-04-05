@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -117,11 +118,16 @@ export function SystemRelationManagementPage() {
   return (
     <div className={pageStyles.page}>
       <Panel variant="hero">
-        <p className={pageStyles.eyebrow}>System Relations</p>
-        <h1 className={pageStyles.title}>関係一覧</h1>
-        <p className={pageStyles.description}>
-          システム間の接続元と接続先を管理します。関連図の矢印はここで定義した向きで表示されます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="system" />
+          <div className={pageStyles.heroHeadingBody}>
+            <p className={pageStyles.eyebrow}>System Relations</p>
+            <h1 className={pageStyles.title}>関係一覧</h1>
+            <p className={pageStyles.description}>
+              システム間の接続元と接続先を管理します。関連図の矢印はここで定義した向きで表示されます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel>

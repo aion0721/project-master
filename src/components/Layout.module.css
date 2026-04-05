@@ -1,19 +1,95 @@
 .shell {
+  position: relative;
   display: grid;
+  height: 100vh;
+  overflow: hidden;
+  transition: grid-template-columns 180ms ease;
+}
+
+.shellExpanded {
   grid-template-columns: 280px minmax(0, 1fr);
-  min-height: 100vh;
+}
+
+.shellRail {
+  grid-template-columns: 76px minmax(0, 1fr);
 }
 
 .sidebar {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 24px;
-  padding: 28px 24px;
+  height: 100vh;
+  padding: 24px 16px 20px;
   background:
-    linear-gradient(180deg, rgba(9, 30, 66, 0.96) 0%, rgba(14, 54, 90, 0.96) 100%),
+    linear-gradient(180deg, rgba(9, 30, 66, 0.97) 0%, rgba(14, 54, 90, 0.97) 100%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 60%);
   color: #eff6ff;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  transition:
+    padding 180ms ease,
+    gap 180ms ease;
+}
+
+.sidebarExpanded {
+  padding-right: 24px;
+  padding-left: 24px;
+}
+
+.sidebarRail {
+  gap: 18px;
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.sidebarPinButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  width: 100%;
+  padding: 0 10px;
+  border: 1px solid rgba(191, 219, 254, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #eff6ff;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease,
+    border-color 140ms ease;
+}
+
+.sidebarPinButton:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(191, 219, 254, 0.3);
+}
+
+.sidebarPinButton:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.42);
+  outline-offset: 2px;
+}
+
+.sidebarPinButton:active {
+  transform: translateY(1px);
+}
+
+.sidebarPinIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.sidebarPinLabel {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .brand {
@@ -30,6 +106,10 @@
   filter: drop-shadow(0 10px 18px rgba(9, 30, 66, 0.28));
 }
 
+.brandCopy {
+  min-width: 0;
+}
+
 .brandTitle {
   margin: 0;
   font-size: 20px;
@@ -41,6 +121,15 @@
   color: rgba(239, 246, 255, 0.72);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.sidebarScrollable {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .navigation {
@@ -74,7 +163,7 @@
   display: flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 14px 0 24px;
+  padding: 0 14px;
   border-radius: 14px;
   color: rgba(239, 246, 255, 0.82);
   font-weight: 600;
@@ -84,6 +173,21 @@
 .navItem:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
+}
+
+.navItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 10px rgba(9, 30, 66, 0.24));
+}
+
+.navItemLabel {
+  margin-left: 10px;
+  white-space: nowrap;
 }
 
 .active {
@@ -117,14 +221,19 @@
 
 .content {
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
   padding: 28px;
+}
+
+.contentExpanded {
+  padding-left: 24px;
 }
 
 .userCard {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: auto;
   padding: 16px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.1);
@@ -192,16 +301,113 @@
   line-height: 1.5;
 }
 
+.sidebarRail .sidebarPinButton {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.sidebarRail .sidebarPinLabel,
+.sidebarRail .brandCopy,
+.sidebarRail .navSectionTitle,
+.sidebarRail .navItemLabel,
+.sidebarRail .sidebarCard,
+.sidebarRail .userCard {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sidebarRail .brand {
+  justify-content: center;
+}
+
+.sidebarRail .navigation {
+  gap: 12px;
+}
+
+.sidebarRail .navSection {
+  gap: 6px;
+}
+
+.sidebarRail .navSectionItems {
+  align-items: center;
+}
+
+.sidebarRail .navItem {
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.sidebarRail .navItemIcon {
+  width: 28px;
+  height: 28px;
+}
+
+.sidebarRail .sidebarScrollable {
+  gap: 16px;
+  padding-right: 0;
+}
+
 @media (max-width: 960px) {
-  .shell {
+  .shell,
+  .shellExpanded,
+  .shellRail {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 
-  .sidebar {
+  .sidebar,
+  .sidebarExpanded,
+  .sidebarRail {
     position: sticky;
     top: 0;
     z-index: 10;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    gap: 20px;
     padding: 20px;
+  }
+
+  .sidebarPinButton,
+  .sidebarRail .sidebarPinButton {
+    justify-content: center;
+    padding: 0 10px;
+  }
+
+  .sidebarRail .sidebarPinLabel,
+  .sidebarRail .brandCopy,
+  .sidebarRail .navSectionTitle,
+  .sidebarRail .navItemLabel,
+  .sidebarRail .sidebarCard,
+  .sidebarRail .userCard {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .sidebarRail .brand {
+    justify-content: flex-start;
+  }
+
+  .sidebarRail .navSectionItems {
+    align-items: stretch;
+  }
+
+  .sidebarRail .navItem {
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 14px;
+  }
+
+  .sidebarScrollable {
+    overflow: visible;
+    padding-right: 0;
   }
 
   .navigation {
@@ -213,7 +419,9 @@
     min-width: 220px;
   }
 
-  .content {
+  .content,
+  .contentExpanded {
+    overflow: visible;
     padding: 20px;
   }
 }

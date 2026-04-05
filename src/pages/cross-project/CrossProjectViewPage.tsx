@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import { useUserSession } from '../../store/useUserSession'
+import pageStyles from '../../styles/page.module.css'
 import type { Project } from '../../types/project'
 import { allWorkStatuses, getMemberDefaultProjectStatusFilters } from '../../utils/userPreferences'
 import { getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../../utils/projectUtils'
@@ -118,12 +120,15 @@ export function CrossProjectViewPage() {
   return (
     <div className={styles.page}>
       <Panel className={styles.hero} variant="hero">
-        <div>
-          <p className={styles.eyebrow}>Cross Project Timeline</p>
-          <h1 className={styles.title}>複数案件横断ビュー</h1>
-          <p className={styles.description}>
-            複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを切り替えると、利用中メンバーのブックマーク案件だけも見られます。
-          </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="project" />
+          <div className={pageStyles.heroHeadingBody}>
+            <p className={styles.eyebrow}>Cross Project Timeline</p>
+            <h1 className={styles.title}>複数案件横断ビュー</h1>
+            <p className={styles.description}>
+              複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを切り替えると、利用中メンバーのブックマーク案件だけも見られます。
+            </p>
+          </div>
 
           <div className={styles.filterRow}>
             <div className={styles.toggleGroup}>

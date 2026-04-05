@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
+import pageStyles from '../../styles/page.module.css'
 import type { CreateSystemInput } from '../../types/project'
 import {
   buildInitialSystemForm,
@@ -78,10 +80,15 @@ export function SystemCreatePage() {
         <Button className={styles.backButton} size="small" to="/systems" variant="secondary">
           システム一覧へ戻る
         </Button>
-        <h1 className={styles.title}>システム追加</h1>
-        <p className={styles.description}>
-          システムID、名称、カテゴリ、オーナー、メモを登録します。登録後は案件との紐付けにも利用できます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="system" />
+          <div className={pageStyles.heroHeadingBody}>
+            <h1 className={styles.title}>システム追加</h1>
+            <p className={styles.description}>
+              システムID、名称、カテゴリ、オーナー、メモを登録します。登録後は案件との紐付けにも利用できます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel className={styles.section}>

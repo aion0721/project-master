@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { EntityIcon } from '../../components/EntityIcon'
 import { ProjectTable } from '../../components/ProjectTable'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import { useUserSession } from '../../store/useUserSession'
+import pageStyles from '../../styles/page.module.css'
 import type { Project } from '../../types/project'
 import { allWorkStatuses, getMemberDefaultProjectStatusFilters } from '../../utils/userPreferences'
 import { getProjectCurrentPhase, getProjectPm } from '../../utils/projectUtils'
@@ -147,12 +149,15 @@ export function ProjectListPage() {
     <div className={styles.page}>
       <Panel className={styles.hero} variant="hero">
         <div className={styles.heroHeader}>
-          <div>
-            <p className={styles.eyebrow}>Project Portfolio</p>
-            <h1 className={styles.title}>案件一覧</h1>
-            <p className={styles.description}>
-              進捗、体制、関連システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
-            </p>
+          <div className={pageStyles.heroHeading}>
+            <EntityIcon className={pageStyles.heroIcon} kind="project" />
+            <div className={pageStyles.heroHeadingBody}>
+              <p className={styles.eyebrow}>Project Portfolio</p>
+              <h1 className={styles.title}>案件一覧</h1>
+              <p className={styles.description}>
+                進捗、体制、関連システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
+              </p>
+            </div>
           </div>
 
           <Button to="/projects/new">案件を追加</Button>

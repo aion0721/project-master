@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
+import pageStyles from '../../styles/page.module.css'
 import type { CreateMemberInput } from '../../types/project'
 import {
   buildInitialMemberForm,
@@ -85,10 +87,15 @@ export function MemberCreatePage() {
         <Button className={styles.backButton} size="small" to="/members" variant="secondary">
           メンバー一覧へ戻る
         </Button>
-        <h1 className={styles.title}>メンバー追加</h1>
-        <p className={styles.description}>
-          ID、名前、ロール、上司を指定してメンバーを登録します。登録後は一覧と体制図に反映されます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="member" />
+          <div className={pageStyles.heroHeadingBody}>
+            <h1 className={styles.title}>メンバー追加</h1>
+            <p className={styles.description}>
+              ID、名前、ロール、上司を指定してメンバーを登録します。登録後は一覧と体制図に反映されます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel className={styles.section}>

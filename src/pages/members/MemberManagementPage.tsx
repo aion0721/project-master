@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -123,11 +124,16 @@ export function MemberManagementPage() {
   return (
     <div className={pageStyles.page}>
       <Panel variant="hero">
-        <p className={pageStyles.eyebrow}>Member Directory</p>
-        <h1 className={pageStyles.title}>メンバー管理</h1>
-        <p className={pageStyles.description}>
-          案件で利用するメンバーの編集、削除を行います。上司設定は体制ツリーにも反映されます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="member" />
+          <div className={pageStyles.heroHeadingBody}>
+            <p className={pageStyles.eyebrow}>Member Directory</p>
+            <h1 className={pageStyles.title}>メンバー管理</h1>
+            <p className={pageStyles.description}>
+              案件で利用するメンバーの編集、削除を行います。上司設定は体制ツリーにも反映されます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel>

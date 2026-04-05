@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
@@ -215,11 +216,16 @@ export function SystemLandscapePage() {
   return (
     <div className={pageStyles.page}>
       <Panel variant="hero">
-        <p className={pageStyles.eyebrow}>System Diagram</p>
-        <h1 className={pageStyles.title}>システム関連図</h1>
-        <p className={pageStyles.description}>
-          システム間のつながりを矢印で表示します。個別ビューでは、上流から自分、下流への流れを3列で確認できます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="system" />
+          <div className={pageStyles.heroHeadingBody}>
+            <p className={pageStyles.eyebrow}>System Diagram</p>
+            <h1 className={pageStyles.title}>システム関連図</h1>
+            <p className={pageStyles.description}>
+              システム間のつながりを矢印で表示します。個別ビューでは、上流から自分、下流への流れを3列で確認できます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel>

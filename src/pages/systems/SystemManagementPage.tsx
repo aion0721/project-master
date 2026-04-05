@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -114,11 +115,16 @@ export function SystemManagementPage() {
   return (
     <div className={pageStyles.page}>
       <Panel variant="hero">
-        <p className={pageStyles.eyebrow}>System Directory</p>
-        <h1 className={pageStyles.title}>システム一覧</h1>
-        <p className={pageStyles.description}>
-          案件が関係するシステムを一覧で管理します。追加は専用画面から行い、関係管理と関連図は別ビューで確認できます。
-        </p>
+        <div className={pageStyles.heroHeading}>
+          <EntityIcon className={pageStyles.heroIcon} kind="system" />
+          <div className={pageStyles.heroHeadingBody}>
+            <p className={pageStyles.eyebrow}>System Directory</p>
+            <h1 className={pageStyles.title}>システム一覧</h1>
+            <p className={pageStyles.description}>
+              案件が関係するシステムを一覧で管理します。追加は専用画面から行い、関係管理と関連図は別ビューで確認できます。
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <Panel>
