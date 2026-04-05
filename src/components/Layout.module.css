@@ -11,7 +11,7 @@
 }
 
 .shellRail {
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -38,19 +38,19 @@
 }
 
 .sidebarRail {
-  gap: 18px;
-  padding-right: 10px;
-  padding-left: 10px;
+  gap: 24px;
+  padding-right: 24px;
+  padding-left: 24px;
 }
 
 .sidebarPinButton {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   min-height: 36px;
   width: 100%;
-  padding: 0 10px;
+  padding: 0 14px;
   border: 1px solid rgba(191, 219, 254, 0.2);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.1);
@@ -81,9 +81,8 @@
   align-items: center;
   justify-content: center;
   min-width: 24px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .sidebarPinLabel {
@@ -179,8 +178,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
   filter: drop-shadow(0 6px 10px rgba(9, 30, 66, 0.24));
 }
@@ -301,15 +303,9 @@
   line-height: 1.5;
 }
 
-.sidebarRail .sidebarPinButton {
-  padding-right: 0;
-  padding-left: 0;
-}
-
 .sidebarRail .sidebarPinLabel,
 .sidebarRail .brandCopy,
 .sidebarRail .navSectionTitle,
-.sidebarRail .navItemLabel,
 .sidebarRail .sidebarCard,
 .sidebarRail .userCard {
   opacity: 0;
@@ -317,38 +313,23 @@
   pointer-events: none;
 }
 
+.sidebarRail .sidebarPinLabel,
+.sidebarRail .brandCopy,
+.sidebarRail .navSectionTitle {
+  display: none;
+}
+
+.sidebarRail .navItemLabel {
+  display: none;
+}
+
+.sidebarRail .sidebarCard,
+.sidebarRail .userCard {
+  display: none;
+}
+
 .sidebarRail .brand {
-  justify-content: center;
-}
-
-.sidebarRail .navigation {
-  gap: 12px;
-}
-
-.sidebarRail .navSection {
-  gap: 6px;
-}
-
-.sidebarRail .navSectionItems {
-  align-items: center;
-}
-
-.sidebarRail .navItem {
-  justify-content: center;
-  width: 100%;
-  min-height: 40px;
-  padding: 0;
-  border-radius: 12px;
-}
-
-.sidebarRail .navItemIcon {
-  width: 28px;
-  height: 28px;
-}
-
-.sidebarRail .sidebarScrollable {
-  gap: 16px;
-  padding-right: 0;
+  justify-content: flex-start;
 }
 
 @media (max-width: 960px) {
@@ -388,6 +369,13 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+  }
+
+  .sidebarRail .sidebarPinLabel,
+  .sidebarRail .brandCopy,
+  .sidebarRail .navSectionTitle,
+  .sidebarRail .navItemLabel {
+    display: initial;
   }
 
   .sidebarRail .brand {

@@ -12,6 +12,10 @@
     linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
 }
 
+.heroMain {
+  min-width: 0;
+}
+
 .section {
   min-width: 0;
 }

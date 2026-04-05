@@ -1,29 +1,35 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { SystemRelationManagementPage } from './SystemRelationManagementPage'
 
 describe('SystemRelationManagementPage', () => {
-  it('関連システムを登録して削除できる', async () => {
+  it('関連システムを追加して削除できる', async () => {
     mockProjectApi()
 
     renderWithProviders(<SystemRelationManagementPage />, {
       initialEntries: ['/systems/relations'],
     })
 
-    await screen.findByRole('heading', { name: '関係一覧' })
+    const selects = await screen.findAllByRole('combobox')
+    expect(
+      within(selects[0]).getByRole('option', { name: 'sys-accounting / 会計基盤' }),
+    ).toBeInTheDocument()
+    expect(
+      within(selects[1]).getByRole('option', { name: 'sys-sales-bi / 営業管理BI' }),
+    ).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('接続元システム'), {
+    fireEvent.change(selects[0], {
       target: { value: 'sys-accounting' },
     })
-    fireEvent.change(screen.getByLabelText('接続先システム'), {
+    fireEvent.change(selects[1], {
       target: { value: 'sys-sales-bi' },
     })
-    fireEvent.change(screen.getByLabelText('メモ'), {
-      target: { value: '会計データを分析基盤へ転送' },
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '会計データを営業管理BIへ連携' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '関連システムを登録' }))
+    fireEvent.click(screen.getAllByRole('button')[0])
 
     const relationRow = await screen.findByTestId('system-relation-row-rel-004')
     expect(relationRow).toHaveTextContent('会計基盤')

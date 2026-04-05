@@ -1,11 +1,11 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { MemberCreatePage } from './MemberCreatePage'
 
 describe('MemberCreatePage', () => {
-  it('メンバー追加フォームを送信して登録 API を呼び出す', async () => {
+  it('追加フォームを送信して登録APIを呼ぶ', async () => {
     const fetchMock = mockProjectApi()
 
     renderWithProviders(<MemberCreatePage />, {
@@ -15,11 +15,21 @@ describe('MemberCreatePage', () => {
 
     await screen.findByRole('heading', { name: 'メンバー追加' })
 
+    expect(
+      within(screen.getByLabelText('上司')).getByRole('option', { name: 'm1 / 田中 (PM)' }),
+    ).toBeInTheDocument()
+
     fireEvent.change(screen.getByLabelText('メンバーID'), {
       target: { value: 'm11' },
     })
     fireEvent.change(screen.getByLabelText('名前'), {
-      target: { value: '佐々木' },
+      target: { value: '山田 花子' },
+    })
+    fireEvent.change(screen.getByLabelText('部署コード'), {
+      target: { value: 'DEP-APP' },
+    })
+    fireEvent.change(screen.getByLabelText('部署名'), {
+      target: { value: 'アプリ開発部' },
     })
     fireEvent.change(screen.getByLabelText('ロール'), {
       target: { value: 'アプリエンジニア' },
@@ -35,6 +45,14 @@ describe('MemberCreatePage', () => {
         expect.stringContaining('/api/members'),
         expect.objectContaining({
           method: 'POST',
+          body: JSON.stringify({
+            id: 'm11',
+            name: '山田 花子',
+            departmentCode: 'DEP-APP',
+            departmentName: 'アプリ開発部',
+            role: 'アプリエンジニア',
+            managerId: 'm1',
+          }),
         }),
       ])
     })

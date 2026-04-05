@@ -151,7 +151,9 @@ export function Layout() {
           onClick={() => setIsSidebarPinned((current) => !current)}
           type="button"
         >
-          <span className={styles.sidebarPinIcon}>{isSidebarPinned ? 'X' : 'PIN'}</span>
+          <span aria-hidden="true" className={styles.sidebarPinIcon}>
+            {isSidebarPinned ? '📌' : '📍'}
+          </span>
           <span className={styles.sidebarPinLabel}>{isSidebarPinned ? '固定解除' : '固定'}</span>
         </button>
 
@@ -175,8 +177,8 @@ export function Layout() {
                     return (
                       <NavLink
                         aria-label={item.label}
-                        key={item.to}
                         className={() => (isActive ? `${styles.navItem} ${styles.active}` : styles.navItem)}
+                        key={item.to}
                         to={item.to}
                       >
                         <EntityIcon className={styles.navItemIcon} kind={item.icon} />

@@ -30,6 +30,8 @@ function cloneFixtures() {
     events: events.map((event) => ({ ...event })),
     members: members.map((member) => ({
       ...member,
+      departmentCode: member.departmentCode,
+      departmentName: member.departmentName,
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
@@ -209,7 +211,13 @@ export function mockProjectApi() {
     if (requestUrl.endsWith('/api/members') && method === 'POST') {
       const body = JSON.parse(String(init?.body)) as CreateMemberInput
 
-      if (!body.id.trim() || !body.name.trim() || !body.role.trim()) {
+      if (
+        !body.id.trim() ||
+        !body.name.trim() ||
+        !body.departmentCode.trim() ||
+        !body.departmentName.trim() ||
+        !body.role.trim()
+      ) {
         return buildJsonResponse({ message: 'Missing required member fields' }, 400)
       }
 
@@ -227,6 +235,8 @@ export function mockProjectApi() {
       const member = {
         id: body.id.trim(),
         name: body.name.trim(),
+        departmentCode: body.departmentCode.trim(),
+        departmentName: body.departmentName.trim(),
         role: body.role.trim(),
         managerId: body.managerId ?? null,
         bookmarkedProjectIds: [],
@@ -770,7 +780,12 @@ export function mockProjectApi() {
         return buildJsonResponse({ message: 'Member not found' }, 404)
       }
 
-      if (!body.name.trim() || !body.role.trim()) {
+      if (
+        !body.name.trim() ||
+        !body.departmentCode.trim() ||
+        !body.departmentName.trim() ||
+        !body.role.trim()
+      ) {
         return buildJsonResponse({ message: 'Missing required member fields' }, 400)
       }
 
@@ -786,6 +801,8 @@ export function mockProjectApi() {
       }
 
       member.name = body.name.trim()
+      member.departmentCode = body.departmentCode.trim()
+      member.departmentName = body.departmentName.trim()
       member.role = body.role.trim()
       member.managerId = body.managerId ?? null
 

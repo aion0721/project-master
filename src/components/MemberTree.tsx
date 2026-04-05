@@ -94,7 +94,9 @@ function MemberTreeNodeView({ node }: { node: MemberNode }) {
       <div className={styles.nodeCard}>
         <div className={styles.nodeHeader}>
           <span className={styles.memberName}>{node.member.name}</span>
-          <span className={styles.memberRole}>{node.member.role}</span>
+          <span className={styles.memberRole}>
+            {node.member.departmentName} / {node.member.role}
+          </span>
         </div>
 
         <div className={styles.tagList}>

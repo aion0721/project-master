@@ -70,7 +70,7 @@ export function CrossProjectViewPage() {
       await saveDefaultProjectStatusFilters(selectedStatuses)
       setSaveFeedback('現在の状態フィルターを既定値として保存しました。')
     } catch {
-      setSaveFeedback('既定フィルターの保存に失敗しました。')
+      setSaveFeedback('既定値フィルターの保存に失敗しました。')
     } finally {
       setIsSavingDefaults(false)
     }
@@ -80,7 +80,7 @@ export function CrossProjectViewPage() {
     return (
       <Panel className={styles.section}>
         <h1 className={styles.title}>複数案件横断ビューを読み込み中です</h1>
-        <p className={styles.description}>バックエンドから横断表示用データを取得しています。</p>
+        <p className={styles.description}>横断表示に必要な案件データを取得しています。</p>
       </Panel>
     )
   }
@@ -98,7 +98,8 @@ export function CrossProjectViewPage() {
     isBookmarkMode && hasNoProjectsInMode
       ? {
           title: 'ブックマーク案件はまだありません',
-          description: '案件一覧または案件詳細から案件をブックマークすると、ここで横断表示できます。',
+          description:
+            '案件一覧または案件詳細から案件をブックマークすると、ここで横断表示できます。',
         }
       : hasNoStatusesSelected
         ? {
@@ -108,26 +109,29 @@ export function CrossProjectViewPage() {
         : hasNoStatusMatches
           ? {
               title: '条件に一致する案件はありません',
-              description: '状態フィルターか表示モードを調整してください。',
+              description: '状態フィルターや表示モードを調整してください。',
             }
           : hasNoSearchResults
             ? {
                 title: '検索条件に一致する案件がありません',
-                description: 'プロジェクト番号または案件名の検索条件を見直してください。',
+                description: 'プロジェクト番号または案件名で検索条件を見直してください。',
               }
             : null
 
   return (
     <div className={styles.page}>
       <Panel className={styles.hero} variant="hero">
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="project" />
-          <div className={pageStyles.heroHeadingBody}>
-            <p className={styles.eyebrow}>Cross Project Timeline</p>
-            <h1 className={styles.title}>複数案件横断ビュー</h1>
-            <p className={styles.description}>
-              複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを切り替えると、利用中メンバーのブックマーク案件だけも見られます。
-            </p>
+        <div className={styles.heroMain}>
+          <div className={pageStyles.heroHeading}>
+            <EntityIcon className={pageStyles.heroIcon} kind="project" />
+            <div className={pageStyles.heroHeadingBody}>
+              <p className={styles.eyebrow}>Cross Project Timeline</p>
+              <h1 className={styles.title}>複数案件横断ビュー</h1>
+              <p className={styles.description}>
+                複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを切り替えると、
+                利用中メンバーのブックマーク案件だけも見られます。
+              </p>
+            </div>
           </div>
 
           <div className={styles.filterRow}>
@@ -165,7 +169,9 @@ export function CrossProjectViewPage() {
           <div className={styles.statusFilters}>
             <div className={styles.statusFilterHeader}>
               <p className={styles.statusFilterTitle}>状態フィルター</p>
-              <p className={styles.statusFilterHint}>複数選択できます。横断ビューでも完了案件を外して見られます。</p>
+              <p className={styles.statusFilterHint}>
+                複数選択できます。横断ビューでも完了案件を外して見られます。
+              </p>
             </div>
             <div className={styles.statusFilterActions}>
               <Button
@@ -176,12 +182,7 @@ export function CrossProjectViewPage() {
               >
                 {isSavingDefaults ? '保存中...' : 'この状態を既定値に保存'}
               </Button>
-              <p className={styles.statusFilterMeta}>
-                {saveFeedback ??
-                  (currentUser
-                    ? '一覧画面でも同じ既定フィルターが使われます。'
-                    : '利用メンバーを選択すると既定値を保存できます。')}
-              </p>
+              <p className={styles.statusFilterMeta}>{saveFeedback ?? '利用メンバーを選択すると既定値を保存できます。'}</p>
             </div>
             <div className={styles.statusCheckboxGroup}>
               {allWorkStatuses.map((status) => (

@@ -46,6 +46,10 @@ export function toNullableValue(value: string) {
   return value.trim() ? value.trim() : null
 }
 
+export function formatSystemOptionLabel(system: ManagedSystem) {
+  return `${system.id} / ${system.name}`
+}
+
 export function validateSystemInput(input: Pick<SystemFormState, 'id' | 'name' | 'category'>) {
   if (!input.id.trim() || !input.name.trim() || !input.category.trim()) {
     return 'システムID、名称、カテゴリを入力してください。'

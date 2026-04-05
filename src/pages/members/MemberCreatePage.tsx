@@ -8,6 +8,7 @@ import pageStyles from '../../styles/page.module.css'
 import type { CreateMemberInput } from '../../types/project'
 import {
   buildInitialMemberForm,
+  formatMemberOptionLabel,
   toNullableManagerId,
   validateMemberInput,
 } from './memberFormUtils'
@@ -50,6 +51,8 @@ export function MemberCreatePage() {
       const input: CreateMemberInput = {
         id: formData.id.trim(),
         name: formData.name.trim(),
+        departmentCode: formData.departmentCode.trim(),
+        departmentName: formData.departmentName.trim(),
         role: formData.role.trim(),
         managerId: toNullableManagerId(formData.managerId),
       }
@@ -57,7 +60,7 @@ export function MemberCreatePage() {
       await createMember(input)
       navigate('/members')
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバー追加に失敗しました。')
+      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバーの追加に失敗しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -66,7 +69,7 @@ export function MemberCreatePage() {
   if (isLoading) {
     return (
       <Panel className={styles.section}>
-        <h1 className={styles.title}>メンバー追加画面を準備中です</h1>
+        <h1 className={styles.title}>メンバー追加画面を読み込み中です</h1>
         <p className={styles.description}>メンバー情報を読み込んでいます。</p>
       </Panel>
     )
@@ -92,7 +95,8 @@ export function MemberCreatePage() {
           <div className={pageStyles.heroHeadingBody}>
             <h1 className={styles.title}>メンバー追加</h1>
             <p className={styles.description}>
-              ID、名前、ロール、上司を指定してメンバーを登録します。登録後は一覧と体制図に反映されます。
+              ID、部署、ロール、上司を登録してメンバーを追加します。上司候補は `ID / 名前`
+              形式で表示するので、ID入力で選びやすくしています。
             </p>
           </div>
         </div>
@@ -103,6 +107,7 @@ export function MemberCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>メンバーID</span>
             <input
+              aria-label="メンバーID"
               className={styles.input}
               onChange={(event) => updateField('id', event.target.value)}
               placeholder="例: m11"
@@ -113,16 +118,40 @@ export function MemberCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>名前</span>
             <input
+              aria-label="名前"
               className={styles.input}
               onChange={(event) => updateField('name', event.target.value)}
-              placeholder="例: 佐々木"
+              placeholder="例: 山田 花子"
               value={formData.name}
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>部署コード</span>
+            <input
+              aria-label="部署コード"
+              className={styles.input}
+              onChange={(event) => updateField('departmentCode', event.target.value)}
+              placeholder="例: DEP-QA"
+              value={formData.departmentCode}
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>部署名</span>
+            <input
+              aria-label="部署名"
+              className={styles.input}
+              onChange={(event) => updateField('departmentName', event.target.value)}
+              placeholder="例: 品質保証部"
+              value={formData.departmentName}
             />
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>ロール</span>
             <input
+              aria-label="ロール"
               className={styles.input}
               onChange={(event) => updateField('role', event.target.value)}
               placeholder="例: アプリエンジニア"
@@ -133,6 +162,7 @@ export function MemberCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>上司</span>
             <select
+              aria-label="上司"
               className={styles.input}
               onChange={(event) => updateField('managerId', event.target.value)}
               value={formData.managerId}
@@ -140,16 +170,16 @@ export function MemberCreatePage() {
               <option value="">未設定</option>
               {sortedMembers.map((member) => (
                 <option key={member.id} value={member.id}>
-                  {member.name} ({member.role})
+                  {formatMemberOptionLabel(member)}
                 </option>
               ))}
             </select>
           </label>
 
           <div className={styles.noteCard}>
-            <p className={styles.noteTitle}>登録ルール</p>
+            <p className={styles.noteTitle}>入力ルール</p>
             <p className={styles.noteText}>
-              上司を指定すると体制図の親子関係にも使われます。メンバーIDは一意である必要があります。
+              部署コードは将来の部署名変更に備えるために保持します。メンバーIDは一意になる値を入力してください。
             </p>
           </div>
 

@@ -55,7 +55,8 @@ describe('CrossProjectViewPage', () => {
 
     await screen.findByRole('heading', { name: '複数案件横断ビュー' })
 
-    fireEvent.click(screen.getByLabelText('完了'))
+    const checkboxes = screen.getAllByRole('checkbox')
+    fireEvent.click(checkboxes[3])
 
     await waitFor(() => {
       expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
@@ -63,8 +64,8 @@ describe('CrossProjectViewPage', () => {
       expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByLabelText('未着手'))
-    fireEvent.click(screen.getByLabelText('進行中'))
+    fireEvent.click(checkboxes[0])
+    fireEvent.click(checkboxes[1])
 
     await waitFor(() => {
       expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
@@ -73,7 +74,7 @@ describe('CrossProjectViewPage', () => {
     })
   })
 
-  it('横断ビューでも状態フィルターの既定値を保存できる', async () => {
+  it('既定値として状態フィルターを保存できる', async () => {
     mockProjectApi()
     window.localStorage.setItem('project-master:user-id', 'm1')
 
@@ -83,7 +84,8 @@ describe('CrossProjectViewPage', () => {
 
     expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText('未着手'))
+    const checkboxes = screen.getAllByRole('checkbox')
+    fireEvent.click(checkboxes[0])
     fireEvent.click(screen.getByRole('button', { name: 'この状態を既定値に保存' }))
 
     await waitFor(() => {
@@ -99,8 +101,9 @@ describe('CrossProjectViewPage', () => {
     expect(await screen.findByRole('heading', { name: '複数案件横断ビュー' })).toBeInTheDocument()
 
     await waitFor(() => {
-      expect(screen.getByLabelText('未着手')).not.toBeChecked()
-      expect(screen.getByLabelText('遅延')).toBeChecked()
+      const persistedCheckboxes = screen.getAllByRole('checkbox')
+      expect(persistedCheckboxes[0]).not.toBeChecked()
+      expect(persistedCheckboxes[3]).toBeChecked()
     })
   })
 })

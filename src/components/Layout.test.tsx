@@ -12,17 +12,17 @@ function renderLayout(initialEntries: string[]) {
         <MemoryRouter initialEntries={initialEntries}>
           <Routes>
             <Route element={<Layout />}>
-              <Route path="/projects" element={<div>projects</div>} />
-              <Route path="/projects/new" element={<div>new project</div>} />
-              <Route path="/projects/:projectNumber" element={<div>project detail</div>} />
-              <Route path="/members" element={<div>members</div>} />
-              <Route path="/members/new" element={<div>new member</div>} />
-              <Route path="/members/hierarchy" element={<div>hierarchy</div>} />
-              <Route path="/systems" element={<div>systems</div>} />
-              <Route path="/systems/new" element={<div>new system</div>} />
-              <Route path="/systems/relations" element={<div>system relations</div>} />
-              <Route path="/systems/diagram" element={<div>system diagram</div>} />
-              <Route path="/cross-project" element={<div>cross project</div>} />
+              <Route element={<div>projects</div>} path="/projects" />
+              <Route element={<div>new project</div>} path="/projects/new" />
+              <Route element={<div>project detail</div>} path="/projects/:projectNumber" />
+              <Route element={<div>members</div>} path="/members" />
+              <Route element={<div>new member</div>} path="/members/new" />
+              <Route element={<div>hierarchy</div>} path="/members/hierarchy" />
+              <Route element={<div>systems</div>} path="/systems" />
+              <Route element={<div>new system</div>} path="/systems/new" />
+              <Route element={<div>system relations</div>} path="/systems/relations" />
+              <Route element={<div>system diagram</div>} path="/systems/diagram" />
+              <Route element={<div>cross project</div>} path="/cross-project" />
             </Route>
           </Routes>
         </MemoryRouter>

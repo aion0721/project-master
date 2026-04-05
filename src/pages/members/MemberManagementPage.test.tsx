@@ -12,14 +12,18 @@ describe('MemberManagementPage', () => {
       initialEntries: ['/members'],
     })
 
-    expect(await screen.findByRole('heading', { name: 'メンバー管理' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'メンバー一覧' })).toBeInTheDocument()
     expect(screen.getByTestId('member-row-m1')).toBeInTheDocument()
     expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
-    expect(within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '体制図' })).toHaveAttribute(
+    expect(within(screen.getByTestId('member-row-m1')).getByText('DEP-BIZ')).toBeInTheDocument()
+    expect(within(screen.getByTestId('member-row-m4')).getByText('m1 / 田中')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '体制図' }),
+    ).toHaveAttribute('href', '/members/hierarchy?memberId=m1')
+    expect(screen.getByRole('link', { name: 'メンバーを追加' })).toHaveAttribute(
       'href',
-      '/members/hierarchy?memberId=m1',
+      '/members/new',
     )
-    expect(screen.getByRole('link', { name: 'メンバーを追加' })).toHaveAttribute('href', '/members/new')
   })
 
   it('メンバーを編集できる', async () => {
@@ -29,19 +33,31 @@ describe('MemberManagementPage', () => {
       initialEntries: ['/members'],
     })
 
-    await screen.findByRole('heading', { name: 'メンバー管理' })
+    await screen.findByRole('heading', { name: 'メンバー一覧' })
 
     const editableRow = screen.getByTestId('member-row-m10')
 
     fireEvent.click(within(editableRow).getByTestId('edit-member-m10'))
 
-    fireEvent.change(within(editableRow).getByDisplayValue('伊藤'), {
-      target: { value: '伊藤 次郎' },
+    expect(
+      within(screen.getByLabelText('上司')).getByRole('option', { name: 'm1 / 田中 (PM)' }),
+    ).toBeInTheDocument()
+
+    fireEvent.change(within(editableRow).getByDisplayValue('DEP-QA'), {
+      target: { value: 'DEP-TEST' },
+    })
+    fireEvent.change(within(editableRow).getByDisplayValue('品質保証部'), {
+      target: { value: 'テスト推進部' },
+    })
+    fireEvent.change(screen.getByLabelText('上司'), {
+      target: { value: 'm2' },
     })
     fireEvent.click(within(editableRow).getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
-      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('伊藤 次郎')
+      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('DEP-TEST')
+      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('テスト推進部')
+      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('m2 / 山本')
     })
   })
 
@@ -55,7 +71,9 @@ describe('MemberManagementPage', () => {
       },
       body: JSON.stringify({
         id: 'm11',
-        name: '佐々木',
+        name: '山田 花子',
+        departmentCode: 'DEP-APP',
+        departmentName: 'アプリ開発部',
         role: 'アプリエンジニア',
         managerId: null,
       }),
@@ -73,5 +91,4 @@ describe('MemberManagementPage', () => {
       expect(screen.queryByTestId('member-row-m11')).not.toBeInTheDocument()
     })
   })
-
 })

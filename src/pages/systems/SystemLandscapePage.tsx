@@ -3,6 +3,7 @@ import { EntityIcon } from '../../components/EntityIcon'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
+import { formatSystemOptionLabel } from './systemFormUtils'
 import styles from './SystemLandscapePage.module.css'
 
 const nodeWidth = 220
@@ -248,7 +249,7 @@ export function SystemLandscapePage() {
           >
             {sortedSystems.map((system) => (
               <option key={system.id} value={system.id}>
-                {system.name}
+                {formatSystemOptionLabel(system)}
               </option>
             ))}
           </select>

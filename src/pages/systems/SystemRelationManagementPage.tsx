@@ -6,6 +6,7 @@ import { useProjectData } from '../../store/useProjectData'
 import type { CreateSystemRelationInput } from '../../types/project'
 import {
   buildInitialSystemRelationForm,
+  formatSystemOptionLabel,
   toNullableValue,
   validateRelationInput,
 } from './systemFormUtils'
@@ -152,7 +153,7 @@ export function SystemRelationManagementPage() {
                 <option value="">選択してください</option>
                 {sortedSystems.map((system) => (
                   <option key={system.id} value={system.id}>
-                    {system.name}
+                    {formatSystemOptionLabel(system)}
                   </option>
                 ))}
               </select>
@@ -168,7 +169,7 @@ export function SystemRelationManagementPage() {
                 <option value="">選択してください</option>
                 {sortedSystems.map((system) => (
                   <option key={system.id} value={system.id}>
-                    {system.name}
+                    {formatSystemOptionLabel(system)}
                   </option>
                 ))}
               </select>

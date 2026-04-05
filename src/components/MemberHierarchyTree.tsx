@@ -88,6 +88,7 @@ function MemberHierarchyNodeView({ node }: { node: HierarchyNode }) {
             </div>
             <div className={styles.memberMeta}>
               <span>{node.member.id}</span>
+              <span>{node.member.departmentName}</span>
               <span>{node.member.role}</span>
             </div>
           </div>

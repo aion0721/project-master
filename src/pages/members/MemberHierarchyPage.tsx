@@ -41,6 +41,7 @@ function renderMemberLevelCard({ member, isSelected, isPathNode }: MemberLevelCa
         </div>
         <div className={styles.memberMeta}>
           <span>{member.id}</span>
+          <span>{member.departmentName}</span>
           <span>{member.role}</span>
         </div>
       </div>

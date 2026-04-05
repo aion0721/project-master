@@ -5,7 +5,13 @@ import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import type { UpdateMemberInput } from '../../types/project'
 import pageStyles from '../../styles/page.module.css'
-import { buildEditForm, toNullableManagerId, validateMemberInput } from './memberFormUtils'
+import {
+  buildEditForm,
+  formatMemberOptionLabel,
+  formatMemberShortLabel,
+  toNullableManagerId,
+  validateMemberInput,
+} from './memberFormUtils'
 import type { MemberFormState } from './memberFormUtils'
 import styles from './MemberManagementPage.module.css'
 
@@ -17,8 +23,8 @@ export function MemberManagementPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const memberNameById = useMemo(
-    () => new Map(members.map((member) => [member.id, member.name])),
+  const memberById = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
     [members],
   )
 
@@ -72,6 +78,8 @@ export function MemberManagementPage() {
     try {
       const input: UpdateMemberInput = {
         name: editForm.name.trim(),
+        departmentCode: editForm.departmentCode.trim(),
+        departmentName: editForm.departmentName.trim(),
         role: editForm.role.trim(),
         managerId: toNullableManagerId(editForm.managerId),
       }
@@ -79,7 +87,7 @@ export function MemberManagementPage() {
       setEditingMemberId(null)
       setEditForm(null)
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバー更新に失敗しました。')
+      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバーの更新に失敗しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -97,7 +105,7 @@ export function MemberManagementPage() {
         setEditForm(null)
       }
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバー削除に失敗しました。')
+      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバーの削除に失敗しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -128,9 +136,10 @@ export function MemberManagementPage() {
           <EntityIcon className={pageStyles.heroIcon} kind="member" />
           <div className={pageStyles.heroHeadingBody}>
             <p className={pageStyles.eyebrow}>Member Directory</p>
-            <h1 className={pageStyles.title}>メンバー管理</h1>
+            <h1 className={pageStyles.title}>メンバー一覧</h1>
             <p className={pageStyles.description}>
-              案件で利用するメンバーの編集、削除を行います。上司設定は体制ツリーにも反映されます。
+              利用中のメンバーを一覧で管理します。上司は `ID / 名前`
+              表記でそろえているので、入力時も一覧確認時も迷いにくくしています。
             </p>
           </div>
         </div>
@@ -141,7 +150,7 @@ export function MemberManagementPage() {
           <div>
             <h2 className={pageStyles.sectionTitle}>登録済みメンバー</h2>
             <p className={pageStyles.sectionDescription}>
-              行ごとに編集できます。案件で利用中のメンバーは削除時に制約チェックを行います。
+              名前、部署、ロール、上司、関連案件数を確認できます。利用中のメンバーは削除前にチェックします。
             </p>
           </div>
           <Button to="/members/new" variant="secondary">
@@ -157,9 +166,11 @@ export function MemberManagementPage() {
               <tr>
                 <th>メンバーID</th>
                 <th>名前</th>
+                <th>部署コード</th>
+                <th>部署名</th>
                 <th>ロール</th>
                 <th>上司</th>
-                <th>関与案件数</th>
+                <th>関連案件数</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -167,6 +178,7 @@ export function MemberManagementPage() {
               {sortedMembers.map((member) => {
                 const isEditing = editingMemberId === member.id && editForm
                 const managerOptions = sortedMembers.filter((option) => option.id !== member.id)
+                const manager = member.managerId ? memberById.get(member.managerId) : null
 
                 return (
                   <tr data-testid={`member-row-${member.id}`} key={member.id}>
@@ -174,6 +186,7 @@ export function MemberManagementPage() {
                     <td>
                       {isEditing ? (
                         <input
+                          aria-label="名前"
                           className={styles.inlineInput}
                           onChange={(event) => updateEditField('name', event.target.value)}
                           value={editForm.name}
@@ -185,6 +198,31 @@ export function MemberManagementPage() {
                     <td>
                       {isEditing ? (
                         <input
+                          aria-label="部署コード"
+                          className={styles.inlineInput}
+                          onChange={(event) => updateEditField('departmentCode', event.target.value)}
+                          value={editForm.departmentCode}
+                        />
+                      ) : (
+                        member.departmentCode
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          aria-label="部署名"
+                          className={styles.inlineInput}
+                          onChange={(event) => updateEditField('departmentName', event.target.value)}
+                          value={editForm.departmentName}
+                        />
+                      ) : (
+                        member.departmentName
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          aria-label="ロール"
                           className={styles.inlineInput}
                           onChange={(event) => updateEditField('role', event.target.value)}
                           value={editForm.role}
@@ -196,6 +234,7 @@ export function MemberManagementPage() {
                     <td>
                       {isEditing ? (
                         <select
+                          aria-label="上司"
                           className={styles.inlineInput}
                           onChange={(event) => updateEditField('managerId', event.target.value)}
                           value={editForm.managerId}
@@ -203,12 +242,12 @@ export function MemberManagementPage() {
                           <option value="">未設定</option>
                           {managerOptions.map((option) => (
                             <option key={option.id} value={option.id}>
-                              {option.name}
+                              {formatMemberOptionLabel(option)}
                             </option>
                           ))}
                         </select>
-                      ) : member.managerId ? (
-                        memberNameById.get(member.managerId) ?? '未設定'
+                      ) : manager ? (
+                        formatMemberShortLabel(manager)
                       ) : (
                         '未設定'
                       )}
