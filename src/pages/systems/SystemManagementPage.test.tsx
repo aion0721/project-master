@@ -12,40 +12,34 @@ describe('SystemManagementPage', () => {
       initialEntries: ['/systems'],
     })
 
-    expect(await screen.findByRole('heading', { name: 'システム管理' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'システム一覧' })).toBeInTheDocument()
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('会計基盤')
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('基幹会計刷新')
+    expect(screen.getByRole('link', { name: 'システムを追加' })).toHaveAttribute('href', '/systems/new')
   })
 
-  it('システムを追加して編集、削除できる', async () => {
+  it('システムを編集、削除できる', async () => {
     mockProjectApi()
+
+    await fetch('/api/systems', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: 'sys-customer',
+        name: '顧客管理基盤',
+        category: '基盤',
+        ownerMemberId: 'm1',
+        note: '顧客情報を管理する基盤',
+      }),
+    })
 
     renderWithProviders(<SystemManagementPage />, {
       initialEntries: ['/systems'],
     })
 
-    await screen.findByRole('heading', { name: 'システム管理' })
-
-    fireEvent.change(screen.getByLabelText('システムID'), {
-      target: { value: 'sys-customer' },
-    })
-    fireEvent.change(screen.getByLabelText('名称'), {
-      target: { value: '顧客管理基盤' },
-    })
-    fireEvent.change(screen.getByLabelText('カテゴリ'), {
-      target: { value: '基盤' },
-    })
-    fireEvent.change(screen.getByLabelText('オーナー'), {
-      target: { value: 'm1' },
-    })
-    fireEvent.change(screen.getAllByLabelText('メモ')[0]!, {
-      target: { value: '顧客情報を管理する基盤' },
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'システムを追加' }))
-
     const createdRow = await screen.findByTestId('system-row-sys-customer')
-    expect(createdRow).toHaveTextContent('顧客管理基盤')
 
     fireEvent.click(within(createdRow).getByTestId('edit-system-sys-customer'))
     fireEvent.change(within(createdRow).getByDisplayValue('顧客管理基盤'), {
@@ -61,37 +55,6 @@ describe('SystemManagementPage', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('system-row-sys-customer')).not.toBeInTheDocument()
-    })
-  })
-
-  it('関連システムを登録して削除できる', async () => {
-    mockProjectApi()
-
-    renderWithProviders(<SystemManagementPage />, {
-      initialEntries: ['/systems'],
-    })
-
-    await screen.findByRole('heading', { name: 'システム管理' })
-
-    fireEvent.change(screen.getByLabelText('接続元システム'), {
-      target: { value: 'sys-accounting' },
-    })
-    fireEvent.change(screen.getByLabelText('接続先システム'), {
-      target: { value: 'sys-sales-bi' },
-    })
-    fireEvent.change(screen.getAllByLabelText('メモ')[1]!, {
-      target: { value: '会計データを分析基盤へ転送' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: '関連システムを登録' }))
-
-    const relationRow = await screen.findByTestId('system-relation-row-rel-004')
-    expect(relationRow).toHaveTextContent('会計基盤')
-    expect(relationRow).toHaveTextContent('営業管理BI')
-
-    fireEvent.click(screen.getByTestId('delete-system-relation-rel-004'))
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('system-relation-row-rel-004')).not.toBeInTheDocument()
     })
   })
 })

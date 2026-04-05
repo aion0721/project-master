@@ -1,24 +1,7 @@
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.formGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.textarea {
-  composes: control from '../../styles/form.module.css';
-  min-height: 104px;
-  resize: vertical;
-}
-
-.actionRow {
-  display: flex;
-  justify-content: flex-end;
+.errorText {
+  margin: 0 0 16px;
+  color: var(--danger);
+  font-size: 14px;
 }
 
 .tableWrap {
@@ -57,6 +40,13 @@
   min-width: 140px;
 }
 
+.inlineTextarea {
+  composes: control from '../../styles/form.module.css';
+  min-width: 180px;
+  min-height: 88px;
+  resize: vertical;
+}
+
 .noteCell {
   color: var(--text-subtle);
   line-height: 1.5;
@@ -91,20 +81,8 @@
   font-weight: 700;
 }
 
-.arrowCell {
-  font-weight: 700;
-  color: #0f4c5c;
-  white-space: nowrap;
-}
-
 .rowActions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-@media (max-width: 960px) {
-  .formGrid {
-    grid-template-columns: 1fr;
-  }
 }

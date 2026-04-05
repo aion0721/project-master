@@ -52,7 +52,12 @@ const navigationSections: NavigationSection[] = [
       {
         to: '/systems',
         label: 'システム一覧',
-        isActive: (pathname) => pathname === '/systems',
+        isActive: (pathname) => pathname === '/systems' || pathname === '/systems/new',
+      },
+      {
+        to: '/systems/relations',
+        label: '関係一覧',
+        isActive: (pathname) => pathname === '/systems/relations',
       },
       {
         to: '/systems/diagram',
