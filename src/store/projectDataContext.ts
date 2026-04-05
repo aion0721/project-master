@@ -2,6 +2,8 @@ import { createContext } from 'react'
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemInput,
+  ManagedSystem,
   Member,
   Phase,
   Project,
@@ -14,6 +16,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemInput,
 } from '../types/project'
 
 export interface ProjectDataContextValue {
@@ -21,14 +24,18 @@ export interface ProjectDataContextValue {
   phases: Phase[]
   events: ProjectEvent[]
   members: Member[]
+  systems: ManagedSystem[]
   assignments: ProjectAssignment[]
   isLoading: boolean
   error: string | null
   refresh: () => void
   createMember: (input: CreateMemberInput) => Promise<Member>
   createProject: (input: CreateProjectInput) => Promise<Project>
+  createSystem: (input: CreateSystemInput) => Promise<ManagedSystem>
   updateMember: (memberId: string, input: UpdateMemberInput) => Promise<Member>
+  updateSystem: (systemId: string, input: UpdateSystemInput) => Promise<ManagedSystem>
   deleteMember: (memberId: string) => Promise<void>
+  deleteSystem: (systemId: string) => Promise<void>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
   updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
   updateProjectLinks: (projectId: string, input: UpdateProjectLinksInput) => Promise<Project>
@@ -41,6 +48,7 @@ export interface ProjectDataContextValue {
   getProjectAssignments: (projectId: string) => ProjectAssignment[]
   getProjectEvents: (projectId: string) => ProjectEvent[]
   getMemberById: (memberId: string) => Member | undefined
+  getSystemById: (systemId: string) => ManagedSystem | undefined
 }
 
 export const ProjectDataContext = createContext<ProjectDataContextValue | null>(null)

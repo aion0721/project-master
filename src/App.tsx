@@ -6,6 +6,7 @@ import { MemberManagementPage } from './pages/MemberManagementPage'
 import { ProjectCreatePage } from './pages/ProjectCreatePage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProjectListPage } from './pages/ProjectListPage'
+import { SystemManagementPage } from './pages/SystemManagementPage'
 import { ProjectDataProvider } from './store/projectData'
 import { UserSessionProvider } from './store/userSession'
 
@@ -22,6 +23,7 @@ function App() {
               <Route path="/projects/:projectNumber" element={<ProjectDetailPage />} />
               <Route path="/members" element={<MemberManagementPage />} />
               <Route path="/members/hierarchy" element={<MemberHierarchyPage />} />
+              <Route path="/systems" element={<SystemManagementPage />} />
               <Route path="/cross-project" element={<CrossProjectViewPage />} />
               <Route path="*" element={<Navigate to="/projects" replace />} />
             </Route>

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
-import type { Phase, Project, ProjectLink } from '../../types/project'
+import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
 import { ProjectDetailMetaGrid } from './ProjectDetailMetaGrid'
 import styles from '../ProjectDetailPage.module.css'
 
@@ -28,6 +28,7 @@ interface ProjectDetailHeroProps {
   onScheduleSave: () => void
   currentPhase?: Phase
   projectPhases: Phase[]
+  relatedSystems: ManagedSystem[]
   isCurrentPhaseEditing: boolean
   currentPhaseDraftId: string
   currentPhaseChanged: boolean
@@ -67,6 +68,7 @@ export function ProjectDetailHero({
   onScheduleSave,
   currentPhase,
   projectPhases,
+  relatedSystems,
   isCurrentPhaseEditing,
   currentPhaseDraftId,
   currentPhaseChanged,
@@ -99,8 +101,17 @@ export function ProjectDetailHero({
           <p className={styles.description}>
             プロジェクト番号: {project.projectNumber}
             <br />
-            PM・進捗・体制をまとめて確認できる案件詳細です。
+            PM、進捗、体制、関連システムをまとめて確認できる案件詳細です。
           </p>
+          {relatedSystems.length > 0 ? (
+            <div className={styles.systemChipList}>
+              {relatedSystems.map((system) => (
+                <span className={styles.systemChip} key={system.id}>
+                  {system.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className={styles.heroActions}>

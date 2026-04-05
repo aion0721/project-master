@@ -39,7 +39,7 @@
 .projectCell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .projectName {
@@ -50,6 +50,24 @@
 .projectId {
   font-size: 12px;
   color: var(--text-subtle);
+}
+
+.systemChipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.systemChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.08);
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .actionCell {

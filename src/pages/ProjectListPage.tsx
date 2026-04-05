@@ -12,7 +12,7 @@ import styles from './ProjectListPage.module.css'
 type ViewMode = 'all' | 'bookmarks'
 
 export function ProjectListPage() {
-  const { projects, members, getProjectPhases, isLoading, error } = useProjectData()
+  const { projects, members, systems, getProjectPhases, isLoading, error } = useProjectData()
   const { currentUser, saveDefaultProjectStatusFilters, toggleBookmark } = useUserSession()
   const [viewMode, setViewMode] = useState<ViewMode>('all')
   const currentUserId = currentUser?.id ?? null
@@ -28,6 +28,11 @@ export function ProjectListPage() {
     setSelectedStatuses(getMemberDefaultProjectStatusFilters(currentUserRef.current))
     setSaveFeedback(null)
   }, [currentUserId])
+
+  const systemNameById = useMemo(
+    () => new Map(systems.map((system) => [system.id, system.name])),
+    [systems],
+  )
 
   const bookmarkFilteredProjects = useMemo(() => {
     if (viewMode !== 'bookmarks' || !currentUser) {
@@ -54,9 +59,12 @@ export function ProjectListPage() {
           project,
           currentPhaseName: currentPhase?.name ?? '未設定',
           pmName: pm?.name ?? '未設定',
+          relatedSystemNames: (project.relatedSystemIds ?? [])
+            .map((systemId) => systemNameById.get(systemId))
+            .filter((value): value is string => Boolean(value)),
         }
       }),
-    [filteredProjects, getProjectPhases, members],
+    [filteredProjects, getProjectPhases, members, systemNameById],
   )
 
   const summary = {
@@ -78,7 +86,7 @@ export function ProjectListPage() {
       : viewMode === 'bookmarks' && currentUser && rows.length === 0
         ? {
             title: 'ブックマーク案件はまだありません',
-            description: '一覧の「追加」ボタンから案件をブックマークできます。',
+            description: '一覧の追加ボタンから案件をブックマークできます。',
           }
         : !hasStatusSelection
           ? {
@@ -143,7 +151,7 @@ export function ProjectListPage() {
             <p className={styles.eyebrow}>Project Portfolio</p>
             <h1 className={styles.title}>案件一覧</h1>
             <p className={styles.description}>
-              進捗と体制を一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
+              進捗、体制、関連システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
             </p>
           </div>
 
@@ -237,7 +245,7 @@ export function ProjectListPage() {
               {viewMode === 'bookmarks' && currentUser ? 'ブックマーク案件一覧' : '案件ステータス一覧'}
             </h2>
             <p className={styles.sectionDescription}>
-              案件ごとの PM、現在フェーズ、開始日、終了日を確認できます。
+              案件ごとの PM、現在フェーズ、開始日、終了日、関連システムを確認できます。
             </p>
           </div>
         </div>

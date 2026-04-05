@@ -17,6 +17,7 @@ function renderLayout(initialEntries: string[]) {
               <Route path="/projects/:projectNumber" element={<div>project detail</div>} />
               <Route path="/members" element={<div>members</div>} />
               <Route path="/members/hierarchy" element={<div>hierarchy</div>} />
+              <Route path="/systems" element={<div>systems</div>} />
               <Route path="/cross-project" element={<div>cross project</div>} />
             </Route>
           </Routes>
@@ -27,7 +28,7 @@ function renderLayout(initialEntries: string[]) {
 }
 
 describe('Layout', () => {
-  it('案件管理とメンバー管理のセクションを表示する', () => {
+  it('案件管理、メンバー管理、システム管理の導線を表示する', () => {
     renderLayout(['/projects'])
 
     expect(screen.getByText('案件管理')).toBeInTheDocument()
@@ -37,6 +38,9 @@ describe('Layout', () => {
     expect(screen.getByText('メンバー管理')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'メンバー一覧' })).toHaveAttribute('href', '/members')
     expect(screen.getByRole('link', { name: '体制図' })).toHaveAttribute('href', '/members/hierarchy')
+
+    expect(screen.getByText('システム管理')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'システム一覧' })).toHaveAttribute('href', '/systems')
   })
 
   it('案件詳細では案件管理の一覧をアクティブ表示する', () => {

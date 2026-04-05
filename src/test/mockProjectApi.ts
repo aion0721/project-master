@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
-import { assignments, events, members, phases, projects } from '../data/mockData'
+import { assignments, events, members, phases, projects, systems } from '../data/mockData'
 import type {
   CreateMemberInput,
   CreateProjectInput,
@@ -31,6 +31,7 @@ function cloneFixtures() {
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
+    systems: systems.map((system) => ({ ...system })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
   }
 }
@@ -194,6 +195,10 @@ export function mockProjectApi() {
       return buildJsonResponse({ items: fixtureData.members }, 200)
     }
 
+    if (requestUrl.endsWith('/api/systems') && method === 'GET') {
+      return buildJsonResponse({ items: fixtureData.systems }, 200)
+    }
+
     if (requestUrl.endsWith('/api/members') && method === 'POST') {
       const body = JSON.parse(String(init?.body)) as CreateMemberInput
 
@@ -223,6 +228,27 @@ export function mockProjectApi() {
 
       fixtureData.members.push(member)
       return buildJsonResponse({ member }, 201)
+    }
+
+    if (requestUrl.endsWith('/api/systems') && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as {
+        id: string
+        name: string
+        category: string
+        ownerMemberId?: string | null
+        note?: string | null
+      }
+
+      const system = {
+        id: body.id.trim(),
+        name: body.name.trim(),
+        category: body.category.trim(),
+        ownerMemberId: body.ownerMemberId ?? null,
+        note: body.note?.trim() || null,
+      }
+
+      fixtureData.systems.push(system)
+      return buildJsonResponse({ system }, 201)
     }
 
     if (requestUrl.endsWith('/api/members/login') && method === 'POST') {
@@ -309,6 +335,44 @@ export function mockProjectApi() {
       })
     }
 
+    const systemMatch = requestUrl.match(/\/api\/systems\/([^/]+)$/)
+    if (systemMatch && method === 'PATCH') {
+      const system = fixtureData.systems.find((item) => item.id === systemMatch[1])
+
+      if (!system) {
+        return buildJsonResponse({ message: 'System not found' }, 404)
+      }
+
+      const body = JSON.parse(String(init?.body)) as {
+        name: string
+        category: string
+        ownerMemberId?: string | null
+        note?: string | null
+      }
+
+      system.name = body.name.trim()
+      system.category = body.category.trim()
+      system.ownerMemberId = body.ownerMemberId ?? null
+      system.note = body.note?.trim() || null
+
+      return buildJsonResponse({ system }, 200)
+    }
+
+    if (systemMatch && method === 'DELETE') {
+      const system = fixtureData.systems.find((item) => item.id === systemMatch[1])
+
+      if (!system) {
+        return buildJsonResponse({ message: 'System not found' }, 404)
+      }
+
+      if (fixtureData.projects.some((project) => (project.relatedSystemIds ?? []).includes(system.id))) {
+        return buildJsonResponse({ message: 'System is linked to a project' }, 400)
+      }
+
+      fixtureData.systems = fixtureData.systems.filter((item) => item.id !== system.id)
+      return buildJsonResponse({ systemId: system.id }, 200)
+    }
+
     if (requestUrl.endsWith('/api/projects') && method === 'GET') {
       return new Response(JSON.stringify(buildProjectListResponse(fixtureData)), {
         status: 200,
@@ -330,6 +394,7 @@ export function mockProjectApi() {
         endDate: body.endDate,
         status: statusLabelByCode[body.status],
         pmMemberId: body.pmMemberId,
+        relatedSystemIds: body.relatedSystemIds ?? [],
         projectLinks: body.projectLinks ?? [],
       }
 

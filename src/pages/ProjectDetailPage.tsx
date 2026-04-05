@@ -23,6 +23,7 @@ export function ProjectDetailPage() {
     projects,
     assignments,
     members,
+    systems,
     getProjectById,
     getProjectPhases,
     getProjectAssignments,
@@ -100,6 +101,15 @@ export function ProjectDetailPage() {
       buildDraftPhaseForRange(project.projectNumber, project.pmMemberId, draft),
     )
   }, [phaseEditor.phaseDrafts, project])
+
+  const relatedSystems = useMemo(() => {
+    if (!project) {
+      return []
+    }
+
+    const relatedSystemIds = new Set(project.relatedSystemIds ?? [])
+    return systems.filter((system) => relatedSystemIds.has(system.id))
+  }, [project, systems])
 
   function handleTimelinePhaseSelect(phaseId: string) {
     if (selectedTimelinePhaseId === phaseId) {
@@ -227,6 +237,7 @@ export function ProjectDetailPage() {
         projectLinksDraft={summaryEditor.projectLinksDraft}
         projectLinksError={summaryEditor.projectLinksError}
         projectPhases={projectPhases}
+        relatedSystems={relatedSystems}
         scheduleChanged={summaryEditor.scheduleChanged}
         scheduleDraft={summaryEditor.scheduleDraft}
         scheduleError={summaryEditor.scheduleError}

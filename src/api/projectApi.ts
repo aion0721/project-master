@@ -1,6 +1,8 @@
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemInput,
+  ManagedSystem,
   Member,
   Phase,
   Project,
@@ -13,6 +15,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
 
@@ -40,6 +43,10 @@ interface ApiProjectListResponse {
 
 interface ApiMemberListResponse {
   items: ApiMember[]
+}
+
+interface ApiSystemListResponse {
+  items: ManagedSystem[]
 }
 
 interface ApiProjectDetailResponse {
@@ -73,6 +80,7 @@ export interface ProjectDataPayload {
   phases: Phase[]
   events: ProjectEvent[]
   members: Member[]
+  systems: ManagedSystem[]
   assignments: ProjectAssignment[]
 }
 
@@ -92,6 +100,17 @@ function normalizeMember(member: ApiMember | null | undefined): Member | null {
     role: member.role,
     managerId: member.managerId,
     bookmarkedProjectIds: [...(member.bookmarkedProjectIds ?? [])],
+    defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? ['未着手', '進行中', '遅延', '完了'])],
+  }
+}
+
+function normalizeSystem(system: ManagedSystem): ManagedSystem {
+  return {
+    id: system.id,
+    name: system.name,
+    category: system.category,
+    ownerMemberId: system.ownerMemberId ?? null,
+    note: system.note ?? null,
   }
 }
 
@@ -103,6 +122,7 @@ function normalizeProject(project: Project): Project {
     endDate: project.endDate,
     status: project.status,
     pmMemberId: project.pmMemberId,
+    relatedSystemIds: [...(project.relatedSystemIds ?? [])],
     projectLinks: (project.projectLinks ?? []).map((link) => ({
       label: link.label,
       url: link.url,
@@ -211,13 +231,15 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
     events: detail.events.map(normalizeEvent),
     assignments: detail.assignments.map(normalizeAssignment),
     members: [...memberMap.values()],
+    systems: [],
   }
 }
 
 export async function loadProjectData(signal?: AbortSignal): Promise<ProjectDataPayload> {
-  const [listResponse, memberResponse] = await Promise.all([
+  const [listResponse, memberResponse, systemResponse] = await Promise.all([
     fetchJson<ApiProjectListResponse>('/api/projects', signal),
     fetchJson<ApiMemberListResponse>('/api/members', signal),
+    fetchJson<ApiSystemListResponse>('/api/systems', signal),
   ])
 
   const detailResponses = await Promise.all(
@@ -272,6 +294,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     phases: [...phaseMap.values()],
     events: [...eventMap.values()],
     members: [...memberMap.values()],
+    systems: systemResponse.items.map(normalizeSystem),
     assignments: [...assignmentMap.values()],
   }
 }
@@ -290,6 +313,7 @@ export async function createProjectRequest(
     'POST',
     {
       ...input,
+      relatedSystemIds: input.relatedSystemIds ?? [],
       status: statusCodeMap[input.status],
     },
     signal,
@@ -345,6 +369,47 @@ export async function deleteMemberRequest(
 ): Promise<{ memberId: string }> {
   return sendJson<{ memberId: string }, Record<string, never>>(
     `/api/members/${memberId}`,
+    'DELETE',
+    {},
+    signal,
+  )
+}
+
+export async function createSystemRequest(
+  input: CreateSystemInput,
+  signal?: AbortSignal,
+): Promise<ManagedSystem> {
+  const response = await sendJson<{ system: ManagedSystem }, CreateSystemInput>(
+    '/api/systems',
+    'POST',
+    input,
+    signal,
+  )
+
+  return normalizeSystem(response.system)
+}
+
+export async function updateSystemRequest(
+  systemId: string,
+  input: UpdateSystemInput,
+  signal?: AbortSignal,
+): Promise<ManagedSystem> {
+  const response = await sendJson<{ system: ManagedSystem }, UpdateSystemInput>(
+    `/api/systems/${systemId}`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeSystem(response.system)
+}
+
+export async function deleteSystemRequest(
+  systemId: string,
+  signal?: AbortSignal,
+): Promise<{ systemId: string }> {
+  return sendJson<{ systemId: string }, Record<string, never>>(
+    `/api/systems/${systemId}`,
     'DELETE',
     {},
     signal,

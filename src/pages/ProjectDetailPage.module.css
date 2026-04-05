@@ -35,6 +35,25 @@
   composes: description from '../styles/page.module.css';
 }
 
+.systemChipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.systemChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.08);
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .notFound {
   padding: 32px;
 }

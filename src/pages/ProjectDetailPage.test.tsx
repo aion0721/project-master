@@ -11,30 +11,37 @@ const nextPhase = phases.find((item) => item.id === 'ph-p1-3')!
 const editableAssignment = assignments.find((item) => item.id === 'as-p1-3')!
 const projectEvent = events.find((item) => item.id === 'ev-p1-1')!
 
+function renderPage() {
+  return renderWithProviders(<ProjectDetailPage />, {
+    initialEntries: ['/projects/PRJ-001'],
+    routePath: '/projects/:projectNumber',
+  })
+}
+
 describe('ProjectDetailPage', () => {
   it('案件詳細と現在フェーズを表示する', async () => {
     mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
+    expect(screen.getByText('会計基盤')).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
-    expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute('href', project.projectLinks[0]?.url)
-    expect(screen.getByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`)).toBeInTheDocument()
+    expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute(
+      'href',
+      project.projectLinks[0]?.url,
+    )
+    expect(
+      screen.getByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`),
+    ).toBeInTheDocument()
     expect(screen.getAllByText(projectEvent.name).length).toBeGreaterThan(0)
     expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
   })
 
-  it('開始日と終了日を更新できる', async () => {
+  it('開始日と終了予定日を更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
@@ -48,26 +55,25 @@ describe('ProjectDetailPage', () => {
     fireEvent.click(screen.getByTestId('project-schedule-save-button'))
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/projects/PRJ-001/schedule'),
-        expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({
-            startDate: '2026-04-13',
-            endDate: '2026-07-03',
-          }),
-        }),
-      )
+      const scheduleCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return (
+          String(url).includes('/api/projects/PRJ-001/schedule') && init?.method === 'PATCH'
+        )
+      })
+
+      expect(scheduleCall).toBeDefined()
+      const body = JSON.parse(String(scheduleCall?.[1]?.body))
+      expect(body).toEqual({
+        startDate: '2026-04-13',
+        endDate: '2026-07-03',
+      })
     })
   })
 
   it('案件リンクを複数更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
@@ -88,38 +94,33 @@ describe('ProjectDetailPage', () => {
     fireEvent.click(screen.getByTestId('project-links-save-button'))
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/projects/PRJ-001/links'),
-        expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({
-            projectLinks: [
-              {
-                label: 'Review',
-                url: 'https://example.com/projects/PRJ-001/review',
-              },
-              {
-                label: '設計資料',
-                url: 'https://example.com/wiki/PRJ-001',
-              },
-              {
-                label: 'Minutes',
-                url: 'https://example.com/projects/PRJ-001/minutes',
-              },
-            ],
-          }),
-        }),
-      )
+      const linkCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/links') && init?.method === 'PATCH'
+      })
+
+      expect(linkCall).toBeDefined()
+      const body = JSON.parse(String(linkCall?.[1]?.body))
+      expect(body.projectLinks).toEqual([
+        {
+          label: 'Review',
+          url: 'https://example.com/projects/PRJ-001/review',
+        },
+        {
+          label: '設計共有',
+          url: 'https://example.com/wiki/PRJ-001',
+        },
+        {
+          label: 'Minutes',
+          url: 'https://example.com/projects/PRJ-001/minutes',
+        },
+      ])
     })
   })
 
-  it('現在フェーズを変更できる', async () => {
+  it('現在フェーズを更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
@@ -130,30 +131,29 @@ describe('ProjectDetailPage', () => {
     fireEvent.click(screen.getByTestId('current-phase-save-button'))
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/projects/PRJ-001/current-phase'),
-        expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({
-            phaseId: nextPhase.id,
-          }),
-        }),
-      )
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return (
+          String(url).includes('/api/projects/PRJ-001/current-phase') && init?.method === 'PATCH'
+        )
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body).toEqual({
+        phaseId: nextPhase.id,
+      })
     })
   })
 
-  it('案件ごとのフェーズ構成を保存できる', async () => {
+  it('案件ごとのフェーズ構成を編集して保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
     fireEvent.change(await screen.findByTestId('phase-name-ph-p1-2'), {
-      target: { value: '予備検討' },
+      target: { value: '基盤検討' },
     })
     fireEvent.click(await screen.findByTestId('phase-remove-ph-p1-3'))
     fireEvent.click(screen.getByTestId('phase-structure-save-button'))
@@ -169,7 +169,7 @@ describe('ProjectDetailPage', () => {
         expect.arrayContaining([
           expect.objectContaining({
             id: 'ph-p1-2',
-            name: '予備検討',
+            name: '基盤検討',
           }),
         ]),
       )
@@ -183,13 +183,10 @@ describe('ProjectDetailPage', () => {
     })
   })
 
-  it('フェーズを上下移動して保存順を変更できる', async () => {
+  it('フェーズを並び替えて保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
@@ -211,10 +208,7 @@ describe('ProjectDetailPage', () => {
   it('プロジェクト体制を編集モードで更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
@@ -255,25 +249,22 @@ describe('ProjectDetailPage', () => {
     })
   })
 
-  it('週次イベントを追加と更新で保存できる', async () => {
+  it('関連イベントを追加と更新で保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
     fireEvent.change(await screen.findByTestId('event-name-0'), {
-      target: { value: '環境再提供' },
+      target: { value: '週次レビュー' },
     })
     fireEvent.change(screen.getByTestId('event-week-0'), {
       target: { value: '5' },
     })
     fireEvent.click(screen.getByTestId('project-events-add-button'))
     fireEvent.change(await screen.findByTestId('event-name-2'), {
-      target: { value: '顧客説明' },
+      target: { value: '障害試験' },
     })
     fireEvent.change(screen.getByTestId('event-week-2'), {
       target: { value: '8' },
@@ -290,18 +281,18 @@ describe('ProjectDetailPage', () => {
 
       expect(eventsCall).toBeDefined()
       const body = JSON.parse(String(eventsCall?.[1]?.body))
-        expect(body.events).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              id: projectEvent.id,
-              name: '環境再提供',
-              week: 5,
-            }),
-            expect.objectContaining({
-              name: '顧客説明',
-              week: 8,
-              ownerMemberId: 'm1',
-            }),
+      expect(body.events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: projectEvent.id,
+            name: '週次レビュー',
+            week: 5,
+          }),
+          expect.objectContaining({
+            name: '障害試験',
+            week: 8,
+            ownerMemberId: 'm1',
+          }),
         ]),
       )
     })
@@ -310,10 +301,7 @@ describe('ProjectDetailPage', () => {
   it('タイムライン上でフェーズ期間を調整して保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 
@@ -343,11 +331,10 @@ describe('ProjectDetailPage', () => {
     })
   })
 
-  it('タイムライン編集をキャンセルすると開始週を元に戻せる', async () => {
-    renderWithProviders(<ProjectDetailPage />, {
-      initialEntries: ['/projects/PRJ-001'],
-      routePath: '/projects/:projectNumber',
-    })
+  it('タイムライン変更をキャンセルすると編集前に戻せる', async () => {
+    mockProjectApi()
+
+    renderPage()
 
     await screen.findByRole('heading', { name: project.name })
 

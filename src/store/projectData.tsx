@@ -2,7 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import {
   createMemberRequest,
   createProjectRequest,
+  createSystemRequest,
   deleteMemberRequest,
+  deleteSystemRequest,
   loadProjectData,
   updateMemberRequest,
   updatePhaseRequest,
@@ -12,10 +14,13 @@ import {
   updateProjectPhasesRequest,
   updateProjectScheduleRequest,
   updateProjectStructureRequest,
+  updateSystemRequest,
 } from '../api/projectApi'
 import type {
   CreateMemberInput,
   CreateProjectInput,
+  CreateSystemInput,
+  ManagedSystem,
   Member,
   Phase,
   Project,
@@ -28,6 +33,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemInput,
 } from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
 import { ProjectDataContext } from './projectDataContext'
@@ -59,6 +65,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [phases, setPhases] = useState<Phase[]>([])
   const [events, setEvents] = useState<ProjectEvent[]>([])
   const [members, setMembers] = useState<Member[]>([])
+  const [systems, setSystems] = useState<ManagedSystem[]>([])
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,6 +85,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         setPhases(payload.phases)
         setEvents(payload.events)
         setMembers(payload.members)
+        setSystems(payload.systems)
         setAssignments(payload.assignments)
       } catch (caughtError) {
         if (controller.signal.aborted) {
@@ -104,6 +112,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     phases,
     events,
     members,
+    systems,
     assignments,
     isLoading,
     error,
@@ -125,18 +134,33 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
       setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
 
       return createdProject
+    },
+    createSystem: async (input: CreateSystemInput) => {
+      const system = await createSystemRequest(input)
+      setSystems((current) => mergeByKey(current, [system], (item) => item.id))
+      return system
     },
     updateMember: async (memberId: string, input: UpdateMemberInput) => {
       const member = await updateMemberRequest(memberId, input)
       setMembers((current) => mergeByKey(current, [member], (item) => item.id))
       return member
     },
+    updateSystem: async (systemId: string, input: UpdateSystemInput) => {
+      const system = await updateSystemRequest(systemId, input)
+      setSystems((current) => mergeByKey(current, [system], (item) => item.id))
+      return system
+    },
     deleteMember: async (memberId: string) => {
       await deleteMemberRequest(memberId)
       setMembers((current) => current.filter((member) => member.id !== memberId))
+    },
+    deleteSystem: async (systemId: string) => {
+      await deleteSystemRequest(systemId)
+      setSystems((current) => current.filter((system) => system.id !== systemId))
     },
     updatePhase: async (phaseId: string, input: UpdatePhaseInput) => {
       const payload = await updatePhaseRequest(phaseId, input)
@@ -156,6 +180,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -172,6 +197,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -188,6 +214,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -206,6 +233,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       )
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -222,6 +250,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -238,6 +267,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
       setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
       setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
 
       return updatedProject
@@ -248,6 +278,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       assignments.filter((assignment) => assignment.projectId === projectId),
     getProjectEvents: (projectId) => events.filter((event) => event.projectId === projectId),
     getMemberById: (memberId) => members.find((member) => member.id === memberId),
+    getSystemById: (systemId) => systems.find((system) => system.id === systemId),
   }
 
   return <ProjectDataContext.Provider value={value}>{children}</ProjectDataContext.Provider>
