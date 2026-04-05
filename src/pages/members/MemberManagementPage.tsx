@@ -2,42 +2,15 @@ import { useMemo, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
-import type { CreateMemberInput, Member, UpdateMemberInput } from '../../types/project'
-import formStyles from '../../styles/form.module.css'
+import type { UpdateMemberInput } from '../../types/project'
 import pageStyles from '../../styles/page.module.css'
+import { buildEditForm, toNullableManagerId, validateMemberInput } from './memberFormUtils'
+import type { MemberFormState } from './memberFormUtils'
 import styles from './MemberManagementPage.module.css'
 
-interface MemberFormState {
-  id: string
-  name: string
-  role: string
-  managerId: string
-}
-
-const initialCreateForm: MemberFormState = {
-  id: '',
-  name: '',
-  role: '',
-  managerId: '',
-}
-
-function toNullableManagerId(value: string) {
-  return value.trim() ? value : null
-}
-
-function buildEditForm(member: Member): MemberFormState {
-  return {
-    id: member.id,
-    name: member.name,
-    role: member.role,
-    managerId: member.managerId ?? '',
-  }
-}
-
 export function MemberManagementPage() {
-  const { members, projects, assignments, isLoading, error, createMember, updateMember, deleteMember } =
+  const { members, projects, assignments, isLoading, error, updateMember, deleteMember } =
     useProjectData()
-  const [createForm, setCreateForm] = useState<MemberFormState>(initialCreateForm)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<MemberFormState | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -76,56 +49,8 @@ export function MemberManagementPage() {
     [members],
   )
 
-  function updateCreateField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
-    setCreateForm((current) => ({
-      ...current,
-      [key]: value,
-    }))
-  }
-
   function updateEditField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
     setEditForm((current) => (current ? { ...current, [key]: value } : current))
-  }
-
-  function validateMemberInput(input: Pick<MemberFormState, 'name' | 'role'>) {
-    if (!input.name.trim() || !input.role.trim()) {
-      return 'メンバー名とロールを入力してください。'
-    }
-
-    return null
-  }
-
-  async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSubmitError(null)
-
-    if (!createForm.id.trim()) {
-      setSubmitError('メンバーIDを入力してください。')
-      return
-    }
-
-    const validationMessage = validateMemberInput(createForm)
-    if (validationMessage) {
-      setSubmitError(validationMessage)
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const input: CreateMemberInput = {
-        id: createForm.id.trim(),
-        name: createForm.name.trim(),
-        role: createForm.role.trim(),
-        managerId: toNullableManagerId(createForm.managerId),
-      }
-      await createMember(input)
-      setCreateForm(initialCreateForm)
-    } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバー追加に失敗しました。')
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   async function handleUpdateSubmit(memberId: string) {
@@ -201,77 +126,8 @@ export function MemberManagementPage() {
         <p className={pageStyles.eyebrow}>Member Directory</p>
         <h1 className={pageStyles.title}>メンバー管理</h1>
         <p className={pageStyles.description}>
-          案件で利用するメンバーの追加、編集、削除を行います。上司設定は体制ツリーにも反映されます。
+          案件で利用するメンバーの編集、削除を行います。上司設定は体制ツリーにも反映されます。
         </p>
-      </Panel>
-
-      <Panel>
-        <div className={pageStyles.sectionHeader}>
-          <div>
-            <h2 className={pageStyles.sectionTitle}>メンバー追加</h2>
-            <p className={pageStyles.sectionDescription}>
-              ID、名前、ロール、上司を指定してメンバーを登録します。
-            </p>
-          </div>
-        </div>
-
-        <form className={styles.form} onSubmit={handleCreateSubmit}>
-          <div className={styles.formGrid}>
-            <label className={formStyles.field}>
-              <span className={formStyles.label}>メンバーID</span>
-              <input
-                className={formStyles.control}
-                onChange={(event) => updateCreateField('id', event.target.value)}
-                placeholder="例: m11"
-                value={createForm.id}
-              />
-            </label>
-
-            <label className={formStyles.field}>
-              <span className={formStyles.label}>名前</span>
-              <input
-                className={formStyles.control}
-                onChange={(event) => updateCreateField('name', event.target.value)}
-                placeholder="例: 佐々木"
-                value={createForm.name}
-              />
-            </label>
-
-            <label className={formStyles.field}>
-              <span className={formStyles.label}>ロール</span>
-              <input
-                className={formStyles.control}
-                onChange={(event) => updateCreateField('role', event.target.value)}
-                placeholder="例: アプリエンジニア"
-                value={createForm.role}
-              />
-            </label>
-
-            <label className={formStyles.field}>
-              <span className={formStyles.label}>上司</span>
-              <select
-                className={formStyles.control}
-                onChange={(event) => updateCreateField('managerId', event.target.value)}
-                value={createForm.managerId}
-              >
-                <option value="">未設定</option>
-                {sortedMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name} ({member.role})
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {submitError ? <p className={formStyles.errorText}>{submitError}</p> : null}
-
-          <div className={styles.actionRow}>
-            <Button disabled={isSubmitting} type="submit">
-              {isSubmitting ? '追加中...' : 'メンバーを追加'}
-            </Button>
-          </div>
-        </form>
       </Panel>
 
       <Panel>
@@ -282,7 +138,12 @@ export function MemberManagementPage() {
               行ごとに編集できます。案件で利用中のメンバーは削除時に制約チェックを行います。
             </p>
           </div>
+          <Button to="/members/new" variant="secondary">
+            メンバーを追加
+          </Button>
         </div>
+
+        {submitError ? <p className={styles.errorText}>{submitError}</p> : null}
 
         <div className={styles.tableWrap}>
           <table className={styles.table}>

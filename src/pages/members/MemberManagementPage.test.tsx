@@ -19,9 +19,10 @@ describe('MemberManagementPage', () => {
       'href',
       '/members/hierarchy?memberId=m1',
     )
+    expect(screen.getByRole('link', { name: 'メンバーを追加' })).toHaveAttribute('href', '/members/new')
   })
 
-  it('メンバーを追加して編集し、削除できる', async () => {
+  it('メンバーを編集できる', async () => {
     mockProjectApi()
 
     renderWithProviders(<MemberManagementPage />, {
@@ -30,34 +31,41 @@ describe('MemberManagementPage', () => {
 
     await screen.findByRole('heading', { name: 'メンバー管理' })
 
-    fireEvent.change(screen.getByLabelText('メンバーID'), {
-      target: { value: 'm11' },
-    })
-    fireEvent.change(screen.getByLabelText('名前'), {
-      target: { value: '佐々木' },
-    })
-    fireEvent.change(screen.getByLabelText('ロール'), {
-      target: { value: 'アプリエンジニア' },
-    })
-    fireEvent.change(screen.getByLabelText('上司'), {
-      target: { value: 'm1' },
-    })
+    const editableRow = screen.getByTestId('member-row-m10')
 
-    fireEvent.click(screen.getByRole('button', { name: 'メンバーを追加' }))
+    fireEvent.click(within(editableRow).getByTestId('edit-member-m10'))
 
-    const createdRow = await screen.findByTestId('member-row-m11')
-    expect(createdRow).toHaveTextContent('佐々木')
-
-    fireEvent.click(within(createdRow).getByTestId('edit-member-m11'))
-
-    fireEvent.change(within(createdRow).getByDisplayValue('佐々木'), {
-      target: { value: '佐々木 太郎' },
+    fireEvent.change(within(editableRow).getByDisplayValue('伊藤'), {
+      target: { value: '伊藤 次郎' },
     })
-    fireEvent.click(within(createdRow).getByRole('button', { name: '保存' }))
+    fireEvent.click(within(editableRow).getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
-      expect(screen.getByTestId('member-row-m11')).toHaveTextContent('佐々木 太郎')
+      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('伊藤 次郎')
     })
+  })
+
+  it('未使用メンバーを削除できる', async () => {
+    mockProjectApi()
+
+    await fetch('/api/members', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: 'm11',
+        name: '佐々木',
+        role: 'アプリエンジニア',
+        managerId: null,
+      }),
+    })
+
+    renderWithProviders(<MemberManagementPage />, {
+      initialEntries: ['/members'],
+    })
+
+    await screen.findByTestId('member-row-m11')
 
     fireEvent.click(screen.getByTestId('delete-member-m11'))
 

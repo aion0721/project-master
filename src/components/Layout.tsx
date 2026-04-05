@@ -37,7 +37,7 @@ const navigationSections: NavigationSection[] = [
       {
         to: '/members',
         label: 'メンバー一覧',
-        isActive: (pathname) => pathname === '/members',
+        isActive: (pathname) => pathname === '/members' || pathname === '/members/new',
       },
       {
         to: '/members/hierarchy',

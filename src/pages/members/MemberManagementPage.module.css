@@ -1,3 +1,9 @@
+.errorText {
+  margin: 0 0 16px;
+  color: var(--danger);
+  font-size: 14px;
+}
+
 .form {
   display: flex;
   flex-direction: column;
