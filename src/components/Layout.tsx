@@ -1,18 +1,61 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { Button } from './ui/Button'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useUserSession } from '../store/useUserSession'
+import { Button } from './ui/Button'
 import styles from './Layout.module.css'
 
-const navigationItems = [
-  { to: '/projects', label: '案件一覧' },
-  { to: '/projects/new', label: '案件追加' },
-  { to: '/members', label: 'メンバーページ' },
-  { to: '/members/hierarchy', label: '体制図' },
-  { to: '/cross-project', label: '横断ビュー' },
+interface NavigationItem {
+  to: string
+  label: string
+  isActive: (pathname: string) => boolean
+}
+
+interface NavigationSection {
+  title: string
+  items: NavigationItem[]
+}
+
+const navigationSections: NavigationSection[] = [
+  {
+    title: '案件管理',
+    items: [
+      {
+        to: '/cross-project',
+        label: '横断ビュー',
+        isActive: (pathname) => pathname === '/cross-project',
+      },
+      {
+        to: '/projects',
+        label: '一覧',
+        isActive: (pathname) =>
+          pathname === '/projects' || /^\/projects\/[^/]+$/.test(pathname),
+      },
+      {
+        to: '/projects/new',
+        label: '追加',
+        isActive: (pathname) => pathname === '/projects/new',
+      },
+    ],
+  },
+  {
+    title: 'メンバー管理',
+    items: [
+      {
+        to: '/members',
+        label: 'メンバー一覧',
+        isActive: (pathname) => pathname === '/members',
+      },
+      {
+        to: '/members/hierarchy',
+        label: '体制図',
+        isActive: (pathname) => pathname === '/members/hierarchy',
+      },
+    ],
+  },
 ]
 
 export function Layout() {
+  const location = useLocation()
   const { currentUser, isLoading, error, login, logout } = useUserSession()
   const [username, setUsername] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -29,7 +72,11 @@ export function Layout() {
       await login(username)
       setUsername('')
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'ログインに失敗しました。')
+      setSubmitError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'ログインに失敗しました。',
+      )
     }
   }
 
@@ -41,29 +88,42 @@ export function Layout() {
           <div>
             <p className={styles.brandTitle}>Project Master</p>
             <p className={styles.brandText}>
-              案件の進捗、担当体制、週次フェーズを一画面で確認できる管理アプリ
+              案件の進捗、体制、横断フェーズを一画面で確認できる管理アプリ
             </p>
           </div>
         </div>
 
         <nav className={styles.navigation}>
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                isActive ? `${styles.navItem} ${styles.active}` : styles.navItem
-              }
-            >
-              {item.label}
-            </NavLink>
+          {navigationSections.map((section) => (
+            <div className={styles.navSection} key={section.title}>
+              <p className={styles.navSectionTitle}>{section.title}</p>
+              <div className={styles.navSectionItems}>
+                {section.items.map((item) => {
+                  const isActive = item.isActive(location.pathname)
+
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={() =>
+                        isActive
+                          ? `${styles.navItem} ${styles.active}`
+                          : styles.navItem
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  )
+                })}
+              </div>
+            </div>
           ))}
         </nav>
 
         <div className={styles.sidebarCard}>
-          <p className={styles.sidebarCardLabel}>運用メモ</p>
+          <p className={styles.sidebarCardLabel}>作業メモ</p>
           <p className={styles.sidebarCardText}>
-            案件追加後は詳細画面からフェーズ期間、進捗、プロジェクト体制を更新できます。横断ビューでは週次の重なりも確認できます。
+            案件追加後は詳細画面からフェーズ更新、体制編集、プロジェクト資料の登録を進めます。横断ビューでは複数案件の遅延や重なりも確認できます。
           </p>
         </div>
 
@@ -79,7 +139,7 @@ export function Layout() {
                 </span>
               </div>
               <p className={styles.userCardText}>
-                一覧と横断ビューで「ブックマーク」を選ぶと、自分が追っている案件だけに絞れます。
+                一覧と横断ビューで「ブックマーク」を選ぶと、優先度の高い案件だけに絞れます。
               </p>
               <Button onClick={logout} size="small" variant="secondary">
                 ログアウト
@@ -100,7 +160,7 @@ export function Layout() {
                 {isLoading ? 'ログイン中...' : 'ログイン'}
               </Button>
               <p className={styles.userCardText}>
-                認証はありません。ユーザー名を入れると、その人用のブックマーク案件が使えます。
+                認証はありません。ユーザー名を入れると、その人用のブックマーク案件を使えます。
               </p>
             </>
           )}
