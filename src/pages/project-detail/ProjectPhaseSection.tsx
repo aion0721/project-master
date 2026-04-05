@@ -3,7 +3,7 @@ import { Panel } from '../../components/ui/Panel'
 import type { Project, WorkStatus } from '../../types/project'
 import type { PhaseFormState } from './projectDetailTypes'
 import { ProjectPhaseTableRow } from './ProjectPhaseTableRow'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectPhaseSectionProps {
   project: Project

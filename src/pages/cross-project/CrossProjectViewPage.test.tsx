@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { mockProjectApi } from '../test/mockProjectApi'
-import { renderWithProviders } from '../test/renderWithProviders'
+import { mockProjectApi } from '../../test/mockProjectApi'
+import { renderWithProviders } from '../../test/renderWithProviders'
 import { CrossProjectViewPage } from './CrossProjectViewPage'
 
 describe('CrossProjectViewPage', () => {

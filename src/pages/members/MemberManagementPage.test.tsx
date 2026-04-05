@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { mockProjectApi } from '../test/mockProjectApi'
-import { renderWithProviders } from '../test/renderWithProviders'
+import { mockProjectApi } from '../../test/mockProjectApi'
+import { renderWithProviders } from '../../test/renderWithProviders'
 import { MemberManagementPage } from './MemberManagementPage'
 
 describe('MemberManagementPage', () => {

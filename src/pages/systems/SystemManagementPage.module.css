@@ -11,7 +11,7 @@
 }
 
 .textarea {
-  composes: control from '../styles/form.module.css';
+  composes: control from '../../styles/form.module.css';
   min-height: 104px;
   resize: vertical;
 }
@@ -53,7 +53,7 @@
 }
 
 .inlineInput {
-  composes: control from '../styles/form.module.css';
+  composes: control from '../../styles/form.module.css';
   min-width: 140px;
 }
 

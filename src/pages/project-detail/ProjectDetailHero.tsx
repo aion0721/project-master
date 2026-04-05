@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
 import { ProjectDetailMetaGrid } from './ProjectDetailMetaGrid'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ScheduleDraft {
   startDate: string

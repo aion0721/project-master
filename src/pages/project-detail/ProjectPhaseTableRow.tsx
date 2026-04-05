@@ -3,7 +3,7 @@ import type { Project, WorkStatus } from '../../types/project'
 import { formatPeriod, getPhaseActualRange } from '../../utils/projectUtils'
 import type { PhaseFormState } from './projectDetailTypes'
 import { getDraftPhaseRange } from './phaseEditorUtils'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectPhaseTableRowProps {
   isFirst: boolean

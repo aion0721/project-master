@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { assignments, events, phases, projects } from '../data/mockData'
-import { mockProjectApi } from '../test/mockProjectApi'
-import { renderWithProviders } from '../test/renderWithProviders'
+import { assignments, events, phases, projects } from '../../data/mockData'
+import { mockProjectApi } from '../../test/mockProjectApi'
+import { renderWithProviders } from '../../test/renderWithProviders'
 import { ProjectDetailPage } from './ProjectDetailPage'
 
 const project = projects.find((item) => item.projectNumber === 'PRJ-001')!

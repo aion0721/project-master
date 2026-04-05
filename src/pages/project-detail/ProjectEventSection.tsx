@@ -2,7 +2,7 @@ import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import type { Member, Phase, WorkStatus } from '../../types/project'
 import type { EventFormState } from './projectDetailTypes'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectEventSectionProps {
   projectPhases: Phase[]

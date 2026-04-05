@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Panel } from '../components/ui/Panel'
-import { useProjectData } from '../store/useProjectData'
-import pageStyles from '../styles/page.module.css'
+import { Panel } from '../../components/ui/Panel'
+import { useProjectData } from '../../store/useProjectData'
+import pageStyles from '../../styles/page.module.css'
 import styles from './SystemLandscapePage.module.css'
 
 const nodeWidth = 220

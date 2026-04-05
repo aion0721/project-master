@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Button } from '../components/ui/Button'
-import { Panel } from '../components/ui/Panel'
-import { useProjectData } from '../store/useProjectData'
+import { Button } from '../../components/ui/Button'
+import { Panel } from '../../components/ui/Panel'
+import { useProjectData } from '../../store/useProjectData'
 import type {
   CreateSystemInput,
   CreateSystemRelationInput,
   ManagedSystem,
   UpdateSystemInput,
-} from '../types/project'
-import formStyles from '../styles/form.module.css'
-import pageStyles from '../styles/page.module.css'
+} from '../../types/project'
+import formStyles from '../../styles/form.module.css'
+import pageStyles from '../../styles/page.module.css'
 import styles from './SystemManagementPage.module.css'
 
 interface SystemFormState {

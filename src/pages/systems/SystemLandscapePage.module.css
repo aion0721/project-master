@@ -21,7 +21,7 @@
 }
 
 .selectorInput {
-  composes: control from '../styles/form.module.css';
+  composes: control from '../../styles/form.module.css';
 }
 
 .focusGrid {

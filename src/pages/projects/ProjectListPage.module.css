@@ -1,5 +1,5 @@
 .page {
-  composes: page from '../styles/page.module.css';
+  composes: page from '../../styles/page.module.css';
 }
 
 .hero {
@@ -16,15 +16,15 @@
 }
 
 .eyebrow {
-  composes: eyebrow from '../styles/page.module.css';
+  composes: eyebrow from '../../styles/page.module.css';
 }
 
 .title {
-  composes: title from '../styles/page.module.css';
+  composes: title from '../../styles/page.module.css';
 }
 
 .description {
-  composes: description from '../styles/page.module.css';
+  composes: description from '../../styles/page.module.css';
   max-width: 760px;
 }
 
@@ -166,15 +166,15 @@
 }
 
 .sectionHeader {
-  composes: sectionHeader from '../styles/page.module.css';
+  composes: sectionHeader from '../../styles/page.module.css';
 }
 
 .sectionTitle {
-  composes: sectionTitle from '../styles/page.module.css';
+  composes: sectionTitle from '../../styles/page.module.css';
 }
 
 .sectionDescription {
-  composes: sectionDescription from '../styles/page.module.css';
+  composes: sectionDescription from '../../styles/page.module.css';
 }
 
 .emptyState {

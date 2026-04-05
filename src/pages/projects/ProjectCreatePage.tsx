@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '../components/ui/Button'
-import { Panel } from '../components/ui/Panel'
-import { useProjectData } from '../store/useProjectData'
-import type { CreateProjectInput, ProjectLink, WorkStatus } from '../types/project'
-import { createEmptyProjectLink, validateProjectLinks } from '../utils/projectLinkUtils'
+import { Button } from '../../components/ui/Button'
+import { Panel } from '../../components/ui/Panel'
+import { useProjectData } from '../../store/useProjectData'
+import type { CreateProjectInput, ProjectLink, WorkStatus } from '../../types/project'
+import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
 import styles from './ProjectCreatePage.module.css'
 
 const statusOptions: WorkStatus[] = ['未着手', '進行中', '完了', '遅延']

@@ -2,7 +2,7 @@ import { Button } from '../../components/ui/Button'
 import type { Member } from '../../types/project'
 import type { StructureAssignmentDraft } from './projectDetailTypes'
 import { getStructureReportingOptions } from './projectStructureUtils'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectStructureEditorProps {
   members: Member[]

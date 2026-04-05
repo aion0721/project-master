@@ -4,7 +4,7 @@ import { Panel } from '../../components/ui/Panel'
 import type { Member, ProjectAssignment } from '../../types/project'
 import type { StructureAssignmentDraft } from './projectDetailTypes'
 import { ProjectStructureEditor } from './ProjectStructureEditor'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectStructureSectionProps {
   members: Member[]

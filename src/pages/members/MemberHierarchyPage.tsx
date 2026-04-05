@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { MemberHierarchyTree } from '../components/MemberHierarchyTree'
-import { Panel } from '../components/ui/Panel'
-import { useProjectData } from '../store/useProjectData'
-import formStyles from '../styles/form.module.css'
-import pageStyles from '../styles/page.module.css'
+import { MemberHierarchyTree } from '../../components/MemberHierarchyTree'
+import { Panel } from '../../components/ui/Panel'
+import { useProjectData } from '../../store/useProjectData'
+import formStyles from '../../styles/form.module.css'
+import pageStyles from '../../styles/page.module.css'
 import styles from './MemberHierarchyPage.module.css'
 
 export function MemberHierarchyPage() {

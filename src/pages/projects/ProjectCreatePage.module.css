@@ -1,5 +1,5 @@
 .page {
-  composes: page from '../styles/page.module.css';
+  composes: page from '../../styles/page.module.css';
 }
 
 .hero {
@@ -17,11 +17,11 @@
 }
 
 .title {
-  composes: title from '../styles/page.module.css';
+  composes: title from '../../styles/page.module.css';
 }
 
 .description {
-  composes: description from '../styles/page.module.css';
+  composes: description from '../../styles/page.module.css';
 }
 
 .form {
@@ -31,15 +31,15 @@
 }
 
 .field {
-  composes: field from '../styles/form.module.css';
+  composes: field from '../../styles/form.module.css';
 }
 
 .label {
-  composes: label from '../styles/form.module.css';
+  composes: label from '../../styles/form.module.css';
 }
 
 .input {
-  composes: control from '../styles/form.module.css';
+  composes: control from '../../styles/form.module.css';
   min-height: 46px;
   padding: 0 14px;
 }
@@ -133,7 +133,7 @@
 }
 
 .errorText {
-  composes: errorText from '../styles/form.module.css';
+  composes: errorText from '../../styles/form.module.css';
   grid-column: 1 / -1;
 }
 

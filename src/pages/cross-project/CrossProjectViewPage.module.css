@@ -1,5 +1,5 @@
 .page {
-  composes: page from '../styles/page.module.css';
+  composes: page from '../../styles/page.module.css';
 }
 
 .hero {
@@ -17,15 +17,15 @@
 }
 
 .eyebrow {
-  composes: eyebrow from '../styles/page.module.css';
+  composes: eyebrow from '../../styles/page.module.css';
 }
 
 .title {
-  composes: title from '../styles/page.module.css';
+  composes: title from '../../styles/page.module.css';
 }
 
 .description {
-  composes: description from '../styles/page.module.css';
+  composes: description from '../../styles/page.module.css';
 }
 
 .filterRow {
@@ -68,17 +68,17 @@
 }
 
 .searchField {
-  composes: field from '../styles/form.module.css';
+  composes: field from '../../styles/form.module.css';
   min-width: 280px;
   max-width: 360px;
 }
 
 .searchLabel {
-  composes: label from '../styles/form.module.css';
+  composes: label from '../../styles/form.module.css';
 }
 
 .searchInput {
-  composes: control from '../styles/form.module.css';
+  composes: control from '../../styles/form.module.css';
 }
 
 .filterHint {

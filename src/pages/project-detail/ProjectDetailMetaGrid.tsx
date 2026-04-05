@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
 import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
 import { formatPeriod } from '../../utils/projectUtils'
-import styles from '../ProjectDetailPage.module.css'
+import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ScheduleDraft {
   startDate: string
