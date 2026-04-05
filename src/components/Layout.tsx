@@ -20,19 +20,14 @@ const navigationSections: NavigationSection[] = [
     title: '案件管理',
     items: [
       {
-        to: '/cross-project',
-        label: '横断ビュー',
-        isActive: (pathname) => pathname === '/cross-project',
-      },
-      {
         to: '/projects',
         label: '一覧',
         isActive: (pathname) => pathname === '/projects' || /^\/projects\/[^/]+$/.test(pathname),
       },
       {
-        to: '/projects/new',
-        label: '追加',
-        isActive: (pathname) => pathname === '/projects/new',
+        to: '/cross-project',
+        label: '横断ビュー',
+        isActive: (pathname) => pathname === '/cross-project',
       },
     ],
   },
