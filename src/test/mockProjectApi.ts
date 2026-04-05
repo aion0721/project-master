@@ -16,6 +16,8 @@ import type {
   UpdateProjectStructureInput,
 } from '../types/project'
 
+const allWorkStatuses = ['未着手', '進行中', '遅延', '完了'] as const
+
 function cloneFixtures() {
   return {
     projects: projects.map((project) => ({
@@ -27,6 +29,7 @@ function cloneFixtures() {
     members: members.map((member) => ({
       ...member,
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
+      defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
   }
@@ -215,6 +218,7 @@ export function mockProjectApi() {
         role: body.role.trim(),
         managerId: body.managerId ?? null,
         bookmarkedProjectIds: [],
+        defaultProjectStatusFilters: [...allWorkStatuses],
       }
 
       fixtureData.members.push(member)
@@ -267,6 +271,35 @@ export function mockProjectApi() {
       user.bookmarkedProjectIds = user.bookmarkedProjectIds.includes(body.projectId)
         ? user.bookmarkedProjectIds.filter((id) => id !== body.projectId)
         : [...user.bookmarkedProjectIds, body.projectId]
+
+      return new Response(JSON.stringify({ user }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const preferencesMatch = requestUrl.match(/\/api\/members\/([^/]+)\/preferences\/project-status-filters$/)
+    if (preferencesMatch && method === 'PATCH') {
+      const user = fixtureData.members.find((item) => item.id === preferencesMatch[1])
+
+      if (!user) {
+        return new Response(JSON.stringify({ message: 'User not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      const body = JSON.parse(String(init?.body)) as {
+        defaultProjectStatusFilters: Array<(typeof allWorkStatuses)[number]>
+      }
+
+      user.defaultProjectStatusFilters = allWorkStatuses.filter((status) =>
+        body.defaultProjectStatusFilters.includes(status),
+      )
 
       return new Response(JSON.stringify({ user }), {
         status: 200,

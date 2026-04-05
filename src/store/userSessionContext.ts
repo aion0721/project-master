@@ -8,6 +8,7 @@ export interface UserSessionContextValue {
   login: (memberKey: string) => Promise<void>
   logout: () => void
   toggleBookmark: (projectId: string) => Promise<void>
+  saveDefaultProjectStatusFilters: (statuses: NonNullable<Member['defaultProjectStatusFilters']>) => Promise<void>
   isBookmarked: (projectId: string) => boolean
 }
 

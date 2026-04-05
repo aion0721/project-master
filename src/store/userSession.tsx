@@ -1,5 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { loadUserRequest, loginUserRequest, toggleBookmarkRequest } from '../api/userApi'
+import {
+  loadUserRequest,
+  loginUserRequest,
+  saveDefaultProjectStatusFiltersRequest,
+  toggleBookmarkRequest,
+} from '../api/userApi'
 import type { Member } from '../types/project'
 import { UserSessionContext, type UserSessionContextValue } from './userSessionContext'
 
@@ -19,6 +24,7 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
     }
 
     const userId = persistedUserId
+
     const controller = new AbortController()
 
     async function loadUser() {
@@ -32,7 +38,7 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
         window.localStorage.removeItem(storageKey)
         setCurrentUser(null)
         setError(
-          caughtError instanceof Error ? caughtError.message : '利用メンバー情報の取得に失敗しました。',
+          caughtError instanceof Error ? caughtError.message : '利用メンバー情報の復元に失敗しました。',
         )
       } finally {
         if (!controller.signal.aborted) {
@@ -83,8 +89,23 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
         const nextUser = await toggleBookmarkRequest(currentUser.id, projectId)
         setCurrentUser(nextUser)
       } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'ブックマーク更新に失敗しました。')
+        throw caughtError
+      }
+    },
+    saveDefaultProjectStatusFilters: async (statuses) => {
+      if (!currentUser) {
+        throw new Error('利用メンバーを選択してから既定フィルターを保存してください。')
+      }
+
+      setError(null)
+
+      try {
+        const nextUser = await saveDefaultProjectStatusFiltersRequest(currentUser.id, statuses)
+        setCurrentUser(nextUser)
+      } catch (caughtError) {
         setError(
-          caughtError instanceof Error ? caughtError.message : 'ブックマーク更新に失敗しました。',
+          caughtError instanceof Error ? caughtError.message : '既定フィルターの保存に失敗しました。',
         )
         throw caughtError
       }

@@ -36,6 +36,72 @@
   margin-top: 24px;
 }
 
+.statusFilters {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.statusFilterHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.statusFilterTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.statusFilterHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.statusCheckboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.statusFilterActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.statusFilterMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.statusCheckbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.statusCheckbox input {
+  margin: 0;
+}
+
 .toggleGroup {
   display: inline-flex;
   align-items: center;
@@ -133,6 +199,16 @@
   }
 
   .filterRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statusFilterHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statusFilterActions {
     flex-direction: column;
     align-items: flex-start;
   }

@@ -42,4 +42,62 @@ describe('ProjectListPage', () => {
       expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
     })
   })
+
+  it('状態フィルターを複数選択で絞り込める', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<ProjectListPage />, {
+      initialEntries: ['/projects'],
+    })
+
+    expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('完了'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
+      expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
+      expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByLabelText('未着手'))
+    fireEvent.click(screen.getByLabelText('進行中'))
+
+    await waitFor(() => {
+      expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
+      expect(screen.queryByText('基幹会計刷新')).not.toBeInTheDocument()
+      expect(screen.queryByText('販売促進モバイル連携')).not.toBeInTheDocument()
+    })
+  })
+
+  it('状態フィルターの既定値を保存できる', async () => {
+    mockProjectApi()
+    window.localStorage.setItem('project-master:user-id', 'm1')
+
+    const view = renderWithProviders(<ProjectListPage />, {
+      initialEntries: ['/projects'],
+    })
+
+    expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('完了'))
+    fireEvent.click(screen.getByRole('button', { name: 'この状態を既定値に保存' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('現在の状態フィルターを既定値として保存しました。')).toBeInTheDocument()
+    })
+
+    view.unmount()
+
+    renderWithProviders(<ProjectListPage />, {
+      initialEntries: ['/projects'],
+    })
+
+    expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('完了')).not.toBeChecked()
+      expect(screen.getByLabelText('進行中')).toBeChecked()
+    })
+  })
 })

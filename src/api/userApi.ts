@@ -1,4 +1,5 @@
 import type { Member } from '../types/project'
+import { normalizeDefaultProjectStatusFilters } from '../utils/userPreferences'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
@@ -48,6 +49,7 @@ function normalizeUser(user: Member): Member {
   return {
     ...user,
     bookmarkedProjectIds: [...(user.bookmarkedProjectIds ?? [])],
+    defaultProjectStatusFilters: normalizeDefaultProjectStatusFilters(user.defaultProjectStatusFilters),
   }
 }
 
@@ -76,6 +78,24 @@ export async function toggleBookmarkRequest(
     `/api/members/${userId}/bookmarks`,
     'PATCH',
     { projectId },
+    signal,
+  )
+
+  return normalizeUser(response.user)
+}
+
+export async function saveDefaultProjectStatusFiltersRequest(
+  userId: string,
+  defaultProjectStatusFilters: NonNullable<Member['defaultProjectStatusFilters']>,
+  signal?: AbortSignal,
+) {
+  const response = await sendJson<
+    UserResponse,
+    { defaultProjectStatusFilters: NonNullable<Member['defaultProjectStatusFilters']> }
+  >(
+    `/api/members/${userId}/preferences/project-status-filters`,
+    'PATCH',
+    { defaultProjectStatusFilters },
     signal,
   )
 

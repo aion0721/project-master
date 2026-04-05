@@ -9,6 +9,7 @@ interface UseCrossProjectViewParams {
   getProjectPhases: (projectId: string) => Phase[]
   getProjectEvents: (projectId: string) => ProjectEvent[]
   projects: Project[]
+  selectedStatuses: Project['status'][]
 }
 
 export function getPhaseToneKey(phaseName: string) {
@@ -33,11 +34,12 @@ export function useCrossProjectView({
   getProjectPhases,
   getProjectEvents,
   projects,
+  selectedStatuses,
 }: UseCrossProjectViewParams) {
   const [viewMode, setViewMode] = useState<CrossProjectViewMode>('all')
   const [keyword, setKeyword] = useState('')
 
-  const baseProjects = useMemo(() => {
+  const modeFilteredProjects = useMemo(() => {
     if (viewMode !== 'bookmarks' || !currentUser) {
       return projects
     }
@@ -46,18 +48,23 @@ export function useCrossProjectView({
     return projects.filter((project) => bookmarkedSet.has(project.projectNumber))
   }, [currentUser, projects, viewMode])
 
+  const statusFilteredProjects = useMemo(
+    () => modeFilteredProjects.filter((project) => selectedStatuses.includes(project.status)),
+    [modeFilteredProjects, selectedStatuses],
+  )
+
   const normalizedKeyword = keyword.trim().toLowerCase()
 
   const filteredProjects = useMemo(() => {
     if (!normalizedKeyword) {
-      return baseProjects
+      return statusFilteredProjects
     }
 
-    return baseProjects.filter((project) => {
+    return statusFilteredProjects.filter((project) => {
       const searchableText = `${project.projectNumber} ${project.name}`.toLowerCase()
       return searchableText.includes(normalizedKeyword)
     })
-  }, [baseProjects, normalizedKeyword])
+  }, [normalizedKeyword, statusFilteredProjects])
 
   const globalWeekSlots = useMemo(() => getGlobalWeekSlots(filteredProjects), [filteredProjects])
 
@@ -78,11 +85,12 @@ export function useCrossProjectView({
   )
 
   return {
-    baseProjects,
     filteredProjects,
     globalWeekSlots,
-    hasNoProjectsInMode: baseProjects.length === 0,
-    hasNoSearchResults: baseProjects.length > 0 && filteredProjects.length === 0,
+    hasNoProjectsInMode: modeFilteredProjects.length === 0,
+    hasNoSearchResults: statusFilteredProjects.length > 0 && filteredProjects.length === 0,
+    hasNoStatusMatches: modeFilteredProjects.length > 0 && selectedStatuses.length > 0 && statusFilteredProjects.length === 0,
+    hasNoStatusesSelected: selectedStatuses.length === 0,
     isBookmarkMode: viewMode === 'bookmarks',
     keyword,
     peakBusy,
