@@ -1,3 +1,49 @@
+.hero {
+  background:
+    radial-gradient(circle at top right, rgba(8, 145, 178, 0.18), transparent 34%),
+    radial-gradient(circle at left center, rgba(59, 130, 246, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(240, 249, 255, 0.95), rgba(255, 255, 255, 0.99));
+}
+
+.heroHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.heroStatCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 96px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+.heroStatLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.heroStatValue {
+  font-size: 32px;
+  line-height: 1;
+  color: var(--text-strong);
+}
+
 .diagramWrap {
   position: relative;
   overflow: auto;
@@ -366,6 +412,14 @@
 }
 
 @media (max-width: 1100px) {
+  .heroHeader {
+    flex-direction: column;
+  }
+
+  .heroStats {
+    grid-template-columns: 1fr;
+  }
+
   .focusGrid {
     grid-template-columns: 1fr;
   }

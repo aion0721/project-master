@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -37,6 +37,15 @@ export function SystemManagementPage() {
     return map
   }, [projects])
 
+  const systemSummary = useMemo(
+    () => ({
+      total: systems.length,
+      connectedProjects: projects.filter((project) => project.relatedSystemIds?.[0]).length,
+      owners: systems.filter((system) => Boolean(system.ownerMemberId)).length,
+    }),
+    [projects, systems],
+  )
+
   if (isLoading) {
     return (
       <Panel>
@@ -57,25 +66,31 @@ export function SystemManagementPage() {
 
   return (
     <div className={pageStyles.page}>
-      <Panel variant="hero">
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="system" />
-          <div className={pageStyles.heroHeadingBody}>
-            <p className={pageStyles.eyebrow}>System Directory</p>
-            <h1 className={pageStyles.title}>システム一覧</h1>
-            <p className={pageStyles.description}>
-              利用中のシステムを一覧で確認します。詳細は個別ページで確認し、関連リンクや補足情報もそこで管理します。
-            </p>
-          </div>
-        </div>
-      </Panel>
+      <ListPageHero
+        action={<Button to="/systems/new">新規システム</Button>}
+        className={styles.hero}
+        description="利用中のシステムを一覧で整理します。カテゴリ、責任者、関連案件、メモを並べて比較しながら確認できます。"
+        eyebrow="System Directory"
+        headerClassName={styles.heroHeader}
+        iconKind="system"
+        statCardClassName={styles.heroStatCard}
+        statLabelClassName={styles.heroStatLabel}
+        stats={[
+          { label: '登録システム', value: systemSummary.total },
+          { label: '関連案件あり', value: systemSummary.connectedProjects },
+          { label: '責任者設定済み', value: systemSummary.owners },
+        ]}
+        statsClassName={styles.heroStats}
+        statValueClassName={styles.heroStatValue}
+        title="システム一覧"
+      />
 
       <Panel>
         <div className={pageStyles.sectionHeader}>
           <div>
-            <h2 className={pageStyles.sectionTitle}>登録済みシステム</h2>
+            <h2 className={pageStyles.sectionTitle}>管理対象システム</h2>
             <p className={pageStyles.sectionDescription}>
-              オーナーと対象プロジェクトを確認できます。詳細ボタンから個別ページへ移動します。
+              オーナーと関連プロジェクトを比較できます。関連案件ボタンから横断ビューにも移動できます。
             </p>
           </div>
           <Button to="/systems/new" variant="secondary">
@@ -117,7 +132,7 @@ export function SystemManagementPage() {
                               </span>
                             ))
                           ) : (
-                            <span className={styles.noteCell}>対象案件なし</span>
+                            <span className={styles.noteCell}>関連案件なし</span>
                           )}
                         </div>
                         <Button

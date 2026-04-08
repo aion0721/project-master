@@ -1,143 +1,157 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useUserSession } from '../store/useUserSession'
-import { EntityIcon, type EntityIconKind } from './EntityIcon'
-import { Button } from './ui/Button'
-import styles from './Layout.module.css'
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useUserSession } from "../store/useUserSession";
+import { EntityIcon, type EntityIconKind } from "./EntityIcon";
+import { Button } from "./ui/Button";
+import styles from "./Layout.module.css";
 
 interface NavigationItem {
-  to: string
-  label: string
-  icon: EntityIconKind
-  isActive: (pathname: string) => boolean
+  to: string;
+  label: string;
+  icon: EntityIconKind;
+  isActive: (pathname: string) => boolean;
 }
 
 interface NavigationSection {
-  title: string
-  items: NavigationItem[]
+  title: string;
+  items: NavigationItem[];
 }
 
 const navigationSections: NavigationSection[] = [
   {
-    title: '案件管理',
+    title: "案件管理",
     items: [
       {
-        to: '/projects',
-        label: '一覧',
-        icon: 'project',
-        isActive: (pathname) => pathname === '/projects' || /^\/projects\/[^/]+$/.test(pathname),
-      },
-      {
-        to: '/cross-project',
-        label: '横断ビュー',
-        icon: 'project',
-        isActive: (pathname) => pathname === '/cross-project',
-      },
-    ],
-  },
-  {
-    title: 'メンバー管理',
-    items: [
-      {
-        to: '/members',
-        label: 'メンバー一覧',
-        icon: 'member',
-        isActive: (pathname) => pathname === '/members' || pathname === '/members/new',
-      },
-      {
-        to: '/members/hierarchy',
-        label: '体制図',
-        icon: 'member',
-        isActive: (pathname) => pathname === '/members/hierarchy',
-      },
-    ],
-  },
-  {
-    title: 'システム管理',
-    items: [
-      {
-        to: '/systems',
-        label: 'システム一覧',
-        icon: 'system',
+        to: "/projects",
+        label: "案件一覧",
+        icon: "project",
         isActive: (pathname) =>
-          pathname === '/systems' ||
-          pathname === '/systems/new' ||
-          (/^\/systems\/[^/]+$/.test(pathname) && pathname !== '/systems/diagram'),
+          pathname === "/projects" || /^\/projects\/[^/]+$/.test(pathname),
       },
       {
-        to: '/systems/diagram',
-        label: '関連図',
-        icon: 'system',
-        isActive: (pathname) => pathname === '/systems/diagram',
+        to: "/cross-project",
+        label: "横断ビュー",
+        icon: "project",
+        isActive: (pathname) => pathname === "/cross-project",
       },
     ],
   },
-]
+  {
+    title: "メンバー管理",
+    items: [
+      {
+        to: "/members",
+        label: "メンバー一覧",
+        icon: "member",
+        isActive: (pathname) =>
+          pathname === "/members" || pathname === "/members/new",
+      },
+      {
+        to: "/members/hierarchy",
+        label: "体制図",
+        icon: "member",
+        isActive: (pathname) => pathname === "/members/hierarchy",
+      },
+    ],
+  },
+  {
+    title: "システム管理",
+    items: [
+      {
+        to: "/systems",
+        label: "システム一覧",
+        icon: "system",
+        isActive: (pathname) =>
+          pathname === "/systems" ||
+          pathname === "/systems/new" ||
+          (/^\/systems\/[^/]+$/.test(pathname) &&
+            pathname !== "/systems/diagram"),
+      },
+      {
+        to: "/systems/diagram",
+        label: "関連図",
+        icon: "system",
+        isActive: (pathname) => pathname === "/systems/diagram",
+      },
+    ],
+  },
+];
 
-const sidebarPinnedStorageKey = 'project-master:sidebar-pinned'
-const logoPath = `${import.meta.env.BASE_URL}logo.svg`
+const sidebarPinnedStorageKey = "project-master:sidebar-pinned";
+const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
 
 export function Layout() {
-  const location = useLocation()
-  const { currentUser, isLoading, error, login, logout } = useUserSession()
-  const memberIdExample = import.meta.env.VITE_MEMBER_ID_EXAMPLE?.trim() || 'm1'
-  const memberLoginPlaceholder = `例: ${memberIdExample}`
-  const [memberKey, setMemberKey] = useState('')
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const location = useLocation();
+  const { currentUser, isLoading, error, login, logout } = useUserSession();
+  const memberIdExample =
+    import.meta.env.VITE_MEMBER_ID_EXAMPLE?.trim() || "m1";
+  const memberLoginPlaceholder = `例: ${memberIdExample}`;
+  const [memberKey, setMemberKey] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSidebarPinned, setIsSidebarPinned] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false
+    if (typeof window === "undefined") {
+      return false;
     }
 
-    return window.localStorage.getItem(sidebarPinnedStorageKey) === 'true'
-  })
-  const [isSidebarPreviewed, setIsSidebarPreviewed] = useState(false)
-  const isSidebarExpanded = isSidebarPinned || isSidebarPreviewed
+    return window.localStorage.getItem(sidebarPinnedStorageKey) === "true";
+  });
+  const [isSidebarPreviewed, setIsSidebarPreviewed] = useState(false);
+  const isSidebarExpanded = isSidebarPinned || isSidebarPreviewed;
 
   useEffect(() => {
-    window.localStorage.setItem(sidebarPinnedStorageKey, String(isSidebarPinned))
-  }, [isSidebarPinned])
+    window.localStorage.setItem(
+      sidebarPinnedStorageKey,
+      String(isSidebarPinned),
+    );
+  }, [isSidebarPinned]);
 
   async function handleLogin() {
     if (!memberKey.trim()) {
-      setSubmitError('利用メンバー ID を入力してください。')
-      return
+      setSubmitError("利用メンバー ID を入力してください。");
+      return;
     }
 
-    setSubmitError(null)
+    setSubmitError(null);
 
     try {
-      await login(memberKey)
-      setMemberKey('')
+      await login(memberKey);
+      setMemberKey("");
     } catch (caughtError) {
       setSubmitError(
-        caughtError instanceof Error ? caughtError.message : '利用メンバーの選択に失敗しました。',
-      )
+        caughtError instanceof Error
+          ? caughtError.message
+          : "利用メンバーの選択に失敗しました。",
+      );
     }
   }
 
   function previewSidebar() {
     if (!isSidebarPinned) {
-      setIsSidebarPreviewed(true)
+      setIsSidebarPreviewed(true);
     }
   }
 
   function collapseSidebarPreview() {
     if (!isSidebarPinned) {
-      setIsSidebarPreviewed(false)
+      setIsSidebarPreviewed(false);
     }
   }
 
   return (
-    <div className={`${styles.shell} ${isSidebarExpanded ? styles.shellExpanded : styles.shellRail}`}>
+    <div
+      className={`${styles.shell} ${isSidebarExpanded ? styles.shellExpanded : styles.shellRail}`}
+    >
       <aside
         className={`${styles.sidebar} ${
           isSidebarExpanded ? styles.sidebarExpanded : styles.sidebarRail
         }`}
-        data-state={isSidebarExpanded ? 'expanded' : 'rail'}
+        data-state={isSidebarExpanded ? "expanded" : "rail"}
         onBlur={(event) => {
-          if (!isSidebarPinned && !event.currentTarget.contains(event.relatedTarget as Node | null)) {
-            setIsSidebarPreviewed(false)
+          if (
+            !isSidebarPinned &&
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
+            setIsSidebarPreviewed(false);
           }
         }}
         onFocus={previewSidebar}
@@ -145,23 +159,35 @@ export function Layout() {
         onMouseLeave={collapseSidebarPreview}
       >
         <button
-          aria-label={isSidebarPinned ? 'サイドバーの固定を解除する' : 'サイドバーを固定する'}
+          aria-label={
+            isSidebarPinned
+              ? "サイドバーの固定を解除する"
+              : "サイドバーを固定する"
+          }
           className={styles.sidebarPinButton}
           data-testid="layout-sidebar-pin"
           onClick={() => setIsSidebarPinned((current) => !current)}
           type="button"
         >
           <span aria-hidden="true" className={styles.sidebarPinIcon}>
-            {isSidebarPinned ? '📌' : '📍'}
+            {isSidebarPinned ? "📌" : "📍"}
           </span>
-          <span className={styles.sidebarPinLabel}>{isSidebarPinned ? '固定解除' : '固定'}</span>
+          <span className={styles.sidebarPinLabel}>
+            {isSidebarPinned ? "固定解除" : "固定"}
+          </span>
         </button>
 
         <div className={styles.brand}>
-          <img alt="Project Master" className={styles.brandLogo} src={logoPath} />
+          <img
+            alt="Project Master"
+            className={styles.brandLogo}
+            src={logoPath}
+          />
           <div className={styles.brandCopy}>
             <p className={styles.brandTitle}>Project Master</p>
-            <p className={styles.brandText}>案件、体制、システムを一画面で比較できる管理アプリ</p>
+            <p className={styles.brandText}>
+              案件、体制、システムを一画面で比較できる管理アプリ
+            </p>
           </div>
         </div>
 
@@ -172,19 +198,28 @@ export function Layout() {
                 <p className={styles.navSectionTitle}>{section.title}</p>
                 <div className={styles.navSectionItems}>
                   {section.items.map((item) => {
-                    const isActive = item.isActive(location.pathname)
+                    const isActive = item.isActive(location.pathname);
 
                     return (
                       <NavLink
                         aria-label={item.label}
-                        className={() => (isActive ? `${styles.navItem} ${styles.active}` : styles.navItem)}
+                        className={() =>
+                          isActive
+                            ? `${styles.navItem} ${styles.active}`
+                            : styles.navItem
+                        }
                         key={item.to}
                         to={item.to}
                       >
-                        <EntityIcon className={styles.navItemIcon} kind={item.icon} />
-                        <span className={styles.navItemLabel}>{item.label}</span>
+                        <EntityIcon
+                          className={styles.navItemIcon}
+                          kind={item.icon}
+                        />
+                        <span className={styles.navItemLabel}>
+                          {item.label}
+                        </span>
                       </NavLink>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -194,7 +229,8 @@ export function Layout() {
           <div className={styles.sidebarCard}>
             <p className={styles.sidebarCardLabel}>表示メモ</p>
             <p className={styles.sidebarCardText}>
-              案件一覧では進捗と PM、横断ビューでは案件の重なり、システム一覧では影響範囲を比較できます。
+              案件一覧では進捗と
+              PM、横断ビューでは案件の重なり、システム一覧では影響範囲を比較できます。
             </p>
           </div>
         </div>
@@ -207,7 +243,8 @@ export function Layout() {
               <div className={styles.userSummary}>
                 <strong className={styles.username}>{currentUser.name}</strong>
                 <span className={styles.userMeta}>
-                  {currentUser.id} / ブックマーク {currentUser.bookmarkedProjectIds.length} 件
+                  {currentUser.id} / ブックマーク{" "}
+                  {currentUser.bookmarkedProjectIds.length} 件
                 </span>
               </div>
               <p className={styles.userCardText}>
@@ -228,8 +265,12 @@ export function Layout() {
                   value={memberKey}
                 />
               </label>
-              <Button disabled={isLoading} onClick={() => void handleLogin()} size="small">
-                {isLoading ? '選択中...' : '利用開始'}
+              <Button
+                disabled={isLoading}
+                onClick={() => void handleLogin()}
+                size="small"
+              >
+                {isLoading ? "選択中..." : "利用開始"}
               </Button>
               <p className={styles.userCardText}>
                 利用メンバーを選ぶと、ブックマーク案件と既定フィルターを使えます。
@@ -237,15 +278,19 @@ export function Layout() {
             </>
           )}
 
-          {submitError || error ? <p className={styles.userError}>{submitError ?? error}</p> : null}
+          {submitError || error ? (
+            <p className={styles.userError}>{submitError ?? error}</p>
+          ) : null}
         </div>
       </aside>
 
-      <main className={`${styles.content} ${isSidebarExpanded ? '' : styles.contentExpanded}`}>
+      <main
+        className={`${styles.content} ${isSidebarExpanded ? "" : styles.contentExpanded}`}
+      >
         <div className={styles.pageTransition} key={location.pathname}>
           <Outlet />
         </div>
       </main>
     </div>
-  )
+  );
 }

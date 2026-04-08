@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -76,6 +76,15 @@ export function MemberManagementPage() {
     })
   }, [filterKeyword, filterRole, sortedMembers])
 
+  const memberSummary = useMemo(
+    () => ({
+      total: members.length,
+      assigned: members.filter((member) => (projectCountByMemberId.get(member.id) ?? 0) > 0).length,
+      roles: roleOptions.length,
+    }),
+    [members, projectCountByMemberId, roleOptions.length],
+  )
+
   function updateEditField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
     setEditForm((current) => (current ? { ...current, [key]: value } : current))
   }
@@ -116,7 +125,7 @@ export function MemberManagementPage() {
   async function handleDelete(memberId: string) {
     const member = memberById.get(memberId)
 
-    if (!window.confirm(`メンバー ${member?.id ?? memberId} / ${member?.name ?? ''} を削除します。`)) {
+    if (!window.confirm(`メンバー ${member?.id ?? memberId} / ${member?.name ?? ''} を削除しますか？`)) {
       return
     }
 
@@ -140,7 +149,7 @@ export function MemberManagementPage() {
   if (isLoading) {
     return (
       <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>メンバー情報を読み込み中です</h1>
+        <h1 className={pageStyles.emptyStateTitle}>メンバー一覧を読み込み中です</h1>
         <p className={pageStyles.emptyStateText}>バックエンドからメンバー情報を取得しています。</p>
       </Panel>
     )
@@ -149,7 +158,7 @@ export function MemberManagementPage() {
   if (error) {
     return (
       <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>メンバー情報を表示できませんでした</h1>
+        <h1 className={pageStyles.emptyStateTitle}>メンバー一覧を表示できませんでした</h1>
         <p className={pageStyles.emptyStateText}>{error}</p>
       </Panel>
     )
@@ -157,26 +166,31 @@ export function MemberManagementPage() {
 
   return (
     <div className={pageStyles.page}>
-      <Panel variant="hero">
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="member" />
-          <div className={pageStyles.heroHeadingBody}>
-            <p className={pageStyles.eyebrow}>Member Directory</p>
-            <h1 className={pageStyles.title}>メンバー一覧</h1>
-            <p className={pageStyles.description}>
-              利用中のメンバーを一覧で管理します。上司は `ID / 名前`
-              表示でそろえているので、対象メンバーを識別しやすくしています。
-            </p>
-          </div>
-        </div>
-      </Panel>
+      <ListPageHero
+        action={<Button to="/members/new">新規メンバー</Button>}
+        className={styles.hero}
+        description="利用中のメンバーを一覧で管理します。検索、ロール確認、上下関係の整理、担当案件数の確認をこの画面から行えます。"
+        eyebrow="Member Directory"
+        headerClassName={styles.heroHeader}
+        iconKind="member"
+        statCardClassName={styles.heroStatCard}
+        statLabelClassName={styles.heroStatLabel}
+        stats={[
+          { label: '登録メンバー', value: memberSummary.total },
+          { label: '担当案件あり', value: memberSummary.assigned },
+          { label: 'ロール種別', value: memberSummary.roles },
+        ]}
+        statsClassName={styles.heroStats}
+        statValueClassName={styles.heroStatValue}
+        title="メンバー一覧"
+      />
 
       <Panel>
         <div className={pageStyles.sectionHeader}>
           <div>
-            <h2 className={pageStyles.sectionTitle}>登録済みメンバー</h2>
+            <h2 className={pageStyles.sectionTitle}>管理対象メンバー</h2>
             <p className={pageStyles.sectionDescription}>
-              名前、部署コード、部署名、ロール、上司、関連案件数を確認できます。利用中のメンバーは削除前にチェックします。
+              部署コード、部署名、ロール、上長、関連案件数を比較できます。利用中のメンバーは削除前にチェックします。
             </p>
           </div>
           <div className={styles.headerActions}>
@@ -186,7 +200,7 @@ export function MemberManagementPage() {
                 aria-label="メンバーIDまたは部署名で絞り込み"
                 className={formStyles.control}
                 onChange={(event) => setFilterKeyword(event.target.value)}
-                placeholder="例: m1 / 品質保証部"
+                placeholder="例: m1 / 営業本部"
                 type="search"
                 value={filterKeyword}
               />
@@ -220,11 +234,11 @@ export function MemberManagementPage() {
             <thead>
               <tr>
                 <th>メンバーID</th>
-                <th>名前</th>
+                <th>氏名</th>
                 <th>部署コード</th>
                 <th>部署名</th>
                 <th>ロール</th>
-                <th>上司</th>
+                <th>上長</th>
                 <th>関連案件数</th>
                 <th>操作</th>
               </tr>
@@ -241,7 +255,7 @@ export function MemberManagementPage() {
                     <td>
                       {isEditing ? (
                         <input
-                          aria-label="名前"
+                          aria-label="氏名"
                           className={styles.inlineInput}
                           onChange={(event) => updateEditField('name', event.target.value)}
                           value={editForm.name}

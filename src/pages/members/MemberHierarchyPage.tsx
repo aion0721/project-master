@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EntityIcon } from '../../components/EntityIcon'
 import { MemberHierarchyTree } from '../../components/MemberHierarchyTree'
+import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import type { Member } from '../../types/project'
@@ -25,11 +26,7 @@ interface HierarchyGroup {
 function renderMemberLevelCard({ member, isSelected, isPathNode }: MemberLevelCardProps) {
   return (
     <article
-      className={[
-        styles.levelCard,
-        isSelected ? styles.selectedCard : '',
-        isPathNode ? styles.pathCard : '',
-      ]
+      className={[styles.levelCard, isSelected ? styles.selectedCard : '', isPathNode ? styles.pathCard : '']
         .filter(Boolean)
         .join(' ')}
       key={member.id}
@@ -137,6 +134,16 @@ export function MemberHierarchyPage() {
     [activeMemberId, sortedMembers],
   )
 
+  const topLevelCount = useMemo(
+    () => members.filter((member) => !member.managerId).length,
+    [members],
+  )
+
+  const roleCount = useMemo(
+    () => new Set(members.map((member) => member.role.trim()).filter(Boolean)).size,
+    [members],
+  )
+
   if (isLoading) {
     return (
       <Panel>
@@ -157,15 +164,34 @@ export function MemberHierarchyPage() {
 
   return (
     <div className={pageStyles.page}>
-      <Panel variant="hero">
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="member" />
-          <div className={pageStyles.heroHeadingBody}>
-            <p className={pageStyles.eyebrow}>Organization View</p>
-            <h1 className={pageStyles.title}>メンバー体制図</h1>
-            <p className={pageStyles.description}>
-              メンバーを 1 人選ぶと、その人までの上位系統と配下メンバーを組織ツリーで表示します。
-            </p>
+      <Panel className={styles.hero} variant="hero">
+        <div className={styles.heroHeader}>
+          <div className={pageStyles.heroHeading}>
+            <EntityIcon className={pageStyles.heroIcon} kind="member" />
+            <div className={pageStyles.heroHeadingBody}>
+              <p className={pageStyles.eyebrow}>Organization View</p>
+              <h1 className={pageStyles.title}>メンバー体制図</h1>
+              <p className={pageStyles.description}>
+                メンバーを起点に上長と配下をツリーで確認できます。選択したメンバーを中心に、指揮系統と周辺メンバーを追いやすく整理しています。
+              </p>
+            </div>
+          </div>
+
+          <Button to="/members">メンバー一覧</Button>
+        </div>
+
+        <div className={styles.heroStats}>
+          <div className={styles.heroStatCard}>
+            <span className={styles.heroStatLabel}>登録メンバー</span>
+            <strong className={styles.heroStatValue}>{members.length}</strong>
+          </div>
+          <div className={styles.heroStatCard}>
+            <span className={styles.heroStatLabel}>最上位ノード</span>
+            <strong className={styles.heroStatValue}>{topLevelCount}</strong>
+          </div>
+          <div className={styles.heroStatCard}>
+            <span className={styles.heroStatLabel}>ロール種別</span>
+            <strong className={styles.heroStatValue}>{roleCount}</strong>
           </div>
         </div>
       </Panel>
@@ -173,9 +199,9 @@ export function MemberHierarchyPage() {
       <Panel>
         <div className={pageStyles.sectionHeader}>
           <div>
-            <h2 className={pageStyles.sectionTitle}>関係図</h2>
+            <h2 className={pageStyles.sectionTitle}>関係表示</h2>
             <p className={pageStyles.sectionDescription}>
-              `managerId` を使った組織上の上司・部下関係を表示します。案件体制とは別のビューです。
+              `managerId` を使った上下関係を表示します。案件体制とは別のビューです。
             </p>
           </div>
         </div>
@@ -199,27 +225,21 @@ export function MemberHierarchyPage() {
             </select>
           </label>
 
-          <div className={styles.viewToggle} role="group" aria-label="体制図の表示切替">
+          <div aria-label="体制図の表示切替" className={styles.viewToggle} role="group">
             <button
               aria-pressed={viewMode === 'tree'}
-              className={[
-                styles.viewToggleButton,
-                viewMode === 'tree' ? styles.viewToggleButtonActive : '',
-              ]
+              className={[styles.viewToggleButton, viewMode === 'tree' ? styles.viewToggleButtonActive : '']
                 .filter(Boolean)
                 .join(' ')}
               data-testid="member-hierarchy-view-tree"
               onClick={() => setViewMode('tree')}
               type="button"
             >
-              縦ツリー
+              ツリー
             </button>
             <button
               aria-pressed={viewMode === 'pyramid'}
-              className={[
-                styles.viewToggleButton,
-                viewMode === 'pyramid' ? styles.viewToggleButtonActive : '',
-              ]
+              className={[styles.viewToggleButton, viewMode === 'pyramid' ? styles.viewToggleButtonActive : '']
                 .filter(Boolean)
                 .join(' ')}
               data-testid="member-hierarchy-view-pyramid"
@@ -235,7 +255,7 @@ export function MemberHierarchyPage() {
           ) : hierarchyLevels ? (
             <div className={styles.pyramidWrap} data-testid="member-hierarchy-pyramid">
               <div className={styles.pyramidLegend}>
-                <span>上位系統から対象メンバー、配下の順に段表示します。</span>
+                <span>上位の系統から対象メンバー、その下の配下まで順に表示します。</span>
               </div>
 
               <div className={styles.pyramidLevels}>

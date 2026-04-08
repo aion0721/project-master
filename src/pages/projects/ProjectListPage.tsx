@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { ProjectTable } from '../../components/ProjectTable'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import { useUserSession } from '../../store/useUserSession'
-import pageStyles from '../../styles/page.module.css'
 import type { Project } from '../../types/project'
-import { allWorkStatuses, getMemberDefaultProjectStatusFilters } from '../../utils/userPreferences'
 import { getProjectCurrentPhase, getProjectPm } from '../../utils/projectUtils'
+import { allWorkStatuses, getMemberDefaultProjectStatusFilters } from '../../utils/userPreferences'
 import styles from './ProjectListPage.module.css'
 
 type ViewMode = 'all' | 'bookmarks'
@@ -74,6 +73,7 @@ export function ProjectListPage() {
     completed: filteredProjects.filter((project) => project.status === '完了').length,
   }
 
+  const bookmarkedCount = currentUser?.bookmarkedProjectIds.length ?? 0
   const hasStatusSelection = selectedStatuses.length > 0
 
   const emptyState =
@@ -81,7 +81,7 @@ export function ProjectListPage() {
       ? {
           title: '条件に一致するブックマーク案件はありません',
           description:
-            'ブックマークした案件はありますが、選択中の状態フィルターに一致していません。状態を見直してください。',
+            'ブックマークした案件はありますが、現在の状態フィルターに一致していません。条件を見直してください。',
         }
       : viewMode === 'bookmarks' && currentUser && rows.length === 0
         ? {
@@ -119,7 +119,7 @@ export function ProjectListPage() {
       await saveDefaultProjectStatusFilters(selectedStatuses)
       setSaveFeedback('現在の状態フィルターを既定値として保存しました。')
     } catch {
-      setSaveFeedback('既定フィルターの保存に失敗しました。')
+      setSaveFeedback('既定値フィルターの保存に失敗しました。')
     } finally {
       setIsSavingDefaults(false)
     }
@@ -145,22 +145,26 @@ export function ProjectListPage() {
 
   return (
     <div className={styles.page}>
-      <Panel className={styles.hero} variant="hero">
-        <div className={styles.heroHeader}>
-          <div className={pageStyles.heroHeading}>
-            <EntityIcon className={pageStyles.heroIcon} kind="project" />
-            <div className={pageStyles.heroHeadingBody}>
-              <p className={styles.eyebrow}>Project Portfolio</p>
-              <h1 className={styles.title}>案件一覧</h1>
-              <p className={styles.description}>
-                進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
-              </p>
-            </div>
-          </div>
+      <ListPageHero
+        action={<Button to="/projects/new">案件を追加</Button>}
+        className={styles.hero}
+        description="進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。"
+        eyebrow="Project Portfolio"
+        headerClassName={styles.heroHeader}
+        iconKind="project"
+        statCardClassName={styles.heroStatCard}
+        statLabelClassName={styles.heroStatLabel}
+        stats={[
+          { label: '表示中案件', value: summary.total },
+          { label: '進行中', value: summary.inProgress },
+          { label: 'ブックマーク', value: bookmarkedCount },
+        ]}
+        statsClassName={styles.heroStats}
+        statValueClassName={styles.heroStatValue}
+        title="案件一覧"
+      />
 
-          <Button to="/projects/new">案件を追加</Button>
-        </div>
-
+      <Panel className={styles.controls} variant="section">
         <div className={styles.filterRow}>
           <div className={styles.toggleGroup}>
             <button
@@ -181,8 +185,8 @@ export function ProjectListPage() {
           </div>
           <p className={styles.filterHint}>
             {currentUser
-              ? `${currentUser.name} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
-              : '右上で利用メンバーを選ぶと、ブックマーク案件を利用できます。'}
+              ? `${currentUser.name} さんのブックマーク ${bookmarkedCount} 件`
+              : '利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。'}
           </p>
         </div>
 
@@ -204,7 +208,7 @@ export function ProjectListPage() {
               {saveFeedback ??
                 (currentUser
                   ? '利用メンバーごとに次回表示時の初期状態として保存されます。'
-                  : '利用メンバーを選択すると既定値を保存できます。')}
+                  : '利用メンバーを選ぶと既定値を保存できます。')}
             </p>
           </div>
           <div className={styles.statusCheckboxGroup}>
@@ -248,7 +252,7 @@ export function ProjectListPage() {
               {viewMode === 'bookmarks' && currentUser ? 'ブックマーク案件一覧' : '案件ステータス一覧'}
             </h2>
             <p className={styles.sectionDescription}>
-              案件ごとの PM、現在フェーズ、開始日、終了日、主システムを確認できます。
+              案件ごとの PM、現在フェーズ、開始日、終了日、主システムを比較できます。
             </p>
           </div>
         </div>
