@@ -7,6 +7,7 @@ import { ProjectListPage } from './ProjectListPage'
 async function openFilterPanel() {
   const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
   fireEvent.click(toggleButton)
+  await screen.findByText('状態フィルター')
 }
 
 describe('ProjectListPage', () => {

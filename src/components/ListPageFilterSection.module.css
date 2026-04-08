@@ -1,3 +1,23 @@
+.wrapper {
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition:
+    max-height 0.28s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease;
+  will-change: max-height, opacity, transform;
+}
+
+.wrapperVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.inner {
+  padding-top: 1px;
+}
+
 .panel {
   composes: section from './ui/Panel.module.css';
 }

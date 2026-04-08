@@ -192,48 +192,47 @@ export function MemberManagementPage() {
         title="メンバー一覧"
       />
 
-      {isFilterVisible ? (
-        <ListPageFilterSection
-          className={styles.controls}
-          topRow={
-            <div className={styles.headerActions}>
-              <label className={`${formStyles.field} ${styles.filterField}`}>
-                <span className={formStyles.label}>絞り込み</span>
-                <input
-                  aria-label="メンバーIDまたは部署名で絞り込み"
-                  className={formStyles.control}
-                  onChange={(event) => setFilterKeyword(event.target.value)}
-                  placeholder="例: m1 / 営業本部"
-                  type="search"
-                  value={filterKeyword}
-                />
-              </label>
-              <label className={`${formStyles.field} ${styles.filterField}`}>
-                <span className={formStyles.label}>ロール</span>
-                <select
-                  aria-label="ロールで絞り込み"
-                  className={formStyles.control}
-                  onChange={(event) => setFilterRole(event.target.value)}
-                  value={filterRole}
-                >
-                  <option value="">すべて</option>
-                  {roleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          }
-          summary={
-            <div className={styles.filterSummary}>
-              <span className={styles.filterSummaryLabel}>表示条件</span>
-              <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
-            </div>
-          }
-        />
-      ) : null}
+      <ListPageFilterSection
+        className={styles.controls}
+        topRow={
+          <div className={styles.headerActions}>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>絞り込み</span>
+              <input
+                aria-label="メンバーIDまたは部署名で絞り込み"
+                className={formStyles.control}
+                onChange={(event) => setFilterKeyword(event.target.value)}
+                placeholder="例: m1 / 営業本部"
+                type="search"
+                value={filterKeyword}
+              />
+            </label>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>ロール</span>
+              <select
+                aria-label="ロールで絞り込み"
+                className={formStyles.control}
+                onChange={(event) => setFilterRole(event.target.value)}
+                value={filterRole}
+              >
+                <option value="">すべて</option>
+                {roleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        }
+        summary={
+          <div className={styles.filterSummary}>
+            <span className={styles.filterSummaryLabel}>表示条件</span>
+            <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
+          </div>
+        }
+        visible={isFilterVisible}
+      />
 
       <ListPageContentSection
         actions={

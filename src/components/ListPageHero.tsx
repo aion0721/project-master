@@ -57,7 +57,10 @@ export function ListPageHero({
   }, [collapsible, isCollapsed, storageKey])
 
   return (
-    <Panel className={[className, isCollapsed ? styles.collapsed : ''].filter(Boolean).join(' ')} variant="hero">
+    <Panel
+      className={[styles.panel, className, isCollapsed ? styles.collapsed : ''].filter(Boolean).join(' ')}
+      variant="hero"
+    >
       <div className={styles.main}>
         {leadingContent ? <div className={styles.leadingContent}>{leadingContent}</div> : null}
 

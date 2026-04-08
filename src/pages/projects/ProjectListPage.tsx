@@ -194,84 +194,83 @@ export function ProjectListPage() {
         title="案件一覧"
       />
 
-      {isFilterVisible ? (
-        <ListPageFilterSection
-          className={styles.controls}
-          topRow={
-            <div className={styles.filterTopRow}>
-              <div className={styles.toggleGroup}>
-                <button
-                  className={
-                    viewMode === "all"
-                      ? `${styles.toggle} ${styles.toggleActive}`
-                      : styles.toggle
-                  }
-                  onClick={() => setViewMode("all")}
-                  type="button"
-                >
-                  全案件
-                </button>
-                <button
-                  className={
-                    viewMode === "bookmarks"
-                      ? `${styles.toggle} ${styles.toggleActive}`
-                      : styles.toggle
-                  }
-                  disabled={!currentUser}
-                  onClick={() => setViewMode("bookmarks")}
-                  type="button"
-                >
-                  ブックマーク
-                </button>
-              </div>
-              <p className={styles.filterHint}>
-                {currentUser
-                  ? `${currentUser.name} さんのブックマーク ${bookmarkedCount} 件`
-                  : "利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。"}
+      <ListPageFilterSection
+        className={styles.controls}
+        topRow={
+          <div className={styles.filterTopRow}>
+            <div className={styles.toggleGroup}>
+              <button
+                className={
+                  viewMode === "all"
+                    ? `${styles.toggle} ${styles.toggleActive}`
+                    : styles.toggle
+                }
+                onClick={() => setViewMode("all")}
+                type="button"
+              >
+                全案件
+              </button>
+              <button
+                className={
+                  viewMode === "bookmarks"
+                    ? `${styles.toggle} ${styles.toggleActive}`
+                    : styles.toggle
+                }
+                disabled={!currentUser}
+                onClick={() => setViewMode("bookmarks")}
+                type="button"
+              >
+                ブックマーク
+              </button>
+            </div>
+            <p className={styles.filterHint}>
+              {currentUser
+                ? `${currentUser.name} さんのブックマーク ${bookmarkedCount} 件`
+                : "利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。"}
+            </p>
+          </div>
+        }
+        summary={
+          <div className={styles.filterSummaryRow}>
+            <div className={styles.filterSummaryHeading}>
+              <p className={styles.statusFilterTitle}>状態フィルター</p>
+              <p className={styles.statusFilterHint}>
+                複数選択できます。完了だけ外す使い方を想定しています。
               </p>
             </div>
-          }
-          summary={
-            <div className={styles.filterSummaryRow}>
-              <div className={styles.filterSummaryHeading}>
-                <p className={styles.statusFilterTitle}>状態フィルター</p>
-                <p className={styles.statusFilterHint}>
-                  複数選択できます。完了だけ外す使い方を想定しています。
-                </p>
-              </div>
-              <div className={styles.statusFilterActions}>
-                <Button
-                  disabled={!currentUser || isSavingDefaults}
-                  onClick={() => void handleSaveDefaults()}
-                  size="small"
-                  variant="secondary"
-                >
-                  {isSavingDefaults ? "保存中..." : "この状態を既定値に保存"}
-                </Button>
-                <p className={styles.statusFilterMeta}>
-                  {saveFeedback ?? "利用メンバーを選ぶと既定値を保存できます。"}
-                </p>
-              </div>
+            <div className={styles.statusFilterActions}>
+              <Button
+                disabled={!currentUser || isSavingDefaults}
+                onClick={() => void handleSaveDefaults()}
+                size="small"
+                variant="secondary"
+              >
+                {isSavingDefaults ? "保存中..." : "この状態を既定値に保存"}
+              </Button>
+              <p className={styles.statusFilterMeta}>
+                {saveFeedback ?? "利用メンバーを選ぶと既定値を保存できます。"}
+              </p>
             </div>
-          }
-          body={
-            <div className={styles.statusFilters}>
-              <div className={styles.statusCheckboxGroup}>
-                {allWorkStatuses.map((status) => (
-                  <label className={styles.statusCheckbox} key={status}>
-                    <input
-                      checked={selectedStatuses.includes(status)}
-                      onChange={() => handleStatusToggle(status)}
-                      type="checkbox"
-                    />
-                    <span>{status}</span>
-                  </label>
-                ))}
-              </div>
+          </div>
+        }
+        body={
+          <div className={styles.statusFilters}>
+            <div className={styles.statusCheckboxGroup}>
+              {allWorkStatuses.map((status) => (
+                <label className={styles.statusCheckbox} key={status}>
+                  <input
+                    checked={selectedStatuses.includes(status)}
+                    onChange={() => handleStatusToggle(status)}
+                    type="checkbox"
+                  />
+                  <span>{status}</span>
+                </label>
+              ))}
             </div>
-          }
-        />
-      ) : null}
+          </div>
+        }
+        visible={isFilterVisible}
+      />
 
       <ListPageContentSection
         actions={

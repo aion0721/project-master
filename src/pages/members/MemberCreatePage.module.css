@@ -3,37 +3,7 @@
 }
 
 .hero {
-  --accent: #0f766e;
-  --accent-strong: #115e59;
-  --page-hero-accent: #0f766e;
-  --page-hero-icon-bg: rgba(220, 252, 231, 0.94);
-  --page-hero-icon-tint: rgba(16, 185, 129, 0.12);
-  --page-hero-stat-bg: rgba(255, 255, 255, 0.64);
-  --page-hero-stat-border: rgba(16, 185, 129, 0.28);
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 88% 14%, rgba(15, 118, 110, 0.18), transparent 30%),
-    radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.2), transparent 24%),
-    radial-gradient(circle at 52% 100%, rgba(167, 243, 208, 0.22), transparent 36%),
-    linear-gradient(135deg, rgba(236, 253, 245, 0.96) 0%, rgba(223, 247, 238, 0.98) 46%, rgba(246, 255, 251, 0.99) 100%);
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.1), transparent 44%),
-    radial-gradient(circle at 10% 16%, rgba(52, 211, 153, 0.22), transparent 20%),
-    radial-gradient(circle at 88% 12%, rgba(16, 185, 129, 0.18), transparent 26%),
-    radial-gradient(circle at 52% 100%, rgba(167, 243, 208, 0.16), transparent 32%);
-  pointer-events: none;
-}
-
-.hero > * {
-  position: relative;
-  z-index: 1;
+  composes: heroPreset from './memberHero.module.css';
 }
 
 .section {

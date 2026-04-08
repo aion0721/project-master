@@ -3,18 +3,7 @@
 }
 
 .hero {
-  --accent: #1d4ed8;
-  --accent-strong: #1e40af;
-  --page-hero-accent: #0f5ecf;
-  --page-hero-icon-bg: rgba(219, 234, 254, 0.94);
-  --page-hero-icon-tint: rgba(59, 130, 246, 0.12);
-  --page-hero-stat-bg: rgba(255, 255, 255, 0.74);
-  --page-hero-stat-border: rgba(96, 165, 250, 0.24);
-  background:
-    radial-gradient(circle at 88% 10%, rgba(37, 99, 235, 0.28), transparent 0 30%),
-    radial-gradient(circle at 8% 24%, rgba(14, 165, 233, 0.22), transparent 0 28%),
-    radial-gradient(circle at 56% 100%, rgba(191, 219, 254, 0.32), transparent 0 34%),
-    linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.99));
+  composes: heroPreset from './projectHero.module.css';
 }
 
 .controls {

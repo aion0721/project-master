@@ -7,10 +7,11 @@ import { SystemManagementPage } from './SystemManagementPage'
 async function openFilterPanel() {
   const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
   fireEvent.click(toggleButton)
+  await screen.findByLabelText('システムIDで絞り込み')
 }
 
 describe('SystemManagementPage', () => {
-  it('システム一覧と対象システム列を表示する', async () => {
+  it('システム一覧と対象案件列を表示する', async () => {
     mockProjectApi()
 
     renderWithProviders(<SystemManagementPage />, {
@@ -18,9 +19,10 @@ describe('SystemManagementPage', () => {
     })
 
     expect(await screen.findByRole('heading', { name: 'システム一覧' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: '対象システム' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '対象案件' })).toBeInTheDocument()
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('会計基盤')
-    expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('基幹会計刷新')
+    expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('1 件')
+    expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('操作列から案件を表示できます')
     expect(screen.getByRole('link', { name: '新規システム' })).toHaveAttribute(
       'href',
       '/systems/new',
@@ -82,5 +84,23 @@ describe('SystemManagementPage', () => {
     )
     expect(within(row).queryByRole('button', { name: '編集' })).not.toBeInTheDocument()
     expect(within(row).queryByRole('button', { name: '削除' })).not.toBeInTheDocument()
+  })
+
+  it('案件の表示をONにすると対象案件列に案件リンクを表示できる', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<SystemManagementPage />, {
+      initialEntries: ['/systems'],
+    })
+
+    await screen.findByRole('heading', { name: 'システム一覧' })
+    fireEvent.click(screen.getByRole('button', { name: '案件の表示: OFF' }))
+
+    const row = await screen.findByTestId('system-row-sys-accounting')
+
+    expect(within(row).getByRole('link', { name: 'PRJ-001 / 基幹会計刷新' })).toHaveAttribute(
+      'href',
+      '/projects/PRJ-001',
+    )
   })
 })

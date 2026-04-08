@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ListPageContentSection } from '../../components/ListPageContentSection'
 import { ListPageFilterSection } from '../../components/ListPageFilterSection'
 import { ListPageHero } from '../../components/ListPageHero'
@@ -14,6 +15,7 @@ export function SystemManagementPage() {
   const [isFilterVisible, setIsFilterVisible] = useState(false)
   const [filterSystemId, setFilterSystemId] = useState('')
   const [filterDepartmentName, setFilterDepartmentName] = useState('')
+  const [isProjectListVisible, setIsProjectListVisible] = useState(false)
 
   const memberNameById = useMemo(
     () => new Map(members.map((member) => [member.id, member.name])),
@@ -64,8 +66,8 @@ export function SystemManagementPage() {
     return tokens.length > 0 ? `${filteredSystems.length} 件表示 / ${tokens.join(' / ')}` : `${filteredSystems.length} 件表示`
   }, [filterDepartmentName, filterSystemId, filteredSystems.length])
 
-  const projectNamesBySystemId = useMemo(() => {
-    const map = new Map<string, string[]>()
+  const relatedProjectsBySystemId = useMemo(() => {
+    const map = new Map<string, Array<{ projectNumber: string; name: string }>>()
 
     projects.forEach((project) => {
       const systemId = project.relatedSystemIds?.[0]
@@ -75,7 +77,10 @@ export function SystemManagementPage() {
       }
 
       const current = map.get(systemId) ?? []
-      current.push(project.name)
+      current.push({
+        projectNumber: project.projectNumber,
+        name: project.name,
+      })
       map.set(systemId, current)
     })
 
@@ -127,60 +132,74 @@ export function SystemManagementPage() {
         title="システム一覧"
       />
 
-      {isFilterVisible ? (
-        <ListPageFilterSection
-          className={styles.controls}
-          topRow={
-            <div className={styles.headerActions}>
-              <label className={`${formStyles.field} ${styles.filterField}`}>
-                <span className={formStyles.label}>システムID</span>
-                <input
-                  aria-label="システムIDで絞り込み"
-                  className={formStyles.control}
-                  onChange={(event) => setFilterSystemId(event.target.value)}
-                  placeholder="例: sys-accounting"
-                  type="search"
-                  value={filterSystemId}
-                />
-              </label>
-              <label className={`${formStyles.field} ${styles.filterField}`}>
-                <span className={formStyles.label}>所管部署</span>
-                <select
-                  aria-label="所管部署で絞り込み"
-                  className={formStyles.control}
-                  onChange={(event) => setFilterDepartmentName(event.target.value)}
-                  value={filterDepartmentName}
-                >
-                  <option value="">すべて</option>
-                  <option value="__unassigned__">未設定</option>
-                  {departmentOptions.map((departmentName) => (
-                    <option key={departmentName} value={departmentName}>
-                      {departmentName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          }
-          summary={
-            <div className={styles.filterSummary}>
-              <span className={styles.filterSummaryLabel}>表示条件</span>
-              <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
-            </div>
-          }
-        />
-      ) : null}
+      <ListPageFilterSection
+        className={styles.controls}
+        topRow={
+          <div className={styles.headerActions}>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>システムID</span>
+              <input
+                aria-label="システムIDで絞り込み"
+                className={formStyles.control}
+                onChange={(event) => setFilterSystemId(event.target.value)}
+                placeholder="例: sys-accounting"
+                type="search"
+                value={filterSystemId}
+              />
+            </label>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>所管部署</span>
+              <select
+                aria-label="所管部署で絞り込み"
+                className={formStyles.control}
+                onChange={(event) => setFilterDepartmentName(event.target.value)}
+                value={filterDepartmentName}
+              >
+                <option value="">すべて</option>
+                <option value="__unassigned__">未設定</option>
+                {departmentOptions.map((departmentName) => (
+                  <option key={departmentName} value={departmentName}>
+                    {departmentName}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        }
+        summary={
+          <div className={styles.filterSummary}>
+            <span className={styles.filterSummaryLabel}>表示条件</span>
+            <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
+          </div>
+        }
+        visible={isFilterVisible}
+      />
 
       <ListPageContentSection
         actions={
-          <Button
-            aria-expanded={isFilterVisible}
-            onClick={() => setIsFilterVisible((current) => !current)}
-            size="small"
-            variant="secondary"
-          >
-            {isFilterVisible ? '絞り込みを非表示' : '絞り込みを表示'}
-          </Button>
+          <div className={styles.toolbarActions}>
+            <Button
+              aria-expanded={isFilterVisible}
+              onClick={() => setIsFilterVisible((current) => !current)}
+              size="small"
+              variant="secondary"
+            >
+              {isFilterVisible ? '絞り込みを非表示' : '絞り込みを表示'}
+            </Button>
+            <Button
+              aria-pressed={isProjectListVisible}
+              className={
+                isProjectListVisible
+                  ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
+                  : styles.toggleStateButton
+              }
+              onClick={() => setIsProjectListVisible((current) => !current)}
+              size="small"
+              variant="secondary"
+            >
+              {`案件の表示: ${isProjectListVisible ? 'ON' : 'OFF'}`}
+            </Button>
+          </div>
         }
         description="オーナーと関連プロジェクトを比較できます。操作列から横断ビューにも移動できます。"
         emptyState={
@@ -203,17 +222,17 @@ export function SystemManagementPage() {
                 <th>カテゴリ</th>
                 <th>オーナー</th>
                 <th>所管部署</th>
-                <th>対象システム</th>
+                <th>対象案件</th>
                 <th>メモ</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredSystems.map((system) => {
-                const relatedProjectNames = projectNamesBySystemId.get(system.id) ?? []
+                const relatedProjects = relatedProjectsBySystemId.get(system.id) ?? []
 
                 return (
-                  <tr data-testid={`system-row-${system.id}`} key={system.id}>
+                  <tr className={styles.systemRow} data-testid={`system-row-${system.id}`} key={system.id}>
                     <td className={styles.idCell}>{system.id}</td>
                     <td>{system.name}</td>
                     <td>{system.category}</td>
@@ -237,17 +256,19 @@ export function SystemManagementPage() {
                     </td>
                     <td>
                       <div className={styles.projectSummary}>
-                        <span className={styles.projectCount}>{relatedProjectNames.length} 件</span>
+                        <span className={styles.projectCount}>{relatedProjects.length} 件</span>
                         <div className={styles.projectList}>
-                          {relatedProjectNames.length > 0 ? (
-                            relatedProjectNames.map((projectName) => (
-                              <span className={styles.projectChip} key={`${system.id}-${projectName}`}>
-                                {projectName}
-                              </span>
-                            ))
-                          ) : (
-                            <span className={styles.noteCell}>関連案件なし</span>
-                          )}
+                          {relatedProjects.length > 0 && isProjectListVisible
+                            ? relatedProjects.map((project) => (
+                                <Link
+                                  className={styles.projectChipLink}
+                                  key={`${system.id}-${project.projectNumber}`}
+                                  to={`/projects/${project.projectNumber}`}
+                                >
+                                  {project.projectNumber} / {project.name}
+                                </Link>
+                              ))
+                            : null}
                         </div>
                       </div>
                     </td>
