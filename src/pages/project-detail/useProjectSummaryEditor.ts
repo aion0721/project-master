@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
+import type {
+  ManagedSystem,
+  Phase,
+  Project,
+  ProjectLink,
+  ProjectStatusOverride,
+} from '../../types/project'
 import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
 
 interface UpdateProjectCurrentPhase {
@@ -22,6 +28,10 @@ interface UpdateProjectReportStatus {
   (projectId: string, input: { hasReportItems: boolean }): Promise<unknown>
 }
 
+interface UpdateProjectStatusOverride {
+  (projectId: string, input: { statusOverride?: ProjectStatusOverride | null }): Promise<unknown>
+}
+
 interface UpdateProjectSystems {
   (projectId: string, input: { relatedSystemIds: string[] }): Promise<unknown>
 }
@@ -35,6 +45,7 @@ export function useProjectSummaryEditor(
   updateProjectLinks: UpdateProjectLinks,
   updateProjectNote: UpdateProjectNote,
   updateProjectReportStatus: UpdateProjectReportStatus,
+  updateProjectStatusOverride: UpdateProjectStatusOverride,
   updateProjectSystems: UpdateProjectSystems,
 ) {
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
@@ -62,6 +73,12 @@ export function useProjectSummaryEditor(
   const [projectReportStatusError, setProjectReportStatusError] = useState<string | null>(null)
   const [isSavingProjectReportStatus, setIsSavingProjectReportStatus] = useState(false)
 
+  const [isProjectStatusEditing, setIsProjectStatusEditing] = useState(false)
+  const [projectStatusOverrideDraft, setProjectStatusOverrideDraft] =
+    useState<ProjectStatusOverride | null>(null)
+  const [projectStatusOverrideError, setProjectStatusOverrideError] = useState<string | null>(null)
+  const [isSavingProjectStatusOverride, setIsSavingProjectStatusOverride] = useState(false)
+
   const [isProjectSystemsEditing, setIsProjectSystemsEditing] = useState(false)
   const [projectSystemIdsDraft, setProjectSystemIdsDraft] = useState<string[]>([])
   const [projectSystemsError, setProjectSystemsError] = useState<string | null>(null)
@@ -84,6 +101,8 @@ export function useProjectSummaryEditor(
     setProjectNoteError(null)
     setProjectReportStatusDraft(project.hasReportItems ?? false)
     setProjectReportStatusError(null)
+    setProjectStatusOverrideDraft(project.statusOverride ?? null)
+    setProjectStatusOverrideError(null)
     setProjectSystemIdsDraft([...(project.relatedSystemIds ?? [])])
     setProjectSystemsError(null)
   }, [project])
@@ -102,6 +121,8 @@ export function useProjectSummaryEditor(
     : false
   const projectNoteChanged = (projectNoteDraft.trim() || '') !== (project?.note ?? '')
   const projectReportStatusChanged = projectReportStatusDraft !== (project?.hasReportItems ?? false)
+  const projectStatusOverrideChanged =
+    (projectStatusOverrideDraft ?? null) !== (project?.statusOverride ?? null)
   const projectSystemsChanged = project
     ? JSON.stringify([...projectSystemIdsDraft].sort()) !==
       JSON.stringify([...(project.relatedSystemIds ?? [])].sort())
@@ -207,6 +228,40 @@ export function useProjectSummaryEditor(
     setProjectReportStatusDraft(project?.hasReportItems ?? false)
     setProjectReportStatusError(null)
     setIsProjectReportStatusEditing(true)
+  }
+
+  function openProjectStatusEditor() {
+    setProjectStatusOverrideDraft(project?.statusOverride ?? null)
+    setProjectStatusOverrideError(null)
+    setIsProjectStatusEditing(true)
+  }
+
+  function closeProjectStatusEditor() {
+    setProjectStatusOverrideDraft(project?.statusOverride ?? null)
+    setProjectStatusOverrideError(null)
+    setIsProjectStatusEditing(false)
+  }
+
+  async function saveProjectStatusOverride() {
+    if (!project) {
+      return
+    }
+
+    setIsSavingProjectStatusOverride(true)
+    setProjectStatusOverrideError(null)
+
+    try {
+      await updateProjectStatusOverride(project.projectNumber, {
+        statusOverride: projectStatusOverrideDraft,
+      })
+      setIsProjectStatusEditing(false)
+    } catch (caughtError) {
+      setProjectStatusOverrideError(
+        caughtError instanceof Error ? caughtError.message : '案件状態の更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectStatusOverride(false)
+    }
   }
 
   function closeProjectReportStatusEditor() {
@@ -375,11 +430,13 @@ export function useProjectSummaryEditor(
     isProjectLinksEditing,
     isProjectNoteEditing,
     isProjectReportStatusEditing,
+    isProjectStatusEditing,
     isProjectSystemsEditing,
     isSavingCurrentPhase,
     isSavingProjectLinks,
     isSavingProjectNote,
     isSavingProjectReportStatus,
+    isSavingProjectStatusOverride,
     isSavingProjectSystems,
     isSavingSchedule,
     isScheduleEditing,
@@ -392,6 +449,9 @@ export function useProjectSummaryEditor(
     projectReportStatusChanged,
     projectReportStatusDraft,
     projectReportStatusError,
+    projectStatusOverrideChanged,
+    projectStatusOverrideDraft,
+    projectStatusOverrideError,
     projectSystemIdsDraft,
     projectSystemsChanged,
     projectSystemsError,
@@ -403,12 +463,14 @@ export function useProjectSummaryEditor(
     closeProjectLinksEditor,
     closeProjectNoteEditor,
     closeProjectReportStatusEditor,
+    closeProjectStatusEditor,
     closeProjectSystemsEditor,
     closeScheduleEditor,
     openCurrentPhaseEditor,
     openProjectLinksEditor,
     openProjectNoteEditor,
     openProjectReportStatusEditor,
+    openProjectStatusEditor,
     openProjectSystemsEditor,
     openScheduleEditor,
     removeProjectLinkDraft,
@@ -416,12 +478,14 @@ export function useProjectSummaryEditor(
     saveProjectLinks,
     saveProjectNote,
     saveProjectReportStatus,
+    saveProjectStatusOverride,
     saveProjectSystems,
     saveSchedule,
     setCurrentPhaseDraftId,
     setScheduleDraft,
     setProjectNoteDraft,
     setProjectReportStatusDraft,
+    setProjectStatusOverrideDraft,
     setProjectSystemDraft,
     updateProjectLinkDraft,
   }

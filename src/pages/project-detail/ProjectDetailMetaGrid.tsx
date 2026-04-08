@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
-import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
+import type { ManagedSystem, Phase, Project, ProjectLink, ProjectStatusOverride } from '../../types/project'
+import { getPhaseToneKey } from '../../utils/projectPhasePresets'
 import { formatPeriod } from '../../utils/projectUtils'
 import styles from '../projects/ProjectDetailPage.module.css'
 
@@ -18,11 +19,13 @@ interface ProjectDetailMetaGridProps {
   isProjectLinksEditing: boolean
   isProjectNoteEditing: boolean
   isProjectReportStatusEditing: boolean
+  isProjectStatusEditing: boolean
   isProjectSystemsEditing: boolean
   isSavingCurrentPhase: boolean
   isSavingProjectLinks: boolean
   isSavingProjectNote: boolean
   isSavingProjectReportStatus: boolean
+  isSavingProjectStatusOverride: boolean
   isSavingProjectSystems: boolean
   isSavingSchedule: boolean
   isScheduleEditing: boolean
@@ -44,6 +47,10 @@ interface ProjectDetailMetaGridProps {
   onProjectReportStatusDraftChange: (hasReportItems: boolean) => void
   onProjectReportStatusEdit: () => void
   onProjectReportStatusSave: () => void
+  onProjectStatusCancel: () => void
+  onProjectStatusOverrideDraftChange: (status: ProjectStatusOverride | null) => void
+  onProjectStatusEdit: () => void
+  onProjectStatusSave: () => void
   onProjectSystemsCancel: () => void
   onProjectSystemsEdit: () => void
   onProjectSystemsSave: () => void
@@ -64,6 +71,9 @@ interface ProjectDetailMetaGridProps {
   projectReportStatusChanged: boolean
   projectReportStatusDraft: boolean
   projectReportStatusError: string | null
+  projectStatusOverrideChanged: boolean
+  projectStatusOverrideDraft: ProjectStatusOverride | null
+  projectStatusOverrideError: string | null
   projectPhases: Phase[]
   projectSystemIdsDraft: string[]
   projectSystemsChanged: boolean
@@ -73,17 +83,68 @@ interface ProjectDetailMetaGridProps {
   scheduleError: string | null
 }
 
+function getCurrentPhaseCardClassName(phase?: Phase) {
+  if (!phase) {
+    return undefined
+  }
+
+  switch (getPhaseToneKey(phase.name)) {
+    case 'preStudy':
+      return styles.metaCardPhaseTonePreStudy
+    case 'discovery':
+      return styles.metaCardPhaseToneDiscovery
+    case 'basicDesign':
+      return styles.metaCardPhaseToneBasicDesign
+    case 'detailDesign':
+      return styles.metaCardPhaseToneDetailDesign
+    case 'ct':
+      return styles.metaCardPhaseToneCt
+    case 'ita':
+      return styles.metaCardPhaseToneIta
+    case 'itb':
+      return styles.metaCardPhaseToneItb
+    case 'uat':
+      return styles.metaCardPhaseToneUat
+    case 'migration':
+      return styles.metaCardPhaseToneMigration
+    case 'defaultTone':
+    default:
+      return styles.metaCardPhaseToneDefault
+  }
+}
+
+function getProjectStatusCardClassName(status?: Project['status']) {
+  switch (status) {
+    case '進行中':
+      return styles.metaCardPhaseInProgress
+    case '完了':
+      return styles.metaCardPhaseCompleted
+    case '遅延':
+      return styles.metaCardPhaseDelayed
+    case '中止':
+      return styles.metaCardStatusCancelled
+    case '未着手':
+    default:
+      return styles.metaCardPhaseNotStarted
+  }
+}
+
 function MetaCard({
   children,
   className,
+  testId,
   label,
 }: {
   children: ReactNode
   className?: string
+  testId?: string
   label: string
 }) {
   return (
-    <article className={className ? `${styles.metaCard} ${className}` : styles.metaCard}>
+    <article
+      className={className ? `${styles.metaCard} ${className}` : styles.metaCard}
+      data-testid={testId}
+    >
       <span className={styles.metaLabel}>{label}</span>
       {children}
     </article>
@@ -99,11 +160,13 @@ export function ProjectDetailMetaGrid({
   isProjectLinksEditing,
   isProjectNoteEditing,
   isProjectReportStatusEditing,
+  isProjectStatusEditing,
   isProjectSystemsEditing,
   isSavingCurrentPhase,
   isSavingProjectLinks,
   isSavingProjectNote,
   isSavingProjectReportStatus,
+  isSavingProjectStatusOverride,
   isSavingProjectSystems,
   isSavingSchedule,
   isScheduleEditing,
@@ -125,6 +188,10 @@ export function ProjectDetailMetaGrid({
   onProjectReportStatusDraftChange,
   onProjectReportStatusEdit,
   onProjectReportStatusSave,
+  onProjectStatusCancel,
+  onProjectStatusOverrideDraftChange,
+  onProjectStatusEdit,
+  onProjectStatusSave,
   onProjectSystemsCancel,
   onProjectSystemsEdit,
   onProjectSystemsSave,
@@ -145,6 +212,9 @@ export function ProjectDetailMetaGrid({
   projectReportStatusChanged,
   projectReportStatusDraft,
   projectReportStatusError,
+  projectStatusOverrideChanged,
+  projectStatusOverrideDraft,
+  projectStatusOverrideError,
   projectPhases,
   projectSystemIdsDraft,
   projectSystemsChanged,
@@ -225,7 +295,11 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard label="現在フェーズ">
+      <MetaCard
+        className={`${styles.metaCardCurrentPhase} ${getCurrentPhaseCardClassName(currentPhase) ?? ''}`.trim()}
+        label="現在フェーズ"
+        testId="current-phase-card"
+      >
         {isCurrentPhaseEditing ? (
           <div className={styles.phaseMetaEditor}>
             <select
@@ -279,7 +353,77 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard label="案件リンク">
+      <MetaCard
+        className={`${styles.metaCardProjectStatus} ${getProjectStatusCardClassName(project.status) ?? ''}`.trim()}
+        label="案件状態"
+        testId="project-status-card"
+      >
+        {isProjectStatusEditing ? (
+          <div className={styles.phaseMetaEditor}>
+            <label className={styles.formField}>
+              <span className={styles.visuallyHidden}>案件状態</span>
+              <select
+                aria-label="案件状態"
+                className={styles.selectInput}
+                data-testid="project-status-override-select"
+                onChange={(event) =>
+                  onProjectStatusOverrideDraftChange(
+                    event.target.value ? (event.target.value as ProjectStatusOverride) : null,
+                  )
+                }
+                value={projectStatusOverrideDraft ?? ''}
+              >
+                <option value="">自動</option>
+                <option value="未着手">未着手</option>
+                <option value="進行中">進行中</option>
+                <option value="完了">完了</option>
+                <option value="遅延">遅延</option>
+                <option value="中止">中止</option>
+              </select>
+            </label>
+            <div className={styles.phaseMetaActions}>
+              <Button
+                data-testid="project-status-override-save-button"
+                disabled={isSavingProjectStatusOverride || !projectStatusOverrideChanged}
+                onClick={onProjectStatusSave}
+                size="small"
+              >
+                {isSavingProjectStatusOverride ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                data-testid="project-status-override-cancel-button"
+                onClick={onProjectStatusCancel}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+            {projectStatusOverrideError ? <p className={styles.metaError}>{projectStatusOverrideError}</p> : null}
+          </div>
+        ) : (
+          <div className={styles.phaseMetaDisplay}>
+            <div className={styles.projectStatusDisplay}>
+              <strong className={styles.metaValue} data-testid="project-status-value">
+                {project.status}
+              </strong>
+              <span className={styles.metaHelperText} data-testid="project-status-mode">
+                {project.statusOverride ? '手動上書き' : '自動判定'}
+              </span>
+            </div>
+            <Button
+              data-testid="project-status-edit-button"
+              onClick={onProjectStatusEdit}
+              size="small"
+              variant="secondary"
+            >
+              編集
+            </Button>
+          </div>
+        )}
+      </MetaCard>
+
+      <MetaCard className={styles.metaCardProjectLinks} label="案件リンク">
         {isProjectLinksEditing ? (
           <div className={styles.phaseMetaEditor}>
             <div className={styles.projectLinksHeader}>
@@ -434,7 +578,15 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard className={styles.metaCardReport} label="報告事項">
+      <MetaCard
+        className={
+          project.hasReportItems
+            ? `${styles.metaCardReport} ${styles.metaCardReportActive}`
+            : styles.metaCardReport
+        }
+        label="報告事項"
+        testId="project-report-status-card"
+      >
         {isProjectReportStatusEditing ? (
           <div className={styles.phaseMetaEditor}>
             <label className={styles.formField}>

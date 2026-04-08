@@ -20,7 +20,6 @@ import styles from './ProjectDetailPage.module.css'
 export function ProjectDetailPage() {
   const { projectNumber } = useParams()
   const {
-    projects,
     assignments,
     members,
     systems,
@@ -35,6 +34,7 @@ export function ProjectDetailPage() {
     updateProjectLinks,
     updateProjectNote,
     updateProjectReportStatus,
+    updateProjectStatusOverride,
     updatePhase,
     updateProjectSystems,
     updateProjectPhases,
@@ -61,7 +61,6 @@ export function ProjectDetailPage() {
     workStatusOptions,
   } = useProjectDetailData({
     project,
-    projects,
     members,
     assignments,
     getProjectPhases,
@@ -78,6 +77,7 @@ export function ProjectDetailPage() {
     updateProjectLinks,
     updateProjectNote,
     updateProjectReportStatus,
+    updateProjectStatusOverride,
     updateProjectSystems,
   )
   const phaseEditor = useProjectPhaseEditor(
@@ -144,7 +144,15 @@ export function ProjectDetailPage() {
       return
     }
 
-    const saved = await phaseEditor.savePhaseRange(phaseId)
+    const currentDraftOrder = phaseEditor.phaseDrafts.map((phase) => phase.id ?? phase.key)
+    const savedPhaseOrder = projectPhases.map((phase) => phase.id)
+    const hasOrderChanges =
+      currentDraftOrder.length !== savedPhaseOrder.length ||
+      currentDraftOrder.some((phaseKey, index) => phaseKey !== savedPhaseOrder[index])
+
+    const saved = hasOrderChanges
+      ? await phaseEditor.savePhaseStructure()
+      : await phaseEditor.savePhaseRange(phaseId)
 
     if (!saved) {
       return
@@ -246,6 +254,12 @@ export function ProjectDetailPage() {
         onProjectReportStatusSave={() => {
           void summaryEditor.saveProjectReportStatus()
         }}
+        onProjectStatusOverrideDraftChange={summaryEditor.setProjectStatusOverrideDraft}
+        onProjectStatusEdit={summaryEditor.openProjectStatusEditor}
+        onProjectStatusCancel={summaryEditor.closeProjectStatusEditor}
+        onProjectStatusSave={() => {
+          void summaryEditor.saveProjectStatusOverride()
+        }}
         onProjectSystemsCancel={summaryEditor.closeProjectSystemsEditor}
         onProjectSystemsEdit={summaryEditor.openProjectSystemsEditor}
         onProjectSystemsSave={() => {
@@ -275,6 +289,9 @@ export function ProjectDetailPage() {
         projectReportStatusChanged={summaryEditor.projectReportStatusChanged}
         projectReportStatusDraft={summaryEditor.projectReportStatusDraft}
         projectReportStatusError={summaryEditor.projectReportStatusError}
+        projectStatusOverrideChanged={summaryEditor.projectStatusOverrideChanged}
+        projectStatusOverrideDraft={summaryEditor.projectStatusOverrideDraft}
+        projectStatusOverrideError={summaryEditor.projectStatusOverrideError}
         projectPhases={projectPhases}
         projectSystemIdsDraft={summaryEditor.projectSystemIdsDraft}
         projectSystemsChanged={summaryEditor.projectSystemsChanged}
@@ -283,9 +300,11 @@ export function ProjectDetailPage() {
         isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
         isProjectNoteEditing={summaryEditor.isProjectNoteEditing}
         isProjectReportStatusEditing={summaryEditor.isProjectReportStatusEditing}
+        isProjectStatusEditing={summaryEditor.isProjectStatusEditing}
         isSavingProjectSystems={summaryEditor.isSavingProjectSystems}
         isSavingProjectNote={summaryEditor.isSavingProjectNote}
         isSavingProjectReportStatus={summaryEditor.isSavingProjectReportStatus}
+        isSavingProjectStatusOverride={summaryEditor.isSavingProjectStatusOverride}
         relatedSystems={relatedSystems}
         scheduleChanged={summaryEditor.scheduleChanged}
         scheduleDraft={summaryEditor.scheduleDraft}
@@ -308,6 +327,7 @@ export function ProjectDetailPage() {
           onPhaseConfirm={(phaseId) => {
             void handleTimelinePhaseConfirm(phaseId)
           }}
+          onPhaseMove={phaseEditor.movePhaseDraft}
           onPhaseResize={(phaseId, nextRange) => {
             phaseEditor.updatePhaseDraftRange(phaseId, nextRange)
           }}

@@ -26,7 +26,7 @@
 
 .form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -72,6 +72,94 @@
   border-radius: 16px;
   background: var(--surface-muted);
   border: 1px solid var(--border-subtle);
+}
+
+.phasePresetSection {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.phasePresetList {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.phasePresetItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--border-subtle);
+}
+
+.phasePresetName {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.defaultTone {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.preStudy {
+  color: #7c2d12;
+  background: #ffedd5;
+}
+
+.discovery {
+  color: #0f4c5c;
+  background: #ccfbf1;
+}
+
+.basicDesign {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.detailDesign {
+  color: #6d28d9;
+  background: #ede9fe;
+}
+
+.ct {
+  color: #be123c;
+  background: #ffe4e6;
+}
+
+.ita {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.itb {
+  color: #075985;
+  background: #e0f2fe;
+}
+
+.uat {
+  color: #854d0e;
+  background: #fef3c7;
+}
+
+.migration {
+  color: #166534;
+  background: #dcfce7;
 }
 
 .systemList {
@@ -145,10 +233,6 @@
 }
 
 @media (max-width: 960px) {
-  .form {
-    grid-template-columns: 1fr;
-  }
-
   .systemList {
     grid-template-columns: 1fr;
   }

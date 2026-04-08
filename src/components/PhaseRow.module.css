@@ -68,6 +68,18 @@
   color: var(--text-strong);
 }
 
+.phaseNameChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+}
+
+.phaseToneMeta {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+}
+
 .eventName {
   font-size: 14px;
   font-weight: 700;
@@ -108,13 +120,19 @@
   gap: 8px;
 }
 
+.reorderActions {
+  display: flex;
+  gap: 8px;
+}
+
 .editActions {
   display: flex;
   gap: 8px;
 }
 
 .confirmButton,
-.cancelButton {
+.cancelButton,
+.reorderButton {
   min-height: 30px;
   padding: 0 10px;
   border-radius: 999px;
@@ -132,6 +150,17 @@
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.92);
   color: var(--text-subtle);
+}
+
+.reorderButton {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-strong);
+}
+
+.reorderButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .weekCell {
@@ -299,4 +328,54 @@
 .delayed {
   background: linear-gradient(135deg, #f97316, #ef4444);
   border-color: #fb7185;
+}
+
+.defaultTone {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.preStudy {
+  color: #7c2d12;
+  background: #ffedd5;
+}
+
+.discovery {
+  color: #0f4c5c;
+  background: #ccfbf1;
+}
+
+.basicDesign {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.detailDesign {
+  color: #6d28d9;
+  background: #ede9fe;
+}
+
+.ct {
+  color: #be123c;
+  background: #ffe4e6;
+}
+
+.ita {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.itb {
+  color: #075985;
+  background: #e0f2fe;
+}
+
+.uat {
+  color: #854d0e;
+  background: #fef3c7;
+}
+
+.migration {
+  color: #166534;
+  background: #dcfce7;
 }

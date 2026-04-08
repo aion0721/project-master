@@ -402,6 +402,11 @@
   background: #e2e8f0;
 }
 
+.preStudy {
+  color: #7c2d12;
+  background: #ffedd5;
+}
+
 .discovery {
   color: #0f4c5c;
   background: #ccfbf1;
@@ -415,6 +420,26 @@
 .detailDesign {
   color: #6d28d9;
   background: #ede9fe;
+}
+
+.ct {
+  color: #be123c;
+  background: #ffe4e6;
+}
+
+.ita {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.itb {
+  color: #075985;
+  background: #e0f2fe;
+}
+
+.uat {
+  color: #854d0e;
+  background: #fef3c7;
 }
 
 .testing {

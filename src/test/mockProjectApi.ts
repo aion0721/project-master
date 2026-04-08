@@ -55,13 +55,46 @@ function cloneFixtures() {
 
 type FixtureData = ReturnType<typeof cloneFixtures>
 
-const phaseTemplates = phases
-  .filter((phase) => phase.projectId === 'PRJ-001')
-  .map(({ name, startWeek, endWeek }) => ({
-    name,
-    startWeek,
-    endWeek,
-  }))
+const standardPhaseTemplates = [
+  { name: '予備検討', durationWeeks: 1 },
+  { name: '基礎検討', durationWeeks: 2 },
+  { name: '基本設計', durationWeeks: 2 },
+  { name: '詳細設計', durationWeeks: 2 },
+  { name: 'CT', durationWeeks: 1 },
+  { name: 'ITa', durationWeeks: 1 },
+  { name: 'ITb', durationWeeks: 1 },
+  { name: 'UAT', durationWeeks: 1 },
+  { name: '移行', durationWeeks: 1 },
+] as const
+
+function buildInitialPhases(projectId: string, assigneeMemberId: string, selectedPhaseNames: string[] | undefined) {
+  const selectedSet = new Set(
+    (selectedPhaseNames?.length ? selectedPhaseNames : standardPhaseTemplates.map((phase) => phase.name)).filter(
+      (phaseName) => standardPhaseTemplates.some((phase) => phase.name === phaseName),
+    ),
+  )
+
+  let currentWeek = 1
+
+  return standardPhaseTemplates
+    .filter((phase) => selectedSet.has(phase.name))
+    .map((phase, index) => {
+      const startWeek = currentWeek
+      const endWeek = currentWeek + phase.durationWeeks - 1
+      currentWeek = endWeek + 1
+
+      return {
+        id: `ph-${projectId}-${index + 1}`,
+        projectId,
+        name: phase.name,
+        startWeek,
+        endWeek,
+        status: statusLabelByCode.not_started as Phase['status'],
+        progress: 0,
+        assigneeMemberId,
+      }
+    })
+}
 
 const statusLabelByCode = {
   not_started: projects.find((project) => project.projectNumber === 'PRJ-004')!.status,
@@ -166,9 +199,8 @@ function updateProjectStatus(fixtureData: FixtureData, projectNumber: string) {
     return null
   }
 
-  project.status = deriveProjectStatus(
-    getOrderedProjectPhases(fixtureData, projectNumber),
-  ) as Project['status']
+  project.status = (project.statusOverride ??
+    deriveProjectStatus(getOrderedProjectPhases(fixtureData, projectNumber))) as Project['status']
   return project
 }
 
@@ -556,17 +588,8 @@ export function mockProjectApi() {
         reportsToMemberId: null,
       })
 
-      phaseTemplates.forEach((phase, index) => {
-        fixtureData.phases.push({
-          id: `ph-${projectKey}-${index + 1}`,
-          projectId: body.projectNumber,
-          name: phase.name,
-          startWeek: phase.startWeek,
-          endWeek: phase.endWeek,
-          status: statusLabelByCode.not_started,
-          progress: 0,
-          assigneeMemberId: body.pmMemberId,
-        })
+      buildInitialPhases(body.projectNumber, body.pmMemberId, body.initialPhaseNames).forEach((phase) => {
+        fixtureData.phases.push(phase)
       })
 
       const detail = buildProjectDetailResponse(fixtureData, body.projectNumber)
@@ -730,6 +753,34 @@ export function mockProjectApi() {
       }
 
       project.hasReportItems = body.hasReportItems
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const statusOverrideMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/status-override$/)
+    if (statusOverrideMatch && method === 'PATCH') {
+      const projectNumber = statusOverrideMatch[1]
+      const body = JSON.parse(String(init?.body)) as { statusOverride?: Project['status'] | null }
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.statusOverride = body.statusOverride ?? null
+      updateProjectStatus(fixtureData, projectNumber)
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

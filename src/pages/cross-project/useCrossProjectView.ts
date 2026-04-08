@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Member, Phase, Project, ProjectEvent } from '../../types/project'
 import { getActiveEventsForWeek, getActivePhasesForWeek, getGlobalWeekSlots } from '../../utils/projectUtils'
+export { getPhaseToneKey } from '../../utils/projectPhasePresets'
 
 export type CrossProjectViewMode = 'all' | 'bookmarks'
 
@@ -10,23 +11,6 @@ interface UseCrossProjectViewParams {
   getProjectEvents: (projectId: string) => ProjectEvent[]
   projects: Project[]
   selectedStatuses: Project['status'][]
-}
-
-export function getPhaseToneKey(phaseName: string) {
-  switch (phaseName) {
-    case '基礎検討':
-      return 'discovery'
-    case '基本設計':
-      return 'basicDesign'
-    case '詳細設計':
-      return 'detailDesign'
-    case 'テスト':
-      return 'testing'
-    case '移行':
-      return 'migration'
-    default:
-      return 'defaultTone'
-  }
 }
 
 export function useCrossProjectView({

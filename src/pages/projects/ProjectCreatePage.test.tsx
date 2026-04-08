@@ -33,6 +33,8 @@ describe('ProjectCreatePage', () => {
     fireEvent.change(screen.getByLabelText('終了予定日'), {
       target: { value: '2026-10-30' },
     })
+    fireEvent.click(screen.getByTestId('create-project-phase-CT'))
+    fireEvent.click(screen.getByTestId('create-project-phase-ITa'))
     fireEvent.change(screen.getByTestId('create-project-system-select'), {
       target: { value: 'sys-accounting' },
     })
@@ -59,6 +61,15 @@ describe('ProjectCreatePage', () => {
         status: 'not_started',
         pmMemberId: 'm8',
         hasReportItems: false,
+        initialPhaseNames: [
+          '予備検討',
+          '基礎検討',
+          '基本設計',
+          '詳細設計',
+          'ITb',
+          'UAT',
+          '移行',
+        ],
         relatedSystemIds: ['sys-accounting'],
         projectLinks: [
           {

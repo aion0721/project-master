@@ -3,7 +3,13 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import pageStyles from '../../styles/page.module.css'
-import type { ManagedSystem, Phase, Project, ProjectLink } from '../../types/project'
+import type {
+  ManagedSystem,
+  Phase,
+  Project,
+  ProjectLink,
+  ProjectStatusOverride,
+} from '../../types/project'
 import { ProjectDetailMetaGrid } from './ProjectDetailMetaGrid'
 import styles from '../projects/ProjectDetailPage.module.css'
 
@@ -43,6 +49,7 @@ interface ProjectDetailHeroProps {
   isProjectLinksEditing: boolean
   isProjectNoteEditing: boolean
   isProjectReportStatusEditing: boolean
+  isProjectStatusEditing: boolean
   isProjectSystemsEditing: boolean
   projectLinksDraft: ProjectLink[]
   projectLinksChanged: boolean
@@ -53,12 +60,16 @@ interface ProjectDetailHeroProps {
   projectReportStatusChanged: boolean
   projectReportStatusDraft: boolean
   projectReportStatusError: string | null
+  projectStatusOverrideChanged: boolean
+  projectStatusOverrideDraft: ProjectStatusOverride | null
+  projectStatusOverrideError: string | null
   projectSystemIdsDraft: string[]
   projectSystemsChanged: boolean
   projectSystemsError: string | null
   isSavingProjectLinks: boolean
   isSavingProjectNote: boolean
   isSavingProjectReportStatus: boolean
+  isSavingProjectStatusOverride: boolean
   isSavingProjectSystems: boolean
   onAddProjectLink: () => void
   onProjectLinkDraftChange: (index: number, patch: Partial<ProjectLink>) => void
@@ -73,6 +84,10 @@ interface ProjectDetailHeroProps {
   onProjectReportStatusEdit: () => void
   onProjectReportStatusCancel: () => void
   onProjectReportStatusSave: () => void
+  onProjectStatusOverrideDraftChange: (status: ProjectStatusOverride | null) => void
+  onProjectStatusEdit: () => void
+  onProjectStatusCancel: () => void
+  onProjectStatusSave: () => void
   onProjectSystemsEdit: () => void
   onProjectSystemsCancel: () => void
   onProjectSystemsSave: () => void
@@ -111,6 +126,7 @@ export function ProjectDetailHero({
   isProjectLinksEditing,
   isProjectNoteEditing,
   isProjectReportStatusEditing,
+  isProjectStatusEditing,
   isProjectSystemsEditing,
   projectLinksDraft,
   projectLinksChanged,
@@ -121,12 +137,16 @@ export function ProjectDetailHero({
   projectReportStatusDraft,
   projectReportStatusChanged,
   projectReportStatusError,
+  projectStatusOverrideDraft,
+  projectStatusOverrideChanged,
+  projectStatusOverrideError,
   projectSystemIdsDraft,
   projectSystemsChanged,
   projectSystemsError,
   isSavingProjectLinks,
   isSavingProjectNote,
   isSavingProjectReportStatus,
+  isSavingProjectStatusOverride,
   isSavingProjectSystems,
   onAddProjectLink,
   onProjectLinkDraftChange,
@@ -141,6 +161,10 @@ export function ProjectDetailHero({
   onProjectReportStatusEdit,
   onProjectReportStatusCancel,
   onProjectReportStatusSave,
+  onProjectStatusOverrideDraftChange,
+  onProjectStatusEdit,
+  onProjectStatusCancel,
+  onProjectStatusSave,
   onProjectSystemsEdit,
   onProjectSystemsCancel,
   onProjectSystemsSave,
@@ -202,10 +226,12 @@ export function ProjectDetailHero({
         isProjectLinksEditing={isProjectLinksEditing}
         isProjectNoteEditing={isProjectNoteEditing}
         isProjectReportStatusEditing={isProjectReportStatusEditing}
+        isProjectStatusEditing={isProjectStatusEditing}
         isSavingCurrentPhase={isSavingCurrentPhase}
         isSavingProjectLinks={isSavingProjectLinks}
         isSavingProjectNote={isSavingProjectNote}
         isSavingProjectReportStatus={isSavingProjectReportStatus}
+        isSavingProjectStatusOverride={isSavingProjectStatusOverride}
         isSavingSchedule={isSavingSchedule}
         isScheduleEditing={isScheduleEditing}
         onAddProjectLink={onAddProjectLink}
@@ -225,6 +251,10 @@ export function ProjectDetailHero({
         onProjectReportStatusEdit={onProjectReportStatusEdit}
         onProjectReportStatusCancel={onProjectReportStatusCancel}
         onProjectReportStatusSave={onProjectReportStatusSave}
+        onProjectStatusOverrideDraftChange={onProjectStatusOverrideDraftChange}
+        onProjectStatusEdit={onProjectStatusEdit}
+        onProjectStatusCancel={onProjectStatusCancel}
+        onProjectStatusSave={onProjectStatusSave}
         onProjectSystemsCancel={onProjectSystemsCancel}
         onProjectSystemsEdit={onProjectSystemsEdit}
         onProjectSystemsSave={onProjectSystemsSave}
@@ -245,6 +275,9 @@ export function ProjectDetailHero({
         projectReportStatusChanged={projectReportStatusChanged}
         projectReportStatusDraft={projectReportStatusDraft}
         projectReportStatusError={projectReportStatusError}
+        projectStatusOverrideChanged={projectStatusOverrideChanged}
+        projectStatusOverrideDraft={projectStatusOverrideDraft}
+        projectStatusOverrideError={projectStatusOverrideError}
         projectPhases={projectPhases}
         projectSystemIdsDraft={projectSystemIdsDraft}
         projectSystemsChanged={projectSystemsChanged}

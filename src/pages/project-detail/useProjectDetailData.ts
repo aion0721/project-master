@@ -1,11 +1,10 @@
 import { useMemo } from 'react'
-import type { Member, Phase, Project, ProjectAssignment, ProjectEvent } from '../../types/project'
+import type { Member, Phase, Project, ProjectAssignment, ProjectEvent, WorkStatus } from '../../types/project'
 import { getProjectCurrentPhase, getProjectPm } from '../../utils/projectUtils'
 import type { StructureAssignmentDraft } from './projectDetailTypes'
 
 interface UseProjectDetailDataParams {
   project: Project | undefined
-  projects: Project[]
   members: Member[]
   assignments: ProjectAssignment[]
   getProjectPhases: (projectId: string) => Phase[]
@@ -15,7 +14,6 @@ interface UseProjectDetailDataParams {
 
 export function useProjectDetailData({
   project,
-  projects,
   members,
   assignments,
   getProjectPhases,
@@ -53,15 +51,8 @@ export function useProjectDetailData({
   const currentPhase = useMemo(() => getProjectCurrentPhase(projectPhases), [projectPhases])
 
   const workStatusOptions = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...projects.map((item) => item.status),
-          ...projectPhases.map((item) => item.status),
-          ...projectEvents.map((item) => item.status),
-        ]),
-      ),
-    [projectEvents, projectPhases, projects],
+    () => ['未着手', '進行中', '完了', '遅延'] satisfies WorkStatus[],
+    [],
   )
 
   const responsibilityOptions = useMemo(

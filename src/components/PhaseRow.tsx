@@ -1,4 +1,5 @@
 import type { Phase } from '../types/project'
+import { getPhaseToneKey } from '../utils/projectPhasePresets'
 import { isDateInWeekSlot, type WeekSlot } from '../utils/projectUtils'
 import { StatusBadge } from './StatusBadge'
 import styles from './PhaseRow.module.css'
@@ -23,9 +24,12 @@ interface PhaseRowProps {
   editable?: boolean
   isSelected?: boolean
   isDragging?: boolean
+  canMoveUp?: boolean
+  canMoveDown?: boolean
   onSelect?: (phaseId: string) => void
   onConfirm?: (phaseId: string) => void
   onCancel?: (phaseId: string) => void
+  onMove?: (phaseId: string, direction: 'up' | 'down') => void
   onResizeStart?: (phaseId: string, edge: 'start' | 'end') => void
   onResizeHover?: (phaseId: string, week: number) => void
 }
@@ -36,14 +40,18 @@ export function PhaseRow({
   editable = false,
   isSelected = false,
   isDragging = false,
+  canMoveUp = false,
+  canMoveDown = false,
   onSelect,
   onConfirm,
   onCancel,
+  onMove,
   onResizeStart,
   onResizeHover,
 }: PhaseRowProps) {
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
   const rowClassName = isSelected ? `${styles.row} ${styles.selectedRow}` : styles.row
+  const phaseToneClassName = styles[getPhaseToneKey(phase.name)]
   const metaClassName = isSelected
     ? `${styles.metaCell} ${styles.selectedMetaCell}`
     : styles.metaCell
@@ -51,7 +59,7 @@ export function PhaseRow({
   return (
     <div className={rowClassName} style={{ gridTemplateColumns: columns }}>
       <div
-        className={metaClassName}
+        className={`${metaClassName} ${styles.phaseToneMeta}`}
         onClick={() => onSelect?.(phase.id)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -63,7 +71,9 @@ export function PhaseRow({
         tabIndex={0}
       >
         <div className={styles.metaHeader}>
-          <span className={styles.phaseName}>{phase.name}</span>
+          <span className={`${styles.phaseName} ${styles.phaseNameChip} ${phaseToneClassName}`}>
+            {phase.name}
+          </span>
           <StatusBadge status={phase.status} />
         </div>
         <div className={styles.metaList}>
@@ -75,8 +85,34 @@ export function PhaseRow({
         {editable && isSelected ? (
           <div className={styles.editControls}>
             <span className={styles.editHint}>
-              {isDragging ? 'ドラッグ中: 週セル上で期間を調整' : '左右端をドラッグして期間調整'}
+              {isDragging ? 'ドラッグ中: 週セル上で期間を調整' : '端のハンドルをドラッグして期間調整'}
             </span>
+            <div className={styles.reorderActions}>
+              <button
+                className={styles.reorderButton}
+                data-testid={`timeline-move-up-${phase.id}`}
+                disabled={!canMoveUp}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onMove?.(phase.id, 'up')
+                }}
+                type="button"
+              >
+                上へ
+              </button>
+              <button
+                className={styles.reorderButton}
+                data-testid={`timeline-move-down-${phase.id}`}
+                disabled={!canMoveDown}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onMove?.(phase.id, 'down')
+                }}
+                type="button"
+              >
+                下へ
+              </button>
+            </div>
             <div className={styles.editActions}>
               <button
                 className={styles.confirmButton}

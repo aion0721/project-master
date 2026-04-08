@@ -15,6 +15,7 @@ import type {
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
+  UpdateProjectStatusOverrideInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
   UpdateProjectSystemsInput,
@@ -154,6 +155,7 @@ function normalizeProject(project: Project): Project {
     startDate: project.startDate,
     endDate: project.endDate,
     status: project.status,
+    statusOverride: project.statusOverride ?? null,
     pmMemberId: project.pmMemberId,
     note: project.note ?? null,
     hasReportItems: project.hasReportItems ?? false,
@@ -653,6 +655,21 @@ export async function updateProjectReportStatusRequest(
 ): Promise<ProjectDataPayload> {
   const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectReportStatusInput>(
     `/api/projects/${projectId}/report-status`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
+export async function updateProjectStatusOverrideRequest(
+  projectId: string,
+  input: UpdateProjectStatusOverrideInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectStatusOverrideInput>(
+    `/api/projects/${projectId}/status-override`,
     'PATCH',
     input,
     signal,

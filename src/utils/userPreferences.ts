@@ -1,10 +1,10 @@
-import type { Member, WorkStatus } from '../types/project'
+import type { Member, ProjectStatus } from '../types/project'
 
-export const allWorkStatuses: WorkStatus[] = ['未着手', '進行中', '遅延', '完了']
+export const allWorkStatuses: ProjectStatus[] = ['未着手', '進行中', '遅延', '完了', '中止']
 
 export function normalizeDefaultProjectStatusFilters(
-  filters: WorkStatus[] | null | undefined,
-): WorkStatus[] {
+  filters: ProjectStatus[] | null | undefined,
+): ProjectStatus[] {
   if (!filters) {
     return [...allWorkStatuses]
   }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { assignments, events, phases, projects } from '../../data/mockData'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
+import styles from './ProjectDetailPage.module.css'
 import { ProjectDetailPage } from './ProjectDetailPage'
 
 const project = projects.find((item) => item.projectNumber === 'PRJ-001')!
@@ -31,8 +32,15 @@ describe('ProjectDetailPage', () => {
     )
     expect(screen.getByText('主システム: sys-accounting / 会計基盤')).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
+    expect(screen.getByTestId('current-phase-card').className).toContain(
+      styles.metaCardPhaseToneBasicDesign,
+    )
+    expect(screen.getByTestId('project-status-card').className).toContain(styles.metaCardPhaseInProgress)
     expect(screen.getByTestId('project-note-value')).toHaveTextContent(project.note ?? '')
     expect(screen.getByTestId('project-report-status-value')).toHaveTextContent('あり')
+    expect(screen.getByTestId('project-report-status-card').className).toContain(
+      styles.metaCardReportActive,
+    )
     expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute(
       'href',
       project.projectLinks[0]?.url,
@@ -201,6 +209,38 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('案件状態の手動上書きを更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-status-edit-button'))
+    fireEvent.change(screen.getByTestId('project-status-override-select'), {
+      target: { value: '中止' },
+    })
+    fireEvent.click(screen.getByTestId('project-status-override-save-button'))
+
+    await waitFor(() => {
+      const statusCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/status-override') && init?.method === 'PATCH'
+      })
+
+      expect(statusCall).toBeDefined()
+      const body = JSON.parse(String(statusCall?.[1]?.body))
+      expect(body).toEqual({
+        statusOverride: '中止',
+      })
+    })
+
+    expect(await screen.findByTestId('project-status-value')).toHaveTextContent('中止')
+    expect(screen.getByTestId('project-status-mode')).toHaveTextContent('手動上書き')
+    expect(screen.getByTestId('project-status-card').className).toContain(
+      styles.metaCardStatusCancelled,
+    )
+  })
+
   it('現在フェーズを更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -287,6 +327,34 @@ describe('ProjectDetailPage', () => {
       expect(body.phases[1]?.id).toBe('ph-p1-3')
       expect(body.phases[2]?.id).toBe('ph-p1-2')
     })
+  })
+
+  it('タイムラインで選択したフェーズを上下移動して確定で保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-3-5'))
+    expect(screen.getByTestId('timeline-move-up-ph-p1-3')).toBeEnabled()
+    expect(screen.getByTestId('timeline-move-down-ph-p1-3')).toBeEnabled()
+
+    fireEvent.click(screen.getByTestId('timeline-move-up-ph-p1-3'))
+    fireEvent.click(screen.getByTestId('timeline-confirm-ph-p1-3'))
+
+    await waitFor(() => {
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/phases') && init?.method === 'PATCH'
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body.phases[1]?.id).toBe('ph-p1-3')
+      expect(body.phases[2]?.id).toBe('ph-p1-2')
+    })
+
+    expect(screen.queryByTestId('timeline-confirm-ph-p1-3')).not.toBeInTheDocument()
   })
 
   it('プロジェクト体制を編集モードで更新できる', async () => {

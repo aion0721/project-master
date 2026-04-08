@@ -13,6 +13,7 @@ interface PhaseTimelineProps {
   editable?: boolean
   selectedPhaseId?: string | null
   onPhaseSelect?: (phaseId: string) => void
+  onPhaseMove?: (phaseId: string, direction: 'up' | 'down') => void
   onPhaseResize?: (phaseId: string, nextRange: { startWeek: number; endWeek: number }) => void
   onPhaseConfirm?: (phaseId: string) => void
   onPhaseCancel?: (phaseId: string) => void
@@ -25,6 +26,7 @@ export function PhaseTimeline({
   editable = false,
   selectedPhaseId = null,
   onPhaseSelect,
+  onPhaseMove,
   onPhaseResize,
   onPhaseConfirm,
   onPhaseCancel,
@@ -152,14 +154,17 @@ export function PhaseTimeline({
         ) : null}
 
         <div className={styles.rowGroup}>
-          {phases.map((phase) => (
+          {phases.map((phase, index) => (
             <PhaseRow
+              canMoveDown={index < phases.length - 1}
+              canMoveUp={index > 0}
               editable={editable}
               isDragging={dragState?.phaseId === phase.id}
               isSelected={selectedPhaseId === phase.id}
               key={phase.id}
               onCancel={onPhaseCancel}
               onConfirm={onPhaseConfirm}
+              onMove={onPhaseMove}
               onResizeHover={handleResizeHover}
               onResizeStart={handleResizeStart}
               onSelect={onPhaseSelect}

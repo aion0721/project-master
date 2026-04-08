@@ -34,3 +34,9 @@
   background: var(--status-delayed-bg);
   border-color: var(--status-delayed-border);
 }
+
+.cancelled {
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.14);
+  border-color: rgba(107, 114, 128, 0.28);
+}

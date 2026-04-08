@@ -6,6 +6,12 @@ import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
 import type { CreateProjectInput, ProjectLink, WorkStatus } from '../../types/project'
+import {
+  defaultStandardProjectPhaseNames,
+  getPhaseToneKey,
+  standardProjectPhasePresets,
+  type StandardProjectPhaseName,
+} from '../../utils/projectPhasePresets'
 import { formatMemberShortLabel } from '../members/memberFormUtils'
 import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
 import styles from './ProjectCreatePage.module.css'
@@ -20,6 +26,7 @@ function buildInitialFormData(): CreateProjectInput {
     endDate: '',
     status: '未着手',
     pmMemberId: '',
+    initialPhaseNames: [...defaultStandardProjectPhaseNames],
     relatedSystemIds: [],
     projectLinks: [createEmptyProjectLink()],
   }
@@ -76,6 +83,20 @@ export function ProjectCreatePage() {
     }))
   }
 
+  function toggleInitialPhase(phaseName: StandardProjectPhaseName) {
+    setFormData((current) => {
+      const currentPhaseNames = current.initialPhaseNames ?? []
+      const nextPhaseNames = currentPhaseNames.includes(phaseName)
+        ? currentPhaseNames.filter((name) => name !== phaseName)
+        : [...currentPhaseNames, phaseName]
+
+      return {
+        ...current,
+        initialPhaseNames: nextPhaseNames,
+      }
+    })
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSubmitError(null)
@@ -96,6 +117,11 @@ export function ProjectCreatePage() {
       return
     }
 
+    if (!(formData.initialPhaseNames?.length ?? 0)) {
+      setSubmitError('少なくとも 1 つのフェーズを選択してください。')
+      return
+    }
+
     const validatedLinks = validateProjectLinks(formData.projectLinks)
 
     if (validatedLinks.error) {
@@ -110,6 +136,7 @@ export function ProjectCreatePage() {
         ...formData,
         relatedSystemIds: formData.relatedSystemIds?.[0] ? [formData.relatedSystemIds[0]] : [],
         projectLinks: validatedLinks.links,
+        initialPhaseNames: formData.initialPhaseNames ?? [],
       })
       navigate(`/projects/${createdProject.projectNumber}`)
     } catch (caughtError) {
@@ -254,6 +281,34 @@ export function ProjectCreatePage() {
             ) : (
               <p className={styles.noteText}>登録済みシステムがありません。</p>
             )}
+          </div>
+
+          <div className={styles.phasePresetSection}>
+            <div>
+              <p className={styles.noteTitle}>標準フェーズ</p>
+              <p className={styles.noteText}>初期作成するフェーズを選択してください。</p>
+            </div>
+            <div className={styles.phasePresetList}>
+              {standardProjectPhasePresets.map((phase) => {
+                const checked = (formData.initialPhaseNames ?? []).includes(phase.name)
+
+                return (
+                  <label className={styles.phasePresetItem} key={phase.name}>
+                    <input
+                      checked={checked}
+                      data-testid={`create-project-phase-${phase.name}`}
+                      onChange={() => toggleInitialPhase(phase.name)}
+                      type="checkbox"
+                    />
+                    <span
+                      className={`${styles.phasePresetName} ${styles[getPhaseToneKey(phase.name)]}`}
+                    >
+                      {phase.name}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
           </div>
 
           <div className={styles.linkSection}>
