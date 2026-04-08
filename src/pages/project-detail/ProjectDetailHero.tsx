@@ -43,6 +43,7 @@ interface ProjectDetailHeroProps {
   onCurrentPhaseSave: () => void
   isProjectLinksEditing: boolean
   isProjectNoteEditing: boolean
+  isProjectReportStatusEditing: boolean
   isProjectSystemsEditing: boolean
   projectLinksDraft: ProjectLink[]
   projectLinksChanged: boolean
@@ -50,11 +51,15 @@ interface ProjectDetailHeroProps {
   projectNoteChanged: boolean
   projectNoteDraft: string
   projectNoteError: string | null
+  projectReportStatusChanged: boolean
+  projectReportStatusDraft: boolean
+  projectReportStatusError: string | null
   projectSystemIdsDraft: string[]
   projectSystemsChanged: boolean
   projectSystemsError: string | null
   isSavingProjectLinks: boolean
   isSavingProjectNote: boolean
+  isSavingProjectReportStatus: boolean
   isSavingProjectSystems: boolean
   onAddProjectLink: () => void
   onProjectLinkDraftChange: (index: number, patch: Partial<ProjectLink>) => void
@@ -65,6 +70,10 @@ interface ProjectDetailHeroProps {
   onProjectNoteEdit: () => void
   onProjectNoteCancel: () => void
   onProjectNoteSave: () => void
+  onProjectReportStatusDraftChange: (hasReportItems: boolean) => void
+  onProjectReportStatusEdit: () => void
+  onProjectReportStatusCancel: () => void
+  onProjectReportStatusSave: () => void
   onProjectSystemsEdit: () => void
   onProjectSystemsCancel: () => void
   onProjectSystemsSave: () => void
@@ -102,6 +111,7 @@ export function ProjectDetailHero({
   onCurrentPhaseSave,
   isProjectLinksEditing,
   isProjectNoteEditing,
+  isProjectReportStatusEditing,
   isProjectSystemsEditing,
   projectLinksDraft,
   projectLinksChanged,
@@ -109,11 +119,15 @@ export function ProjectDetailHero({
   projectNoteDraft,
   projectNoteChanged,
   projectNoteError,
+  projectReportStatusDraft,
+  projectReportStatusChanged,
+  projectReportStatusError,
   projectSystemIdsDraft,
   projectSystemsChanged,
   projectSystemsError,
   isSavingProjectLinks,
   isSavingProjectNote,
+  isSavingProjectReportStatus,
   isSavingProjectSystems,
   onAddProjectLink,
   onProjectLinkDraftChange,
@@ -124,6 +138,10 @@ export function ProjectDetailHero({
   onProjectNoteEdit,
   onProjectNoteCancel,
   onProjectNoteSave,
+  onProjectReportStatusDraftChange,
+  onProjectReportStatusEdit,
+  onProjectReportStatusCancel,
+  onProjectReportStatusSave,
   onProjectSystemsEdit,
   onProjectSystemsCancel,
   onProjectSystemsSave,
@@ -143,13 +161,13 @@ export function ProjectDetailHero({
             <p className={styles.description}>
               プロジェクト番号: {project.projectNumber}
               <br />
-              PM、進捗、体制、関連システムをまとめて確認できる案件詳細です。
+              PM、進捗、体制、主システムをまとめて確認できる案件詳細です。
             </p>
             {relatedSystems.length > 0 ? (
               <div className={styles.systemChipList}>
                 {relatedSystems.map((system) => (
                   <span className={styles.systemChip} key={system.id}>
-                    {system.name}
+                    主システム: {system.id} / {system.name}
                   </span>
                 ))}
               </div>
@@ -179,9 +197,11 @@ export function ProjectDetailHero({
         isCurrentPhaseEditing={isCurrentPhaseEditing}
         isProjectLinksEditing={isProjectLinksEditing}
         isProjectNoteEditing={isProjectNoteEditing}
+        isProjectReportStatusEditing={isProjectReportStatusEditing}
         isSavingCurrentPhase={isSavingCurrentPhase}
         isSavingProjectLinks={isSavingProjectLinks}
         isSavingProjectNote={isSavingProjectNote}
+        isSavingProjectReportStatus={isSavingProjectReportStatus}
         isSavingSchedule={isSavingSchedule}
         isScheduleEditing={isScheduleEditing}
         onAddProjectLink={onAddProjectLink}
@@ -197,6 +217,10 @@ export function ProjectDetailHero({
         onProjectNoteEdit={onProjectNoteEdit}
         onProjectNoteCancel={onProjectNoteCancel}
         onProjectNoteSave={onProjectNoteSave}
+        onProjectReportStatusDraftChange={onProjectReportStatusDraftChange}
+        onProjectReportStatusEdit={onProjectReportStatusEdit}
+        onProjectReportStatusCancel={onProjectReportStatusCancel}
+        onProjectReportStatusSave={onProjectReportStatusSave}
         onProjectSystemsCancel={onProjectSystemsCancel}
         onProjectSystemsEdit={onProjectSystemsEdit}
         onProjectSystemsSave={onProjectSystemsSave}
@@ -214,6 +238,9 @@ export function ProjectDetailHero({
         projectNoteChanged={projectNoteChanged}
         projectNoteDraft={projectNoteDraft}
         projectNoteError={projectNoteError}
+        projectReportStatusChanged={projectReportStatusChanged}
+        projectReportStatusDraft={projectReportStatusDraft}
+        projectReportStatusError={projectReportStatusError}
         projectPhases={projectPhases}
         projectSystemIdsDraft={projectSystemIdsDraft}
         projectSystemsChanged={projectSystemsChanged}

@@ -85,9 +85,13 @@ export function SystemLandscapePage() {
     const counts = new Map<string, number>()
 
     projects.forEach((project) => {
-      for (const systemId of project.relatedSystemIds ?? []) {
-        counts.set(systemId, (counts.get(systemId) ?? 0) + 1)
+      const systemId = project.relatedSystemIds?.[0]
+
+      if (!systemId) {
+        return
       }
+
+      counts.set(systemId, (counts.get(systemId) ?? 0) + 1)
     })
 
     return counts

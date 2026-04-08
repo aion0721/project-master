@@ -30,11 +30,15 @@ export function SystemManagementPage() {
     const map = new Map<string, string[]>()
 
     projects.forEach((project) => {
-      for (const systemId of project.relatedSystemIds ?? []) {
+      const systemId = project.relatedSystemIds?.[0]
+
+      if (!systemId) {
+        return
+      }
+
         const current = map.get(systemId) ?? []
         current.push(project.name)
         map.set(systemId, current)
-      }
     })
 
     return map

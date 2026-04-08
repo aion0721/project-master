@@ -8,7 +8,7 @@ interface ProjectTableRow {
   project: Project
   currentPhaseName: string
   pmName: string
-  relatedSystemNames: string[]
+  primarySystemName?: string
 }
 
 interface ProjectTableProps {
@@ -40,7 +40,7 @@ export function ProjectTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ project, currentPhaseName, pmName, relatedSystemNames }) => {
+          {rows.map(({ project, currentPhaseName, pmName, primarySystemName }) => {
             const isBookmarked = bookmarkedSet.has(project.projectNumber)
 
             return (
@@ -49,13 +49,11 @@ export function ProjectTable({
                   <div className={styles.projectCell}>
                     <span className={styles.projectName}>{project.name}</span>
                     <span className={styles.projectId}>{project.projectNumber}</span>
-                    {relatedSystemNames.length > 0 ? (
+                    {primarySystemName ? (
                       <div className={styles.systemChipList}>
-                        {relatedSystemNames.map((systemName) => (
-                          <span className={styles.systemChip} key={`${project.projectNumber}-${systemName}`}>
-                            {systemName}
-                          </span>
-                        ))}
+                        <span className={styles.systemChip} key={`${project.projectNumber}-${primarySystemName}`}>
+                          主システム: {primarySystemName}
+                        </span>
                       </div>
                     ) : null}
                   </div>

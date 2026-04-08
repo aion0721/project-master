@@ -17,10 +17,12 @@ interface ProjectDetailMetaGridProps {
   isCurrentPhaseEditing: boolean
   isProjectLinksEditing: boolean
   isProjectNoteEditing: boolean
+  isProjectReportStatusEditing: boolean
   isProjectSystemsEditing: boolean
   isSavingCurrentPhase: boolean
   isSavingProjectLinks: boolean
   isSavingProjectNote: boolean
+  isSavingProjectReportStatus: boolean
   isSavingProjectSystems: boolean
   isSavingSchedule: boolean
   isScheduleEditing: boolean
@@ -38,6 +40,10 @@ interface ProjectDetailMetaGridProps {
   onProjectNoteDraftChange: (note: string) => void
   onProjectNoteEdit: () => void
   onProjectNoteSave: () => void
+  onProjectReportStatusCancel: () => void
+  onProjectReportStatusDraftChange: (hasReportItems: boolean) => void
+  onProjectReportStatusEdit: () => void
+  onProjectReportStatusSave: () => void
   onProjectSystemsCancel: () => void
   onProjectSystemsEdit: () => void
   onProjectSystemsSave: () => void
@@ -55,6 +61,9 @@ interface ProjectDetailMetaGridProps {
   projectNoteChanged: boolean
   projectNoteDraft: string
   projectNoteError: string | null
+  projectReportStatusChanged: boolean
+  projectReportStatusDraft: boolean
+  projectReportStatusError: string | null
   projectPhases: Phase[]
   projectSystemIdsDraft: string[]
   projectSystemsChanged: boolean
@@ -81,10 +90,12 @@ export function ProjectDetailMetaGrid({
   isCurrentPhaseEditing,
   isProjectLinksEditing,
   isProjectNoteEditing,
+  isProjectReportStatusEditing,
   isProjectSystemsEditing,
   isSavingCurrentPhase,
   isSavingProjectLinks,
   isSavingProjectNote,
+  isSavingProjectReportStatus,
   isSavingProjectSystems,
   isSavingSchedule,
   isScheduleEditing,
@@ -102,6 +113,10 @@ export function ProjectDetailMetaGrid({
   onProjectNoteDraftChange,
   onProjectNoteEdit,
   onProjectNoteSave,
+  onProjectReportStatusCancel,
+  onProjectReportStatusDraftChange,
+  onProjectReportStatusEdit,
+  onProjectReportStatusSave,
   onProjectSystemsCancel,
   onProjectSystemsEdit,
   onProjectSystemsSave,
@@ -119,6 +134,9 @@ export function ProjectDetailMetaGrid({
   projectNoteChanged,
   projectNoteDraft,
   projectNoteError,
+  projectReportStatusChanged,
+  projectReportStatusDraft,
+  projectReportStatusError,
   projectPhases,
   projectSystemIdsDraft,
   projectSystemsChanged,
@@ -408,15 +426,68 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard label="関連システム">
+      <MetaCard label="報告事項">
+        {isProjectReportStatusEditing ? (
+          <div className={styles.phaseMetaEditor}>
+            <label className={styles.formField}>
+              <span className={styles.visuallyHidden}>報告事項の有無</span>
+              <select
+                aria-label="報告事項の有無"
+                className={styles.selectInput}
+                data-testid="project-report-status-select"
+                onChange={(event) => onProjectReportStatusDraftChange(event.target.value === 'true')}
+                value={String(projectReportStatusDraft)}
+              >
+                <option value="false">なし</option>
+                <option value="true">あり</option>
+              </select>
+            </label>
+            <div className={styles.phaseMetaActions}>
+              <Button
+                data-testid="project-report-status-save-button"
+                disabled={isSavingProjectReportStatus || !projectReportStatusChanged}
+                onClick={onProjectReportStatusSave}
+                size="small"
+              >
+                {isSavingProjectReportStatus ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                data-testid="project-report-status-cancel-button"
+                onClick={onProjectReportStatusCancel}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+            {projectReportStatusError ? <p className={styles.metaError}>{projectReportStatusError}</p> : null}
+          </div>
+        ) : (
+          <div className={styles.phaseMetaDisplay}>
+            <strong className={styles.metaValue} data-testid="project-report-status-value">
+              {project.hasReportItems ? 'あり' : 'なし'}
+            </strong>
+            <Button
+              data-testid="project-report-status-edit-button"
+              onClick={onProjectReportStatusEdit}
+              size="small"
+              variant="secondary"
+            >
+              編集
+            </Button>
+          </div>
+        )}
+      </MetaCard>
+
+      <MetaCard label="主システム">
         {isProjectSystemsEditing ? (
           <div className={styles.phaseMetaEditor}>
-              <div className={styles.systemSelectionList}>
+            <div className={styles.systemSelectionList}>
                 {availableSystems.length > 0 ? (
                   <label className={styles.formField}>
-                    <span className={styles.visuallyHidden}>関連システム</span>
+                    <span className={styles.visuallyHidden}>主システム</span>
                     <select
-                      aria-label="関連システム"
+                      aria-label="主システム"
                       className={styles.selectInput}
                       data-testid="project-system-select"
                       onChange={(event) => onProjectSystemChange(event.target.value)}

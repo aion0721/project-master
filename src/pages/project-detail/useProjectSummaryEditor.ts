@@ -18,6 +18,10 @@ interface UpdateProjectNote {
   (projectId: string, input: { note?: string | null }): Promise<unknown>
 }
 
+interface UpdateProjectReportStatus {
+  (projectId: string, input: { hasReportItems: boolean }): Promise<unknown>
+}
+
 interface UpdateProjectSystems {
   (projectId: string, input: { relatedSystemIds: string[] }): Promise<unknown>
 }
@@ -30,6 +34,7 @@ export function useProjectSummaryEditor(
   updateProjectSchedule: UpdateProjectSchedule,
   updateProjectLinks: UpdateProjectLinks,
   updateProjectNote: UpdateProjectNote,
+  updateProjectReportStatus: UpdateProjectReportStatus,
   updateProjectSystems: UpdateProjectSystems,
 ) {
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
@@ -52,6 +57,11 @@ export function useProjectSummaryEditor(
   const [projectNoteError, setProjectNoteError] = useState<string | null>(null)
   const [isSavingProjectNote, setIsSavingProjectNote] = useState(false)
 
+  const [isProjectReportStatusEditing, setIsProjectReportStatusEditing] = useState(false)
+  const [projectReportStatusDraft, setProjectReportStatusDraft] = useState(false)
+  const [projectReportStatusError, setProjectReportStatusError] = useState<string | null>(null)
+  const [isSavingProjectReportStatus, setIsSavingProjectReportStatus] = useState(false)
+
   const [isProjectSystemsEditing, setIsProjectSystemsEditing] = useState(false)
   const [projectSystemIdsDraft, setProjectSystemIdsDraft] = useState<string[]>([])
   const [projectSystemsError, setProjectSystemsError] = useState<string | null>(null)
@@ -72,6 +82,8 @@ export function useProjectSummaryEditor(
     setProjectLinksError(null)
     setProjectNoteDraft(project.note ?? '')
     setProjectNoteError(null)
+    setProjectReportStatusDraft(project.hasReportItems ?? false)
+    setProjectReportStatusError(null)
     setProjectSystemIdsDraft([...(project.relatedSystemIds ?? [])])
     setProjectSystemsError(null)
   }, [project])
@@ -89,6 +101,7 @@ export function useProjectSummaryEditor(
       JSON.stringify(project.projectLinks)
     : false
   const projectNoteChanged = (projectNoteDraft.trim() || '') !== (project?.note ?? '')
+  const projectReportStatusChanged = projectReportStatusDraft !== (project?.hasReportItems ?? false)
   const projectSystemsChanged = project
     ? JSON.stringify([...projectSystemIdsDraft].sort()) !==
       JSON.stringify([...(project.relatedSystemIds ?? [])].sort())
@@ -188,6 +201,40 @@ export function useProjectSummaryEditor(
     )
     setProjectLinksError(null)
     setIsProjectLinksEditing(true)
+  }
+
+  function openProjectReportStatusEditor() {
+    setProjectReportStatusDraft(project?.hasReportItems ?? false)
+    setProjectReportStatusError(null)
+    setIsProjectReportStatusEditing(true)
+  }
+
+  function closeProjectReportStatusEditor() {
+    setProjectReportStatusDraft(project?.hasReportItems ?? false)
+    setProjectReportStatusError(null)
+    setIsProjectReportStatusEditing(false)
+  }
+
+  async function saveProjectReportStatus() {
+    if (!project) {
+      return
+    }
+
+    setIsSavingProjectReportStatus(true)
+    setProjectReportStatusError(null)
+
+    try {
+      await updateProjectReportStatus(project.projectNumber, {
+        hasReportItems: projectReportStatusDraft,
+      })
+      setIsProjectReportStatusEditing(false)
+    } catch (caughtError) {
+      setProjectReportStatusError(
+        caughtError instanceof Error ? caughtError.message : '報告事項の更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectReportStatus(false)
+    }
   }
 
   function openProjectNoteEditor() {
@@ -327,10 +374,12 @@ export function useProjectSummaryEditor(
     isCurrentPhaseEditing,
     isProjectLinksEditing,
     isProjectNoteEditing,
+    isProjectReportStatusEditing,
     isProjectSystemsEditing,
     isSavingCurrentPhase,
     isSavingProjectLinks,
     isSavingProjectNote,
+    isSavingProjectReportStatus,
     isSavingProjectSystems,
     isSavingSchedule,
     isScheduleEditing,
@@ -340,6 +389,9 @@ export function useProjectSummaryEditor(
     projectNoteChanged,
     projectNoteDraft,
     projectNoteError,
+    projectReportStatusChanged,
+    projectReportStatusDraft,
+    projectReportStatusError,
     projectSystemIdsDraft,
     projectSystemsChanged,
     projectSystemsError,
@@ -350,22 +402,26 @@ export function useProjectSummaryEditor(
     closeCurrentPhaseEditor,
     closeProjectLinksEditor,
     closeProjectNoteEditor,
+    closeProjectReportStatusEditor,
     closeProjectSystemsEditor,
     closeScheduleEditor,
     openCurrentPhaseEditor,
     openProjectLinksEditor,
     openProjectNoteEditor,
+    openProjectReportStatusEditor,
     openProjectSystemsEditor,
     openScheduleEditor,
     removeProjectLinkDraft,
     saveCurrentPhase,
     saveProjectLinks,
     saveProjectNote,
+    saveProjectReportStatus,
     saveProjectSystems,
     saveSchedule,
     setCurrentPhaseDraftId,
     setScheduleDraft,
     setProjectNoteDraft,
+    setProjectReportStatusDraft,
     setProjectSystemDraft,
     updateProjectLinkDraft,
   }

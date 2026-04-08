@@ -175,6 +175,7 @@ describe('CrossProjectViewPage', () => {
     const projectInfo = screen.getByTestId('cross-project-project-info-PRJ-001')
     expect(projectInfo).toHaveTextContent('PM: 田中')
     expect(projectInfo).toHaveTextContent('体制: 7名')
+    expect(projectInfo).toHaveTextContent('報告事項: あり')
     expect(projectInfo).toHaveTextContent('メモ: あり')
     expect(projectInfo).not.toHaveClass(styles.projectInfoCompact)
 
@@ -182,8 +183,32 @@ describe('CrossProjectViewPage', () => {
 
     expect(projectInfo).not.toHaveTextContent('PM: 田中')
     expect(projectInfo).not.toHaveTextContent('体制: 7名')
+    expect(projectInfo).not.toHaveTextContent('報告事項: あり')
     expect(projectInfo).not.toHaveTextContent('メモ: あり')
     expect(projectInfo).toHaveClass(styles.projectInfoCompact)
     expect(screen.getByRole('button', { name: '標準表示' })).toBeInTheDocument()
+  })
+
+  it('主システム別でグルーピング表示できる', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<CrossProjectViewPage />, {
+      initialEntries: ['/cross-project'],
+    })
+
+    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
+
+    expect(screen.queryByTestId('cross-project-group-sys-accounting / 会計基盤')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '主システム別' }))
+
+    expect(
+      screen.getByTestId('cross-project-group-sys-accounting / 会計基盤'),
+    ).toHaveTextContent('主システム: sys-accounting / 会計基盤')
+    expect(
+      screen.getByTestId('cross-project-group-sys-mobile-app / 販促モバイル'),
+    ).toHaveTextContent('主システム: sys-mobile-app / 販促モバイル')
+    expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '通常並び' })).toBeInTheDocument()
   })
 })

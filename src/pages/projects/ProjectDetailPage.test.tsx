@@ -25,9 +25,10 @@ describe('ProjectDetailPage', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
-    expect(screen.getAllByText('会計基盤').length).toBeGreaterThan(0)
+    expect(screen.getByText('主システム: sys-accounting / 会計基盤')).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
     expect(screen.getByTestId('project-note-value')).toHaveTextContent(project.note ?? '')
+    expect(screen.getByTestId('project-report-status-value')).toHaveTextContent('あり')
     expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute(
       'href',
       project.projectLinks[0]?.url,
@@ -144,7 +145,33 @@ describe('ProjectDetailPage', () => {
     })
   })
 
-  it('関連システムを更新できる', async () => {
+  it('報告事項の有無を更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-report-status-edit-button'))
+    fireEvent.change(screen.getByTestId('project-report-status-select'), {
+      target: { value: 'false' },
+    })
+    fireEvent.click(screen.getByTestId('project-report-status-save-button'))
+
+    await waitFor(() => {
+      const reportStatusCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/report-status') && init?.method === 'PATCH'
+      })
+
+      expect(reportStatusCall).toBeDefined()
+      const body = JSON.parse(String(reportStatusCall?.[1]?.body))
+      expect(body).toEqual({
+        hasReportItems: false,
+      })
+    })
+  })
+
+  it('主システムを更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
     renderPage()

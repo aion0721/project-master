@@ -150,7 +150,7 @@ export function ProjectCreatePage() {
           <div className={pageStyles.heroHeadingBody}>
             <h1 className={styles.title}>案件追加</h1>
             <p className={styles.description}>
-              プロジェクト番号、案件名、PM を設定して案件を追加します。関連システムと案件リンクも同時に登録できます。
+              プロジェクト番号、案件名、PM を設定して案件を追加します。主システムと案件リンクも同時に登録できます。
             </p>
           </div>
         </div>
@@ -231,12 +231,12 @@ export function ProjectCreatePage() {
 
           <div className={styles.systemSection}>
             <div>
-              <p className={styles.noteTitle}>関連システム</p>
-              <p className={styles.noteText}>案件に紐づけるシステムを 1 件選択してください。</p>
+              <p className={styles.noteTitle}>主システム</p>
+              <p className={styles.noteText}>案件の主システムを 1 件選択してください。</p>
             </div>
             {systems.length > 0 ? (
               <label className={styles.field}>
-                <span className={styles.label}>関連システム</span>
+                <span className={styles.label}>主システム</span>
                 <select
                   className={styles.input}
                   data-testid="create-project-system-select"

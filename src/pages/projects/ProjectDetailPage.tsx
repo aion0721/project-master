@@ -34,6 +34,7 @@ export function ProjectDetailPage() {
     updateProjectEvents,
     updateProjectLinks,
     updateProjectNote,
+    updateProjectReportStatus,
     updatePhase,
     updateProjectSystems,
     updateProjectPhases,
@@ -76,6 +77,7 @@ export function ProjectDetailPage() {
     updateProjectSchedule,
     updateProjectLinks,
     updateProjectNote,
+    updateProjectReportStatus,
     updateProjectSystems,
   )
   const phaseEditor = useProjectPhaseEditor(
@@ -114,8 +116,8 @@ export function ProjectDetailPage() {
       return []
     }
 
-    const relatedSystemIds = new Set(project.relatedSystemIds ?? [])
-    return systems.filter((system) => relatedSystemIds.has(system.id))
+    const primarySystemId = project.relatedSystemIds?.[0]
+    return primarySystemId ? systems.filter((system) => system.id === primarySystemId) : []
   }, [project, systems])
 
   function handleTimelinePhaseSelect(phaseId: string) {
@@ -238,6 +240,12 @@ export function ProjectDetailPage() {
         onProjectNoteSave={() => {
           void summaryEditor.saveProjectNote()
         }}
+        onProjectReportStatusDraftChange={summaryEditor.setProjectReportStatusDraft}
+        onProjectReportStatusEdit={summaryEditor.openProjectReportStatusEditor}
+        onProjectReportStatusCancel={summaryEditor.closeProjectReportStatusEditor}
+        onProjectReportStatusSave={() => {
+          void summaryEditor.saveProjectReportStatus()
+        }}
         onProjectSystemsCancel={summaryEditor.closeProjectSystemsEditor}
         onProjectSystemsEdit={summaryEditor.openProjectSystemsEditor}
         onProjectSystemsSave={() => {
@@ -264,6 +272,9 @@ export function ProjectDetailPage() {
         projectNoteChanged={summaryEditor.projectNoteChanged}
         projectNoteDraft={summaryEditor.projectNoteDraft}
         projectNoteError={summaryEditor.projectNoteError}
+        projectReportStatusChanged={summaryEditor.projectReportStatusChanged}
+        projectReportStatusDraft={summaryEditor.projectReportStatusDraft}
+        projectReportStatusError={summaryEditor.projectReportStatusError}
         projectPhases={projectPhases}
         projectSystemIdsDraft={summaryEditor.projectSystemIdsDraft}
         projectSystemsChanged={summaryEditor.projectSystemsChanged}
@@ -271,8 +282,10 @@ export function ProjectDetailPage() {
         availableSystems={systems}
         isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
         isProjectNoteEditing={summaryEditor.isProjectNoteEditing}
+        isProjectReportStatusEditing={summaryEditor.isProjectReportStatusEditing}
         isSavingProjectSystems={summaryEditor.isSavingProjectSystems}
         isSavingProjectNote={summaryEditor.isSavingProjectNote}
+        isSavingProjectReportStatus={summaryEditor.isSavingProjectReportStatus}
         relatedSystems={relatedSystems}
         scheduleChanged={summaryEditor.scheduleChanged}
         scheduleDraft={summaryEditor.scheduleDraft}

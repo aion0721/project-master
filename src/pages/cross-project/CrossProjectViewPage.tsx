@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
@@ -22,6 +22,7 @@ export function CrossProjectViewPage() {
     getProjectEvents,
     getProjectAssignments,
     getMemberById,
+    systems,
     isLoading,
     error,
   } = useProjectData()
@@ -37,6 +38,7 @@ export function CrossProjectViewPage() {
   const [isStructureVisible, setIsStructureVisible] = useState(false)
   const [isNoteVisible, setIsNoteVisible] = useState(false)
   const [isCompactMode, setIsCompactMode] = useState(false)
+  const [isGroupedByPrimarySystem, setIsGroupedByPrimarySystem] = useState(false)
   const [expandedNoteProjectIds, setExpandedNoteProjectIds] = useState<string[]>([])
 
   useEffect(() => {
@@ -97,6 +99,44 @@ export function CrossProjectViewPage() {
         : current.concat(projectNumber),
     )
   }
+
+  const systemNameById = useMemo(
+    () => new Map(systems.map((system) => [system.id, system.name])),
+    [systems],
+  )
+
+  const groupedProjects = useMemo(() => {
+    const groups = new Map<string, Project[]>()
+
+    filteredProjects.forEach((project) => {
+      const primarySystemId = project.relatedSystemIds?.[0]
+      const groupLabel = primarySystemId
+        ? `${primarySystemId} / ${systemNameById.get(primarySystemId) ?? primarySystemId}`
+        : '未設定'
+      const current = groups.get(groupLabel) ?? []
+      current.push(project)
+      groups.set(groupLabel, current)
+    })
+
+    return [...groups.entries()]
+      .sort((left, right) => {
+        if (left[0] === '未設定') {
+          return 1
+        }
+
+        if (right[0] === '未設定') {
+          return -1
+        }
+
+        return left[0].localeCompare(right[0], 'ja')
+      })
+      .map(([label, projectsInGroup]) => ({
+        label,
+        projects: projectsInGroup.sort((left, right) =>
+          left.name.localeCompare(right.name, 'ja'),
+        ),
+      }))
+  }, [filteredProjects, systemNameById])
 
   if (isLoading) {
     return (
@@ -252,6 +292,13 @@ export function CrossProjectViewPage() {
               >
                 {isCompactMode ? '標準表示' : '短く表示'}
               </Button>
+              <Button
+                onClick={() => setIsGroupedByPrimarySystem((current) => !current)}
+                size="small"
+                variant="secondary"
+              >
+                {isGroupedByPrimarySystem ? '通常並び' : '主システム別'}
+              </Button>
             </div>
           </div>
         </div>
@@ -298,7 +345,28 @@ export function CrossProjectViewPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProjects.map((project) => {
+                {(isGroupedByPrimarySystem
+                  ? groupedProjects.flatMap((group) => [
+                      { type: 'group' as const, label: group.label },
+                      ...group.projects.map((project) => ({ type: 'project' as const, project })),
+                    ])
+                  : filteredProjects.map((project) => ({ type: 'project' as const, project }))
+                ).map((row) => {
+                  if (row.type === 'group') {
+                    return (
+                      <tr className={styles.groupRow} key={`group-${row.label}`}>
+                        <td
+                          className={`${styles.stickyColumn} ${styles.groupCell}`}
+                          colSpan={globalWeekSlots.length + 1}
+                          data-testid={`cross-project-group-${row.label}`}
+                        >
+                          主システム: {row.label}
+                        </td>
+                      </tr>
+                    )
+                  }
+
+                  const project = row.project
                   const projectPhases = getProjectPhases(project.projectNumber)
                   const projectEvents = getProjectEvents(project.projectNumber)
                   const structureMembers = getProjectAssignments(project.projectNumber)
@@ -349,6 +417,9 @@ export function CrossProjectViewPage() {
                             <>
                               <div className={styles.metaLine}>PM: {pm?.name ?? '未設定'}</div>
                               <div className={styles.metaLine}>体制: {structureMembers.length}名</div>
+                              <div className={styles.metaLine}>
+                                報告事項: {project.hasReportItems ? 'あり' : 'なし'}
+                              </div>
                               <div className={styles.metaLine}>
                                 メモ: {project.note?.trim() ? 'あり' : 'なし'}
                               </div>

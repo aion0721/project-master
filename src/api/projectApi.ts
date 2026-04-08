@@ -13,6 +13,7 @@ import type {
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
+  UpdateProjectReportStatusInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
   UpdateProjectSystemsInput,
@@ -147,6 +148,7 @@ function normalizeProject(project: Project): Project {
     status: project.status,
     pmMemberId: project.pmMemberId,
     note: project.note ?? null,
+    hasReportItems: project.hasReportItems ?? false,
     relatedSystemIds: [...(project.relatedSystemIds ?? [])],
     projectLinks: (project.projectLinks ?? []).map((link) => ({
       label: link.label,
@@ -363,6 +365,7 @@ export async function createProjectRequest(
     'POST',
     {
       ...input,
+      hasReportItems: input.hasReportItems ?? false,
       relatedSystemIds: input.relatedSystemIds ?? [],
       status: statusCodeMap[input.status],
     },
@@ -592,6 +595,21 @@ export async function updateProjectNoteRequest(
 ): Promise<ProjectDataPayload> {
   const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectNoteInput>(
     `/api/projects/${projectId}/note`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
+export async function updateProjectReportStatusRequest(
+  projectId: string,
+  input: UpdateProjectReportStatusInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectReportStatusInput>(
+    `/api/projects/${projectId}/report-status`,
     'PATCH',
     input,
     signal,

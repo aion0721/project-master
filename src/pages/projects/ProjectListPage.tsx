@@ -61,9 +61,7 @@ export function ProjectListPage() {
           project,
           currentPhaseName: currentPhase?.name ?? '未設定',
           pmName: pm?.name ?? '未設定',
-          relatedSystemNames: (project.relatedSystemIds ?? [])
-            .map((systemId) => systemNameById.get(systemId))
-            .filter((value): value is string => Boolean(value)),
+          primarySystemName: systemNameById.get(project.relatedSystemIds?.[0] ?? ''),
         }
       }),
     [filteredProjects, getProjectPhases, members, systemNameById],
@@ -155,7 +153,7 @@ export function ProjectListPage() {
               <p className={styles.eyebrow}>Project Portfolio</p>
               <h1 className={styles.title}>案件一覧</h1>
               <p className={styles.description}>
-                進捗、体制、関連システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
+                進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。
               </p>
             </div>
           </div>
@@ -250,7 +248,7 @@ export function ProjectListPage() {
               {viewMode === 'bookmarks' && currentUser ? 'ブックマーク案件一覧' : '案件ステータス一覧'}
             </h2>
             <p className={styles.sectionDescription}>
-              案件ごとの PM、現在フェーズ、開始日、終了日、関連システムを確認できます。
+              案件ごとの PM、現在フェーズ、開始日、終了日、主システムを確認できます。
             </p>
           </div>
         </div>

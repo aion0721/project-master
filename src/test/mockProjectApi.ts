@@ -446,6 +446,7 @@ export function mockProjectApi() {
         status: statusLabelByCode[body.status],
         pmMemberId: body.pmMemberId,
         note: body.note?.trim() || null,
+        hasReportItems: body.hasReportItems ?? false,
         relatedSystemIds: body.relatedSystemIds ?? [],
         projectLinks: body.projectLinks ?? [],
       }
@@ -608,6 +609,33 @@ export function mockProjectApi() {
       }
 
       project.note = body.note?.trim() || null
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const reportStatusMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/report-status$/)
+    if (reportStatusMatch && method === 'PATCH') {
+      const projectNumber = reportStatusMatch[1]
+      const body = JSON.parse(String(init?.body)) as { hasReportItems: boolean }
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.hasReportItems = body.hasReportItems
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

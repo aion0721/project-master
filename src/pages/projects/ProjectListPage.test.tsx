@@ -15,7 +15,7 @@ describe('ProjectListPage', () => {
     expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
     expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
-    expect(screen.getByText('会計基盤')).toBeInTheDocument()
+    expect(screen.getByText('主システム: 会計基盤')).toBeInTheDocument()
     expect(screen.getByText('案件ステータス一覧')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '案件を追加' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: '詳細を見る' }).length).toBeGreaterThan(0)

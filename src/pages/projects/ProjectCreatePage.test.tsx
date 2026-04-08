@@ -58,6 +58,7 @@ describe('ProjectCreatePage', () => {
         endDate: '2026-10-30',
         status: 'not_started',
         pmMemberId: 'm8',
+        hasReportItems: false,
         relatedSystemIds: ['sys-accounting'],
         projectLinks: [
           {
