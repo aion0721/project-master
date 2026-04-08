@@ -66,24 +66,6 @@ export function ProjectPhaseTableRow({
         </label>
       </td>
       <td>
-        <label className={styles.formField}>
-          <span className={styles.visuallyHidden}>{phaseLabel} の進捗率</span>
-          <input
-            aria-label={`${phaseLabel} の進捗率`}
-            className={styles.progressInput}
-            data-testid={`phase-progress-${phase.key}`}
-            inputMode="numeric"
-            max={100}
-            min={0}
-            onChange={(event) => {
-              onUpdatePhase(phase.key, { progress: event.target.value })
-            }}
-            type="number"
-            value={phase.progress}
-          />
-        </label>
-      </td>
-      <td>
         <input
           aria-label={`${phaseLabel} の開始週`}
           className={styles.weekInput}

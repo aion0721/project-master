@@ -43,6 +43,7 @@ export function ProjectDetailPage() {
   } = useProjectData()
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
   const [selectedTimelinePhaseId, setSelectedTimelinePhaseId] = useState<string | null>(null)
+  const [projectStatusBulkApplyEnabled, setProjectStatusBulkApplyEnabled] = useState(false)
   const [timelineEditingRange, setTimelineEditingRange] = useState<{
     phaseId: string
     startWeek: number
@@ -177,6 +178,26 @@ export function ProjectDetailPage() {
     setTimelineEditingRange(null)
   }
 
+  async function handleProjectStatusSave() {
+    const nextStatus = summaryEditor.projectStatusOverrideDraft
+    const shouldApplyToAllPhases =
+      projectStatusBulkApplyEnabled && (nextStatus === '未着手' || nextStatus === '完了')
+
+    if (shouldApplyToAllPhases) {
+      const phasesSaved = await phaseEditor.applyStatusToAllPhases(nextStatus)
+
+      if (!phasesSaved) {
+        return
+      }
+    }
+
+    const statusSaved = await summaryEditor.saveProjectStatusOverride()
+
+    if (statusSaved) {
+      setProjectStatusBulkApplyEnabled(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <Panel className={styles.notFound}>
@@ -255,11 +276,18 @@ export function ProjectDetailPage() {
           void summaryEditor.saveProjectReportStatus()
         }}
         onProjectStatusOverrideDraftChange={summaryEditor.setProjectStatusOverrideDraft}
-        onProjectStatusEdit={summaryEditor.openProjectStatusEditor}
-        onProjectStatusCancel={summaryEditor.closeProjectStatusEditor}
-        onProjectStatusSave={() => {
-          void summaryEditor.saveProjectStatusOverride()
+        onProjectStatusEdit={() => {
+          setProjectStatusBulkApplyEnabled(false)
+          summaryEditor.openProjectStatusEditor()
         }}
+        onProjectStatusCancel={() => {
+          setProjectStatusBulkApplyEnabled(false)
+          summaryEditor.closeProjectStatusEditor()
+        }}
+        onProjectStatusSave={() => {
+          void handleProjectStatusSave()
+        }}
+        onProjectStatusBulkApplyChange={setProjectStatusBulkApplyEnabled}
         onProjectSystemsCancel={summaryEditor.closeProjectSystemsEditor}
         onProjectSystemsEdit={summaryEditor.openProjectSystemsEditor}
         onProjectSystemsSave={() => {
@@ -290,6 +318,7 @@ export function ProjectDetailPage() {
         projectReportStatusDraft={summaryEditor.projectReportStatusDraft}
         projectReportStatusError={summaryEditor.projectReportStatusError}
         projectStatusOverrideChanged={summaryEditor.projectStatusOverrideChanged}
+        projectStatusBulkApplyEnabled={projectStatusBulkApplyEnabled}
         projectStatusOverrideDraft={summaryEditor.projectStatusOverrideDraft}
         projectStatusOverrideError={summaryEditor.projectStatusOverrideError}
         projectPhases={projectPhases}

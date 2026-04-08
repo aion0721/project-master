@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
@@ -10,6 +11,7 @@ import type {
   ProjectLink,
   ProjectStatusOverride,
 } from '../../types/project'
+import { getPhaseToneKey } from '../../utils/projectPhasePresets'
 import { ProjectDetailMetaGrid } from './ProjectDetailMetaGrid'
 import styles from '../projects/ProjectDetailPage.module.css'
 
@@ -61,6 +63,7 @@ interface ProjectDetailHeroProps {
   projectReportStatusDraft: boolean
   projectReportStatusError: string | null
   projectStatusOverrideChanged: boolean
+  projectStatusBulkApplyEnabled: boolean
   projectStatusOverrideDraft: ProjectStatusOverride | null
   projectStatusOverrideError: string | null
   projectSystemIdsDraft: string[]
@@ -84,6 +87,7 @@ interface ProjectDetailHeroProps {
   onProjectReportStatusEdit: () => void
   onProjectReportStatusCancel: () => void
   onProjectReportStatusSave: () => void
+  onProjectStatusBulkApplyChange: (checked: boolean) => void
   onProjectStatusOverrideDraftChange: (status: ProjectStatusOverride | null) => void
   onProjectStatusEdit: () => void
   onProjectStatusCancel: () => void
@@ -137,6 +141,7 @@ export function ProjectDetailHero({
   projectReportStatusDraft,
   projectReportStatusChanged,
   projectReportStatusError,
+  projectStatusBulkApplyEnabled,
   projectStatusOverrideDraft,
   projectStatusOverrideChanged,
   projectStatusOverrideError,
@@ -161,6 +166,7 @@ export function ProjectDetailHero({
   onProjectReportStatusEdit,
   onProjectReportStatusCancel,
   onProjectReportStatusSave,
+  onProjectStatusBulkApplyChange,
   onProjectStatusOverrideDraftChange,
   onProjectStatusEdit,
   onProjectStatusCancel,
@@ -171,6 +177,11 @@ export function ProjectDetailHero({
   onProjectSystemChange,
   onRemoveProjectLink,
 }: ProjectDetailHeroProps) {
+  const [isExpanded, setIsExpanded] = useState(true)
+  const currentPhaseToneClassName = currentPhase
+    ? styles[`phaseSummaryBadge${getPhaseToneKey(currentPhase.name)}`]
+    : styles.phaseSummaryBadgeDefaultTone
+
   return (
     <Panel className={styles.hero} variant="hero">
       <div className={styles.heroTop}>
@@ -213,82 +224,113 @@ export function ProjectDetailHero({
               {isBookmarked ? 'ブックマーク解除' : 'ブックマーク'}
             </Button>
           ) : null}
-          <StatusBadge status={project.status} />
+          <Button
+            aria-expanded={isExpanded}
+            data-testid="project-hero-toggle-button"
+            onClick={() => setIsExpanded((current) => !current)}
+            size="small"
+            variant="secondary"
+          >
+            {isExpanded ? '詳細を折りたたむ' : '詳細を表示'}
+          </Button>
+          <div className={styles.heroBadgeGroup}>
+            <StatusBadge status={project.status} />
+            <span
+              className={`${styles.phaseSummaryBadge} ${currentPhaseToneClassName}`}
+              data-testid="hero-current-phase-badge"
+            >
+              フェーズ: {currentPhase?.name ?? '未設定'}
+            </span>
+            <span
+              className={
+                project.hasReportItems
+                  ? `${styles.phaseSummaryBadge} ${styles.reportSummaryBadgeActive}`
+                  : `${styles.phaseSummaryBadge} ${styles.reportSummaryBadgeInactive}`
+              }
+              data-testid="hero-report-status-badge"
+            >
+              報告事項: {project.hasReportItems ? 'あり' : 'なし'}
+            </span>
+          </div>
         </div>
       </div>
 
-      <ProjectDetailMetaGrid
-        currentPhase={currentPhase}
-        currentPhaseChanged={currentPhaseChanged}
-        currentPhaseDraftId={currentPhaseDraftId}
-        currentPhaseError={currentPhaseError}
-        isCurrentPhaseEditing={isCurrentPhaseEditing}
-        isProjectLinksEditing={isProjectLinksEditing}
-        isProjectNoteEditing={isProjectNoteEditing}
-        isProjectReportStatusEditing={isProjectReportStatusEditing}
-        isProjectStatusEditing={isProjectStatusEditing}
-        isSavingCurrentPhase={isSavingCurrentPhase}
-        isSavingProjectLinks={isSavingProjectLinks}
-        isSavingProjectNote={isSavingProjectNote}
-        isSavingProjectReportStatus={isSavingProjectReportStatus}
-        isSavingProjectStatusOverride={isSavingProjectStatusOverride}
-        isSavingSchedule={isSavingSchedule}
-        isScheduleEditing={isScheduleEditing}
-        onAddProjectLink={onAddProjectLink}
-        onCurrentPhaseCancel={onCurrentPhaseCancel}
-        onCurrentPhaseDraftChange={onCurrentPhaseDraftChange}
-        onCurrentPhaseEdit={onCurrentPhaseEdit}
-        onCurrentPhaseSave={onCurrentPhaseSave}
-        onProjectLinksCancel={onProjectLinksCancel}
-        onProjectLinkDraftChange={onProjectLinkDraftChange}
-        onProjectLinksEdit={onProjectLinksEdit}
-        onProjectLinksSave={onProjectLinksSave}
-        onProjectNoteDraftChange={onProjectNoteDraftChange}
-        onProjectNoteEdit={onProjectNoteEdit}
-        onProjectNoteCancel={onProjectNoteCancel}
-        onProjectNoteSave={onProjectNoteSave}
-        onProjectReportStatusDraftChange={onProjectReportStatusDraftChange}
-        onProjectReportStatusEdit={onProjectReportStatusEdit}
-        onProjectReportStatusCancel={onProjectReportStatusCancel}
-        onProjectReportStatusSave={onProjectReportStatusSave}
-        onProjectStatusOverrideDraftChange={onProjectStatusOverrideDraftChange}
-        onProjectStatusEdit={onProjectStatusEdit}
-        onProjectStatusCancel={onProjectStatusCancel}
-        onProjectStatusSave={onProjectStatusSave}
-        onProjectSystemsCancel={onProjectSystemsCancel}
-        onProjectSystemsEdit={onProjectSystemsEdit}
-        onProjectSystemsSave={onProjectSystemsSave}
-         onProjectSystemChange={onProjectSystemChange}
-        onRemoveProjectLink={onRemoveProjectLink}
-        onScheduleCancel={onScheduleCancel}
-        onScheduleDraftChange={onScheduleDraftChange}
-        onScheduleEdit={onScheduleEdit}
-        onScheduleSave={onScheduleSave}
-        pmName={pmName}
-        project={project}
-        projectLinksChanged={projectLinksChanged}
-        projectLinksDraft={projectLinksDraft}
-        projectLinksError={projectLinksError}
-        projectNoteChanged={projectNoteChanged}
-        projectNoteDraft={projectNoteDraft}
-        projectNoteError={projectNoteError}
-        projectReportStatusChanged={projectReportStatusChanged}
-        projectReportStatusDraft={projectReportStatusDraft}
-        projectReportStatusError={projectReportStatusError}
-        projectStatusOverrideChanged={projectStatusOverrideChanged}
-        projectStatusOverrideDraft={projectStatusOverrideDraft}
-        projectStatusOverrideError={projectStatusOverrideError}
-        projectPhases={projectPhases}
-        projectSystemIdsDraft={projectSystemIdsDraft}
-        projectSystemsChanged={projectSystemsChanged}
-        projectSystemsError={projectSystemsError}
-        availableSystems={availableSystems}
-        isProjectSystemsEditing={isProjectSystemsEditing}
-        isSavingProjectSystems={isSavingProjectSystems}
-        scheduleChanged={scheduleChanged}
-        scheduleDraft={scheduleDraft}
-        scheduleError={scheduleError}
-      />
+      {isExpanded ? (
+        <ProjectDetailMetaGrid
+          currentPhase={currentPhase}
+          currentPhaseChanged={currentPhaseChanged}
+          currentPhaseDraftId={currentPhaseDraftId}
+          currentPhaseError={currentPhaseError}
+          isCurrentPhaseEditing={isCurrentPhaseEditing}
+          isProjectLinksEditing={isProjectLinksEditing}
+          isProjectNoteEditing={isProjectNoteEditing}
+          isProjectReportStatusEditing={isProjectReportStatusEditing}
+          isProjectStatusEditing={isProjectStatusEditing}
+          isSavingCurrentPhase={isSavingCurrentPhase}
+          isSavingProjectLinks={isSavingProjectLinks}
+          isSavingProjectNote={isSavingProjectNote}
+          isSavingProjectReportStatus={isSavingProjectReportStatus}
+          isSavingProjectStatusOverride={isSavingProjectStatusOverride}
+          isSavingSchedule={isSavingSchedule}
+          isScheduleEditing={isScheduleEditing}
+          onAddProjectLink={onAddProjectLink}
+          onCurrentPhaseCancel={onCurrentPhaseCancel}
+          onCurrentPhaseDraftChange={onCurrentPhaseDraftChange}
+          onCurrentPhaseEdit={onCurrentPhaseEdit}
+          onCurrentPhaseSave={onCurrentPhaseSave}
+          onProjectLinksCancel={onProjectLinksCancel}
+          onProjectLinkDraftChange={onProjectLinkDraftChange}
+          onProjectLinksEdit={onProjectLinksEdit}
+          onProjectLinksSave={onProjectLinksSave}
+          onProjectNoteDraftChange={onProjectNoteDraftChange}
+          onProjectNoteEdit={onProjectNoteEdit}
+          onProjectNoteCancel={onProjectNoteCancel}
+          onProjectNoteSave={onProjectNoteSave}
+          onProjectReportStatusDraftChange={onProjectReportStatusDraftChange}
+          onProjectReportStatusEdit={onProjectReportStatusEdit}
+          onProjectReportStatusCancel={onProjectReportStatusCancel}
+          onProjectReportStatusSave={onProjectReportStatusSave}
+          onProjectStatusBulkApplyChange={onProjectStatusBulkApplyChange}
+          onProjectStatusOverrideDraftChange={onProjectStatusOverrideDraftChange}
+          onProjectStatusEdit={onProjectStatusEdit}
+          onProjectStatusCancel={onProjectStatusCancel}
+          onProjectStatusSave={onProjectStatusSave}
+          onProjectSystemsCancel={onProjectSystemsCancel}
+          onProjectSystemsEdit={onProjectSystemsEdit}
+          onProjectSystemsSave={onProjectSystemsSave}
+          onProjectSystemChange={onProjectSystemChange}
+          onRemoveProjectLink={onRemoveProjectLink}
+          onScheduleCancel={onScheduleCancel}
+          onScheduleDraftChange={onScheduleDraftChange}
+          onScheduleEdit={onScheduleEdit}
+          onScheduleSave={onScheduleSave}
+          pmName={pmName}
+          project={project}
+          projectLinksChanged={projectLinksChanged}
+          projectLinksDraft={projectLinksDraft}
+          projectLinksError={projectLinksError}
+          projectNoteChanged={projectNoteChanged}
+          projectNoteDraft={projectNoteDraft}
+          projectNoteError={projectNoteError}
+          projectReportStatusChanged={projectReportStatusChanged}
+          projectReportStatusDraft={projectReportStatusDraft}
+          projectReportStatusError={projectReportStatusError}
+          projectStatusOverrideChanged={projectStatusOverrideChanged}
+          projectStatusBulkApplyEnabled={projectStatusBulkApplyEnabled}
+          projectStatusOverrideDraft={projectStatusOverrideDraft}
+          projectStatusOverrideError={projectStatusOverrideError}
+          projectPhases={projectPhases}
+          projectSystemIdsDraft={projectSystemIdsDraft}
+          projectSystemsChanged={projectSystemsChanged}
+          projectSystemsError={projectSystemsError}
+          availableSystems={availableSystems}
+          isProjectSystemsEditing={isProjectSystemsEditing}
+          isSavingProjectSystems={isSavingProjectSystems}
+          scheduleChanged={scheduleChanged}
+          scheduleDraft={scheduleDraft}
+          scheduleError={scheduleError}
+        />
+      ) : null}
     </Panel>
   )
 }

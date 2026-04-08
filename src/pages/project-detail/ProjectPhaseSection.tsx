@@ -36,7 +36,7 @@ export function ProjectPhaseSection({
         <div>
           <h2 className={styles.sectionTitle}>フェーズ編集</h2>
           <p className={styles.sectionDescription}>
-            案件ごとにフェーズ名、期間、状態、進捗を編集できます。不要なフェーズは削除し、新しいフェーズも追加できます。
+            フェーズ名、期間、状態を編集できます。並び替えや削除、新規フェーズの追加にも対応しています。
           </p>
         </div>
         <div className={styles.phaseHeaderActions}>
@@ -61,7 +61,6 @@ export function ProjectPhaseSection({
               <th>フェーズ名</th>
               <th>期間</th>
               <th>状態</th>
-              <th>進捗率</th>
               <th>開始週</th>
               <th>終了週</th>
               <th>操作</th>

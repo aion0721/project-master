@@ -35,6 +35,11 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByTestId('current-phase-card').className).toContain(
       styles.metaCardPhaseToneBasicDesign,
     )
+    expect(screen.getByTestId('hero-current-phase-badge')).toHaveTextContent('フェーズ: 基本設計')
+    expect(screen.getByTestId('hero-current-phase-badge').className).toContain(
+      styles.phaseSummaryBadgebasicDesign,
+    )
+    expect(screen.getByTestId('hero-report-status-badge')).toHaveTextContent('報告事項: あり')
     expect(screen.getByTestId('project-status-card').className).toContain(styles.metaCardPhaseInProgress)
     expect(screen.getByTestId('project-note-value')).toHaveTextContent(project.note ?? '')
     expect(screen.getByTestId('project-report-status-value')).toHaveTextContent('あり')

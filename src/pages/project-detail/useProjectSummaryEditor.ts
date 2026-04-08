@@ -224,106 +224,6 @@ export function useProjectSummaryEditor(
     setIsProjectLinksEditing(true)
   }
 
-  function openProjectReportStatusEditor() {
-    setProjectReportStatusDraft(project?.hasReportItems ?? false)
-    setProjectReportStatusError(null)
-    setIsProjectReportStatusEditing(true)
-  }
-
-  function openProjectStatusEditor() {
-    setProjectStatusOverrideDraft(project?.statusOverride ?? null)
-    setProjectStatusOverrideError(null)
-    setIsProjectStatusEditing(true)
-  }
-
-  function closeProjectStatusEditor() {
-    setProjectStatusOverrideDraft(project?.statusOverride ?? null)
-    setProjectStatusOverrideError(null)
-    setIsProjectStatusEditing(false)
-  }
-
-  async function saveProjectStatusOverride() {
-    if (!project) {
-      return
-    }
-
-    setIsSavingProjectStatusOverride(true)
-    setProjectStatusOverrideError(null)
-
-    try {
-      await updateProjectStatusOverride(project.projectNumber, {
-        statusOverride: projectStatusOverrideDraft,
-      })
-      setIsProjectStatusEditing(false)
-    } catch (caughtError) {
-      setProjectStatusOverrideError(
-        caughtError instanceof Error ? caughtError.message : '案件状態の更新に失敗しました。',
-      )
-    } finally {
-      setIsSavingProjectStatusOverride(false)
-    }
-  }
-
-  function closeProjectReportStatusEditor() {
-    setProjectReportStatusDraft(project?.hasReportItems ?? false)
-    setProjectReportStatusError(null)
-    setIsProjectReportStatusEditing(false)
-  }
-
-  async function saveProjectReportStatus() {
-    if (!project) {
-      return
-    }
-
-    setIsSavingProjectReportStatus(true)
-    setProjectReportStatusError(null)
-
-    try {
-      await updateProjectReportStatus(project.projectNumber, {
-        hasReportItems: projectReportStatusDraft,
-      })
-      setIsProjectReportStatusEditing(false)
-    } catch (caughtError) {
-      setProjectReportStatusError(
-        caughtError instanceof Error ? caughtError.message : '報告事項の更新に失敗しました。',
-      )
-    } finally {
-      setIsSavingProjectReportStatus(false)
-    }
-  }
-
-  function openProjectNoteEditor() {
-    setProjectNoteDraft(project?.note ?? '')
-    setProjectNoteError(null)
-    setIsProjectNoteEditing(true)
-  }
-
-  function closeProjectNoteEditor() {
-    setProjectNoteDraft(project?.note ?? '')
-    setProjectNoteError(null)
-    setIsProjectNoteEditing(false)
-  }
-
-  async function saveProjectNote() {
-    if (!project) {
-      return
-    }
-
-    setIsSavingProjectNote(true)
-    setProjectNoteError(null)
-
-    try {
-      await updateProjectNote(project.projectNumber, { note: projectNoteDraft.trim() || null })
-      setIsProjectNoteEditing(false)
-    } catch (caughtError) {
-      setProjectNoteError(
-        caughtError instanceof Error ? caughtError.message : '状況メモの保存に失敗しました。',
-      )
-    } finally {
-      setIsSavingProjectNote(false)
-    }
-  }
-
   function closeProjectLinksEditor() {
     setProjectLinksDraft(
       project && project.projectLinks.length > 0
@@ -378,6 +278,108 @@ export function useProjectSummaryEditor(
     }
   }
 
+  function openProjectNoteEditor() {
+    setProjectNoteDraft(project?.note ?? '')
+    setProjectNoteError(null)
+    setIsProjectNoteEditing(true)
+  }
+
+  function closeProjectNoteEditor() {
+    setProjectNoteDraft(project?.note ?? '')
+    setProjectNoteError(null)
+    setIsProjectNoteEditing(false)
+  }
+
+  async function saveProjectNote() {
+    if (!project) {
+      return
+    }
+
+    setIsSavingProjectNote(true)
+    setProjectNoteError(null)
+
+    try {
+      await updateProjectNote(project.projectNumber, { note: projectNoteDraft.trim() || null })
+      setIsProjectNoteEditing(false)
+    } catch (caughtError) {
+      setProjectNoteError(
+        caughtError instanceof Error ? caughtError.message : '状況メモの保存に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectNote(false)
+    }
+  }
+
+  function openProjectReportStatusEditor() {
+    setProjectReportStatusDraft(project?.hasReportItems ?? false)
+    setProjectReportStatusError(null)
+    setIsProjectReportStatusEditing(true)
+  }
+
+  function closeProjectReportStatusEditor() {
+    setProjectReportStatusDraft(project?.hasReportItems ?? false)
+    setProjectReportStatusError(null)
+    setIsProjectReportStatusEditing(false)
+  }
+
+  async function saveProjectReportStatus() {
+    if (!project) {
+      return
+    }
+
+    setIsSavingProjectReportStatus(true)
+    setProjectReportStatusError(null)
+
+    try {
+      await updateProjectReportStatus(project.projectNumber, {
+        hasReportItems: projectReportStatusDraft,
+      })
+      setIsProjectReportStatusEditing(false)
+    } catch (caughtError) {
+      setProjectReportStatusError(
+        caughtError instanceof Error ? caughtError.message : '報告事項の更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectReportStatus(false)
+    }
+  }
+
+  function openProjectStatusEditor() {
+    setProjectStatusOverrideDraft(project?.statusOverride ?? null)
+    setProjectStatusOverrideError(null)
+    setIsProjectStatusEditing(true)
+  }
+
+  function closeProjectStatusEditor() {
+    setProjectStatusOverrideDraft(project?.statusOverride ?? null)
+    setProjectStatusOverrideError(null)
+    setIsProjectStatusEditing(false)
+  }
+
+  async function saveProjectStatusOverride() {
+    if (!project) {
+      return false
+    }
+
+    setIsSavingProjectStatusOverride(true)
+    setProjectStatusOverrideError(null)
+
+    try {
+      await updateProjectStatusOverride(project.projectNumber, {
+        statusOverride: projectStatusOverrideDraft,
+      })
+      setIsProjectStatusEditing(false)
+      return true
+    } catch (caughtError) {
+      setProjectStatusOverrideError(
+        caughtError instanceof Error ? caughtError.message : '案件状態の更新に失敗しました。',
+      )
+      return false
+    } finally {
+      setIsSavingProjectStatusOverride(false)
+    }
+  }
+
   function openProjectSystemsEditor() {
     setProjectSystemIdsDraft([...(project?.relatedSystemIds ?? [])])
     setProjectSystemsError(null)
@@ -402,8 +404,10 @@ export function useProjectSummaryEditor(
 
     const uniqueSystemIds = projectSystemIdsDraft[0] ? [projectSystemIdsDraft[0]] : []
 
-    if (uniqueSystemIds.some((systemId) => !availableSystems.some((system) => system.id === systemId))) {
-      setProjectSystemsError('関連システムに不正な選択が含まれています。')
+    if (
+      uniqueSystemIds.some((systemId) => !availableSystems.some((system) => system.id === systemId))
+    ) {
+      setProjectSystemsError('関連システムに正しい選択肢が含まれていません。')
       return
     }
 
@@ -415,7 +419,7 @@ export function useProjectSummaryEditor(
       setIsProjectSystemsEditing(false)
     } catch (caughtError) {
       setProjectSystemsError(
-        caughtError instanceof Error ? caughtError.message : '関連システムの更新に失敗しました。',
+        caughtError instanceof Error ? caughtError.message : '主システムの更新に失敗しました。',
       )
     } finally {
       setIsSavingProjectSystems(false)

@@ -23,6 +23,8 @@ interface UpdatePhase {
   (phaseId: string, input: UpdatePhaseInput): Promise<unknown>
 }
 
+type BulkApplicablePhaseStatus = Extract<WorkStatus, '未着手' | '完了'>
+
 const FALLBACK_SAVE_ERROR = 'フェーズ更新の保存に失敗しました。'
 const MISSING_PHASE_ERROR = '対象のフェーズが見つかりません。'
 
@@ -186,6 +188,41 @@ export function useProjectPhaseEditor(
     }
   }
 
+  async function applyStatusToAllPhases(status: BulkApplicablePhaseStatus) {
+    if (!project) {
+      return false
+    }
+
+    const nextProgress = status === '完了' ? '100' : '0'
+    const nextPhaseDrafts = phaseDrafts.map((phase) => ({
+      ...phase,
+      status,
+      progress: nextProgress,
+    }))
+    const { phases: normalizedPhases, error } = normalizePhaseDrafts(nextPhaseDrafts)
+
+    if (error) {
+      setPhaseStructureError(error)
+      return false
+    }
+
+    setIsSavingPhaseStructure(true)
+    setPhaseStructureError(null)
+
+    try {
+      await updateProjectPhases(project.projectNumber, { phases: normalizedPhases })
+      setPhaseDrafts(nextPhaseDrafts)
+      return true
+    } catch (caughtError) {
+      setPhaseStructureError(
+        caughtError instanceof Error ? caughtError.message : FALLBACK_SAVE_ERROR,
+      )
+      return false
+    } finally {
+      setIsSavingPhaseStructure(false)
+    }
+  }
+
   return {
     phaseDrafts,
     phaseStructureError,
@@ -193,6 +230,7 @@ export function useProjectPhaseEditor(
     addPhaseDraft,
     movePhaseDraft,
     removePhaseDraft,
+    applyStatusToAllPhases,
     savePhaseRange,
     savePhaseStructure,
     updatePhaseDraft,

@@ -48,6 +48,7 @@ interface ProjectDetailMetaGridProps {
   onProjectReportStatusEdit: () => void
   onProjectReportStatusSave: () => void
   onProjectStatusCancel: () => void
+  onProjectStatusBulkApplyChange: (checked: boolean) => void
   onProjectStatusOverrideDraftChange: (status: ProjectStatusOverride | null) => void
   onProjectStatusEdit: () => void
   onProjectStatusSave: () => void
@@ -72,6 +73,7 @@ interface ProjectDetailMetaGridProps {
   projectReportStatusDraft: boolean
   projectReportStatusError: string | null
   projectStatusOverrideChanged: boolean
+  projectStatusBulkApplyEnabled: boolean
   projectStatusOverrideDraft: ProjectStatusOverride | null
   projectStatusOverrideError: string | null
   projectPhases: Phase[]
@@ -189,6 +191,7 @@ export function ProjectDetailMetaGrid({
   onProjectReportStatusEdit,
   onProjectReportStatusSave,
   onProjectStatusCancel,
+  onProjectStatusBulkApplyChange,
   onProjectStatusOverrideDraftChange,
   onProjectStatusEdit,
   onProjectStatusSave,
@@ -213,6 +216,7 @@ export function ProjectDetailMetaGrid({
   projectReportStatusDraft,
   projectReportStatusError,
   projectStatusOverrideChanged,
+  projectStatusBulkApplyEnabled,
   projectStatusOverrideDraft,
   projectStatusOverrideError,
   projectPhases,
@@ -302,20 +306,23 @@ export function ProjectDetailMetaGrid({
       >
         {isCurrentPhaseEditing ? (
           <div className={styles.phaseMetaEditor}>
-            <select
-              aria-label="現在フェーズを選択"
-              className={styles.selectInput}
-              data-testid="current-phase-select"
-              onChange={(event) => onCurrentPhaseDraftChange(event.target.value)}
-              value={currentPhaseDraftId}
-            >
-              <option value="">選択してください</option>
-              {projectPhases.map((phase) => (
-                <option key={phase.id} value={phase.id}>
-                  {phase.name}
-                </option>
-              ))}
-            </select>
+            <label className={styles.formField}>
+              <span className={styles.visuallyHidden}>現在フェーズ</span>
+              <select
+                aria-label="現在フェーズ"
+                className={styles.selectInput}
+                data-testid="current-phase-select"
+                onChange={(event) => onCurrentPhaseDraftChange(event.target.value)}
+                value={currentPhaseDraftId}
+              >
+                <option value="">選択してください</option>
+                {projectPhases.map((phase) => (
+                  <option key={phase.id} value={phase.id}>
+                    {phase.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className={styles.phaseMetaActions}>
               <Button
                 data-testid="current-phase-save-button"
@@ -381,10 +388,31 @@ export function ProjectDetailMetaGrid({
                 <option value="中止">中止</option>
               </select>
             </label>
+            {projectStatusOverrideDraft === '未着手' || projectStatusOverrideDraft === '完了' ? (
+              <label className={styles.statusSyncOption}>
+                <input
+                  checked={projectStatusBulkApplyEnabled}
+                  data-testid="project-status-apply-all-phases"
+                  onChange={(event) => onProjectStatusBulkApplyChange(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  この状態を全フェーズへ反映
+                  <span className={styles.statusSyncHint}>
+                    {projectStatusOverrideDraft === '完了'
+                      ? '全フェーズを完了 / 進捗100%にします。'
+                      : '全フェーズを未着手 / 進捗0%にします。'}
+                  </span>
+                </span>
+              </label>
+            ) : null}
             <div className={styles.phaseMetaActions}>
               <Button
                 data-testid="project-status-override-save-button"
-                disabled={isSavingProjectStatusOverride || !projectStatusOverrideChanged}
+                disabled={
+                  isSavingProjectStatusOverride ||
+                  !(projectStatusOverrideChanged || projectStatusBulkApplyEnabled)
+                }
                 onClick={onProjectStatusSave}
                 size="small"
               >
@@ -427,7 +455,7 @@ export function ProjectDetailMetaGrid({
         {isProjectLinksEditing ? (
           <div className={styles.phaseMetaEditor}>
             <div className={styles.projectLinksHeader}>
-              <span className={styles.metaHelperText}>リンク名と URL をセットで登録できます。</span>
+              <span className={styles.metaHelperText}>リンク名と URL をセットで入力します。</span>
               <Button onClick={onAddProjectLink} size="small" variant="secondary">
                 追加
               </Button>
@@ -537,7 +565,7 @@ export function ProjectDetailMetaGrid({
                 className={`${styles.selectInput} ${styles.memoInput}`}
                 data-testid="project-note-input"
                 onChange={(event) => onProjectNoteDraftChange(event.target.value)}
-                placeholder="状況、懸念、次のアクションを記録"
+                placeholder="状況、課題、次回アクションを入力"
                 value={projectNoteDraft}
               />
             </label>
@@ -643,28 +671,28 @@ export function ProjectDetailMetaGrid({
         {isProjectSystemsEditing ? (
           <div className={styles.phaseMetaEditor}>
             <div className={styles.systemSelectionList}>
-                {availableSystems.length > 0 ? (
-                  <label className={styles.formField}>
-                    <span className={styles.visuallyHidden}>主システム</span>
-                    <select
-                      aria-label="主システム"
-                      className={styles.selectInput}
-                      data-testid="project-system-select"
-                      onChange={(event) => onProjectSystemChange(event.target.value)}
-                      value={projectSystemIdsDraft[0] ?? ''}
-                    >
-                      <option value="">選択してください</option>
-                      {availableSystems.map((system) => (
-                        <option key={system.id} value={system.id}>
-                          {system.id} / {system.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <p className={styles.emptyText}>登録済みシステムがありません。</p>
-                )}
-              </div>
+              {availableSystems.length > 0 ? (
+                <label className={styles.formField}>
+                  <span className={styles.visuallyHidden}>主システム</span>
+                  <select
+                    aria-label="主システム"
+                    className={styles.selectInput}
+                    data-testid="project-system-select"
+                    onChange={(event) => onProjectSystemChange(event.target.value)}
+                    value={projectSystemIdsDraft[0] ?? ''}
+                  >
+                    <option value="">選択してください</option>
+                    {availableSystems.map((system) => (
+                      <option key={system.id} value={system.id}>
+                        {system.id} / {system.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className={styles.emptyText}>選択可能なシステムがありません。</p>
+              )}
+            </div>
             <div className={styles.phaseMetaActions}>
               <Button
                 data-testid="project-systems-save-button"
@@ -688,13 +716,9 @@ export function ProjectDetailMetaGrid({
         ) : (
           <div className={styles.projectLinksDisplay}>
             {selectedSystems.length > 0 ? (
-              <div className={styles.systemChipList}>
-                {selectedSystems.map((system) => (
-                  <span className={styles.systemChip} key={system.id}>
-                    {system.id} / {system.name}
-                  </span>
-                ))}
-              </div>
+              <strong className={styles.metaValue} data-testid="project-system-value">
+                {selectedSystems[0]?.id} / {selectedSystems[0]?.name}
+              </strong>
             ) : (
               <strong className={styles.metaValue} data-testid="project-system-empty">
                 未設定
