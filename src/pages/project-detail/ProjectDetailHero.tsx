@@ -6,6 +6,7 @@ import type {
   Phase,
   Project,
   ProjectLink,
+  ProjectStatusEntry,
   ProjectStatusOverride,
 } from '../../types/project'
 import { getPhaseToneKey } from '../../utils/projectPhasePresets'
@@ -47,6 +48,7 @@ interface ProjectDetailHeroProps {
   onCurrentPhaseSave: () => void
   isProjectLinksEditing: boolean
   isProjectNoteEditing: boolean
+  isProjectStatusEntriesEditing: boolean
   isProjectReportStatusEditing: boolean
   isProjectStatusEditing: boolean
   isProjectSystemsEditing: boolean
@@ -56,6 +58,9 @@ interface ProjectDetailHeroProps {
   projectNoteChanged: boolean
   projectNoteDraft: string
   projectNoteError: string | null
+  projectStatusEntriesChanged: boolean
+  projectStatusEntriesDraft: ProjectStatusEntry[]
+  projectStatusEntriesError: string | null
   projectReportStatusChanged: boolean
   projectReportStatusDraft: boolean
   projectReportStatusError: string | null
@@ -68,6 +73,7 @@ interface ProjectDetailHeroProps {
   projectSystemsError: string | null
   isSavingProjectLinks: boolean
   isSavingProjectNote: boolean
+  isSavingProjectStatusEntries: boolean
   isSavingProjectReportStatus: boolean
   isSavingProjectStatusOverride: boolean
   isSavingProjectSystems: boolean
@@ -80,6 +86,12 @@ interface ProjectDetailHeroProps {
   onProjectNoteEdit: () => void
   onProjectNoteCancel: () => void
   onProjectNoteSave: () => void
+  onAddProjectStatusEntry: () => void
+  onProjectStatusEntryDraftChange: (index: number, patch: Partial<ProjectStatusEntry>) => void
+  onProjectStatusEntryMove: (index: number, direction: 'up' | 'down') => void
+  onProjectStatusEntriesEdit: () => void
+  onProjectStatusEntriesCancel: () => void
+  onProjectStatusEntriesSave: () => void
   onProjectReportStatusDraftChange: (hasReportItems: boolean) => void
   onProjectReportStatusEdit: () => void
   onProjectReportStatusCancel: () => void
@@ -94,6 +106,7 @@ interface ProjectDetailHeroProps {
   onProjectSystemsSave: () => void
   onProjectSystemChange: (systemId: string) => void
   onRemoveProjectLink: (index: number) => void
+  onRemoveProjectStatusEntry: (index: number) => void
 }
 
 export function ProjectDetailHero({
@@ -126,6 +139,7 @@ export function ProjectDetailHero({
   onCurrentPhaseSave,
   isProjectLinksEditing,
   isProjectNoteEditing,
+  isProjectStatusEntriesEditing,
   isProjectReportStatusEditing,
   isProjectStatusEditing,
   isProjectSystemsEditing,
@@ -135,6 +149,9 @@ export function ProjectDetailHero({
   projectNoteDraft,
   projectNoteChanged,
   projectNoteError,
+  projectStatusEntriesChanged,
+  projectStatusEntriesDraft,
+  projectStatusEntriesError,
   projectReportStatusDraft,
   projectReportStatusChanged,
   projectReportStatusError,
@@ -147,6 +164,7 @@ export function ProjectDetailHero({
   projectSystemsError,
   isSavingProjectLinks,
   isSavingProjectNote,
+  isSavingProjectStatusEntries,
   isSavingProjectReportStatus,
   isSavingProjectStatusOverride,
   isSavingProjectSystems,
@@ -159,6 +177,12 @@ export function ProjectDetailHero({
   onProjectNoteEdit,
   onProjectNoteCancel,
   onProjectNoteSave,
+  onAddProjectStatusEntry,
+  onProjectStatusEntryDraftChange,
+  onProjectStatusEntryMove,
+  onProjectStatusEntriesEdit,
+  onProjectStatusEntriesCancel,
+  onProjectStatusEntriesSave,
   onProjectReportStatusDraftChange,
   onProjectReportStatusEdit,
   onProjectReportStatusCancel,
@@ -173,6 +197,7 @@ export function ProjectDetailHero({
   onProjectSystemsSave,
   onProjectSystemChange,
   onRemoveProjectLink,
+  onRemoveProjectStatusEntry,
 }: ProjectDetailHeroProps) {
   const currentPhaseToneClassName = currentPhase
     ? styles[`phaseSummaryBadge${getPhaseToneKey(currentPhase.name)}`]
@@ -251,11 +276,13 @@ export function ProjectDetailHero({
           isCurrentPhaseEditing={isCurrentPhaseEditing}
           isProjectLinksEditing={isProjectLinksEditing}
           isProjectNoteEditing={isProjectNoteEditing}
+          isProjectStatusEntriesEditing={isProjectStatusEntriesEditing}
           isProjectReportStatusEditing={isProjectReportStatusEditing}
           isProjectStatusEditing={isProjectStatusEditing}
           isSavingCurrentPhase={isSavingCurrentPhase}
           isSavingProjectLinks={isSavingProjectLinks}
           isSavingProjectNote={isSavingProjectNote}
+          isSavingProjectStatusEntries={isSavingProjectStatusEntries}
           isSavingProjectReportStatus={isSavingProjectReportStatus}
           isSavingProjectStatusOverride={isSavingProjectStatusOverride}
           isSavingSchedule={isSavingSchedule}
@@ -273,6 +300,12 @@ export function ProjectDetailHero({
           onProjectNoteEdit={onProjectNoteEdit}
           onProjectNoteCancel={onProjectNoteCancel}
           onProjectNoteSave={onProjectNoteSave}
+          onAddProjectStatusEntry={onAddProjectStatusEntry}
+          onProjectStatusEntryDraftChange={onProjectStatusEntryDraftChange}
+          onProjectStatusEntryMove={onProjectStatusEntryMove}
+          onProjectStatusEntriesEdit={onProjectStatusEntriesEdit}
+          onProjectStatusEntriesCancel={onProjectStatusEntriesCancel}
+          onProjectStatusEntriesSave={onProjectStatusEntriesSave}
           onProjectReportStatusDraftChange={onProjectReportStatusDraftChange}
           onProjectReportStatusEdit={onProjectReportStatusEdit}
           onProjectReportStatusCancel={onProjectReportStatusCancel}
@@ -287,6 +320,7 @@ export function ProjectDetailHero({
           onProjectSystemsSave={onProjectSystemsSave}
           onProjectSystemChange={onProjectSystemChange}
           onRemoveProjectLink={onRemoveProjectLink}
+          onRemoveProjectStatusEntry={onRemoveProjectStatusEntry}
           onScheduleCancel={onScheduleCancel}
           onScheduleDraftChange={onScheduleDraftChange}
           onScheduleEdit={onScheduleEdit}
@@ -299,6 +333,9 @@ export function ProjectDetailHero({
           projectNoteChanged={projectNoteChanged}
           projectNoteDraft={projectNoteDraft}
           projectNoteError={projectNoteError}
+          projectStatusEntriesChanged={projectStatusEntriesChanged}
+          projectStatusEntriesDraft={projectStatusEntriesDraft}
+          projectStatusEntriesError={projectStatusEntriesError}
           projectReportStatusChanged={projectReportStatusChanged}
           projectReportStatusDraft={projectReportStatusDraft}
           projectReportStatusError={projectReportStatusError}

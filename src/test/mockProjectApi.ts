@@ -36,6 +36,7 @@ function cloneFixtures() {
     projects: projects.map((project) => ({
       ...project,
       projectLinks: project.projectLinks.map((link) => ({ ...link })),
+      statusEntries: (project.statusEntries ?? []).map((entry) => ({ ...entry })),
     })),
     phases: phases.map((phase) => ({ ...phase })),
     events: events.map((event) => ({ ...event })),
@@ -580,6 +581,7 @@ export function mockProjectApi() {
         status: statusLabelByCode[body.status],
         pmMemberId: body.pmMemberId,
         note: body.note?.trim() || null,
+        statusEntries: [],
         hasReportItems: body.hasReportItems ?? false,
         relatedSystemIds: body.relatedSystemIds ?? [],
         projectLinks: body.projectLinks ?? [],
@@ -734,6 +736,40 @@ export function mockProjectApi() {
       }
 
       project.note = body.note?.trim() || null
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const statusEntriesMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/status-entries$/)
+    if (statusEntriesMatch && method === 'PATCH') {
+      const projectNumber = statusEntriesMatch[1]
+      const body = JSON.parse(String(init?.body)) as {
+        statusEntries?: Array<{ date: string; content: string }>
+      }
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.statusEntries = (body.statusEntries ?? [])
+        .map((entry) => ({
+          date: entry.date.trim(),
+          content: entry.content.trim(),
+        }))
+        .filter((entry) => entry.date || entry.content)
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

@@ -557,6 +557,68 @@
   white-space: pre-wrap;
 }
 
+.statusEntryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statusEntryRow {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.statusEntryRowActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statusEntryContentField {
+  min-width: 0;
+}
+
+.statusEntryContentInput {
+  min-height: 96px;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+
+.statusEntriesDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statusEntriesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statusEntriesToolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.statusEntryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.statusEntryDate {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
 .weekInput {
   composes: control from '../../styles/form.module.css';
   width: 84px;
@@ -656,6 +718,15 @@
   .heroActions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .statusEntryRow {
+    grid-template-columns: 1fr;
+  }
+
+  .statusEntryRowActions {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .assignmentRow,

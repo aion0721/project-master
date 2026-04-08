@@ -33,6 +33,7 @@ export function ProjectDetailPage() {
     updateProjectEvents,
     updateProjectLinks,
     updateProjectNote,
+    updateProjectStatusEntries,
     updateProjectReportStatus,
     updateProjectStatusOverride,
     updatePhase,
@@ -77,6 +78,7 @@ export function ProjectDetailPage() {
     updateProjectSchedule,
     updateProjectLinks,
     updateProjectNote,
+    updateProjectStatusEntries,
     updateProjectReportStatus,
     updateProjectStatusOverride,
     updateProjectSystems,
@@ -269,6 +271,7 @@ export function ProjectDetailPage() {
         onProjectNoteSave={() => {
           void summaryEditor.saveProjectNote()
         }}
+        onAddProjectStatusEntry={summaryEditor.addProjectStatusEntryDraft}
         onProjectReportStatusDraftChange={summaryEditor.setProjectReportStatusDraft}
         onProjectReportStatusEdit={summaryEditor.openProjectReportStatusEditor}
         onProjectReportStatusCancel={summaryEditor.closeProjectReportStatusEditor}
@@ -287,6 +290,13 @@ export function ProjectDetailPage() {
         onProjectStatusSave={() => {
           void handleProjectStatusSave()
         }}
+        onProjectStatusEntriesCancel={summaryEditor.closeProjectStatusEntriesEditor}
+        onProjectStatusEntryDraftChange={summaryEditor.updateProjectStatusEntryDraft}
+        onProjectStatusEntriesEdit={summaryEditor.openProjectStatusEntriesEditor}
+        onProjectStatusEntryMove={summaryEditor.moveProjectStatusEntryDraft}
+        onProjectStatusEntriesSave={() => {
+          void summaryEditor.saveProjectStatusEntries()
+        }}
         onProjectStatusBulkApplyChange={setProjectStatusBulkApplyEnabled}
         onProjectSystemsCancel={summaryEditor.closeProjectSystemsEditor}
         onProjectSystemsEdit={summaryEditor.openProjectSystemsEditor}
@@ -295,6 +305,7 @@ export function ProjectDetailPage() {
         }}
         onProjectSystemChange={summaryEditor.setProjectSystemDraft}
         onRemoveProjectLink={summaryEditor.removeProjectLinkDraft}
+        onRemoveProjectStatusEntry={summaryEditor.removeProjectStatusEntryDraft}
         onScheduleCancel={summaryEditor.closeScheduleEditor}
         onScheduleDraftChange={(patch) => {
           summaryEditor.setScheduleDraft((current) => ({ ...current, ...patch }))
@@ -314,6 +325,9 @@ export function ProjectDetailPage() {
         projectNoteChanged={summaryEditor.projectNoteChanged}
         projectNoteDraft={summaryEditor.projectNoteDraft}
         projectNoteError={summaryEditor.projectNoteError}
+        projectStatusEntriesChanged={summaryEditor.projectStatusEntriesChanged}
+        projectStatusEntriesDraft={summaryEditor.projectStatusEntriesDraft}
+        projectStatusEntriesError={summaryEditor.projectStatusEntriesError}
         projectReportStatusChanged={summaryEditor.projectReportStatusChanged}
         projectReportStatusDraft={summaryEditor.projectReportStatusDraft}
         projectReportStatusError={summaryEditor.projectReportStatusError}
@@ -328,10 +342,12 @@ export function ProjectDetailPage() {
         availableSystems={systems}
         isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
         isProjectNoteEditing={summaryEditor.isProjectNoteEditing}
+        isProjectStatusEntriesEditing={summaryEditor.isProjectStatusEntriesEditing}
         isProjectReportStatusEditing={summaryEditor.isProjectReportStatusEditing}
         isProjectStatusEditing={summaryEditor.isProjectStatusEditing}
         isSavingProjectSystems={summaryEditor.isSavingProjectSystems}
         isSavingProjectNote={summaryEditor.isSavingProjectNote}
+        isSavingProjectStatusEntries={summaryEditor.isSavingProjectStatusEntries}
         isSavingProjectReportStatus={summaryEditor.isSavingProjectReportStatus}
         isSavingProjectStatusOverride={summaryEditor.isSavingProjectStatusOverride}
         relatedSystems={relatedSystems}

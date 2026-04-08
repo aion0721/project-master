@@ -1,6 +1,13 @@
-import type { ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
-import type { ManagedSystem, Phase, Project, ProjectLink, ProjectStatusOverride } from '../../types/project'
+import type {
+  ManagedSystem,
+  Phase,
+  Project,
+  ProjectLink,
+  ProjectStatusEntry,
+  ProjectStatusOverride,
+} from '../../types/project'
 import { getPhaseToneKey } from '../../utils/projectPhasePresets'
 import { formatPeriod } from '../../utils/projectUtils'
 import styles from '../projects/ProjectDetailPage.module.css'
@@ -18,12 +25,14 @@ interface ProjectDetailMetaGridProps {
   isCurrentPhaseEditing: boolean
   isProjectLinksEditing: boolean
   isProjectNoteEditing: boolean
+  isProjectStatusEntriesEditing: boolean
   isProjectReportStatusEditing: boolean
   isProjectStatusEditing: boolean
   isProjectSystemsEditing: boolean
   isSavingCurrentPhase: boolean
   isSavingProjectLinks: boolean
   isSavingProjectNote: boolean
+  isSavingProjectStatusEntries: boolean
   isSavingProjectReportStatus: boolean
   isSavingProjectStatusOverride: boolean
   isSavingProjectSystems: boolean
@@ -43,6 +52,12 @@ interface ProjectDetailMetaGridProps {
   onProjectNoteDraftChange: (note: string) => void
   onProjectNoteEdit: () => void
   onProjectNoteSave: () => void
+  onAddProjectStatusEntry: () => void
+  onProjectStatusEntryDraftChange: (index: number, patch: Partial<ProjectStatusEntry>) => void
+  onProjectStatusEntryMove: (index: number, direction: 'up' | 'down') => void
+  onProjectStatusEntriesCancel: () => void
+  onProjectStatusEntriesEdit: () => void
+  onProjectStatusEntriesSave: () => void
   onProjectReportStatusCancel: () => void
   onProjectReportStatusDraftChange: (hasReportItems: boolean) => void
   onProjectReportStatusEdit: () => void
@@ -57,6 +72,7 @@ interface ProjectDetailMetaGridProps {
   onProjectSystemsSave: () => void
   onProjectSystemChange: (systemId: string) => void
   onRemoveProjectLink: (index: number) => void
+  onRemoveProjectStatusEntry: (index: number) => void
   onScheduleCancel: () => void
   onScheduleDraftChange: (patch: Partial<ScheduleDraft>) => void
   onScheduleEdit: () => void
@@ -69,6 +85,9 @@ interface ProjectDetailMetaGridProps {
   projectNoteChanged: boolean
   projectNoteDraft: string
   projectNoteError: string | null
+  projectStatusEntriesChanged: boolean
+  projectStatusEntriesDraft: ProjectStatusEntry[]
+  projectStatusEntriesError: string | null
   projectReportStatusChanged: boolean
   projectReportStatusDraft: boolean
   projectReportStatusError: string | null
@@ -161,12 +180,14 @@ export function ProjectDetailMetaGrid({
   isCurrentPhaseEditing,
   isProjectLinksEditing,
   isProjectNoteEditing,
+  isProjectStatusEntriesEditing,
   isProjectReportStatusEditing,
   isProjectStatusEditing,
   isProjectSystemsEditing,
   isSavingCurrentPhase,
   isSavingProjectLinks,
   isSavingProjectNote,
+  isSavingProjectStatusEntries,
   isSavingProjectReportStatus,
   isSavingProjectStatusOverride,
   isSavingProjectSystems,
@@ -186,6 +207,12 @@ export function ProjectDetailMetaGrid({
   onProjectNoteDraftChange,
   onProjectNoteEdit,
   onProjectNoteSave,
+  onAddProjectStatusEntry,
+  onProjectStatusEntryDraftChange,
+  onProjectStatusEntryMove,
+  onProjectStatusEntriesCancel,
+  onProjectStatusEntriesEdit,
+  onProjectStatusEntriesSave,
   onProjectReportStatusCancel,
   onProjectReportStatusDraftChange,
   onProjectReportStatusEdit,
@@ -200,6 +227,7 @@ export function ProjectDetailMetaGrid({
   onProjectSystemsSave,
   onProjectSystemChange,
   onRemoveProjectLink,
+  onRemoveProjectStatusEntry,
   onScheduleCancel,
   onScheduleDraftChange,
   onScheduleEdit,
@@ -212,6 +240,9 @@ export function ProjectDetailMetaGrid({
   projectNoteChanged,
   projectNoteDraft,
   projectNoteError,
+  projectStatusEntriesChanged,
+  projectStatusEntriesDraft,
+  projectStatusEntriesError,
   projectReportStatusChanged,
   projectReportStatusDraft,
   projectReportStatusError,
@@ -227,9 +258,19 @@ export function ProjectDetailMetaGrid({
   scheduleDraft,
   scheduleError,
 }: ProjectDetailMetaGridProps) {
+  const [statusEntriesSortOrder, setStatusEntriesSortOrder] = useState<'desc' | 'asc'>('desc')
   const selectedSystems = availableSystems.filter((system) =>
     (project.relatedSystemIds ?? []).includes(system.id),
   )
+  const sortedStatusEntries = useMemo(() => {
+    const entries = [...(project.statusEntries ?? [])]
+    entries.sort((left, right) =>
+      statusEntriesSortOrder === 'desc'
+        ? right.date.localeCompare(left.date)
+        : left.date.localeCompare(right.date),
+    )
+    return entries
+  }, [project.statusEntries, statusEntriesSortOrder])
 
   return (
     <div className={styles.metaGrid}>
@@ -555,13 +596,13 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard className={styles.metaCardWide} label="状況メモ">
+      <MetaCard className={styles.metaCardWide} label="メモ">
         {isProjectNoteEditing ? (
           <div className={styles.phaseMetaEditor}>
             <label className={styles.formField}>
-              <span className={styles.visuallyHidden}>状況メモ</span>
+              <span className={styles.visuallyHidden}>メモ</span>
               <textarea
-                aria-label="状況メモ"
+                aria-label="メモ"
                 className={`${styles.selectInput} ${styles.memoInput}`}
                 data-testid="project-note-input"
                 onChange={(event) => onProjectNoteDraftChange(event.target.value)}
@@ -597,6 +638,141 @@ export function ProjectDetailMetaGrid({
             <Button
               data-testid="project-note-edit-button"
               onClick={onProjectNoteEdit}
+              size="small"
+              variant="secondary"
+            >
+              編集
+            </Button>
+          </div>
+        )}
+      </MetaCard>
+
+      <MetaCard className={styles.metaCardWide} label="状況">
+        {isProjectStatusEntriesEditing ? (
+          <div className={styles.phaseMetaEditor}>
+            <div className={styles.statusEntryList}>
+              {projectStatusEntriesDraft.map((entry, index) => (
+                <div className={styles.statusEntryRow} key={`status-entry-${index}`}>
+                  <label className={styles.formField}>
+                    <span className={styles.visuallyHidden}>状況日付 {index + 1}</span>
+                    <input
+                      aria-label={`状況日付 ${index + 1}`}
+                      className={styles.selectInput}
+                      data-testid={`project-status-entry-date-${index}`}
+                      onChange={(event) =>
+                        onProjectStatusEntryDraftChange(index, { date: event.target.value })
+                      }
+                      type="date"
+                      value={entry.date}
+                    />
+                  </label>
+                  <label className={`${styles.formField} ${styles.statusEntryContentField}`}>
+                    <span className={styles.visuallyHidden}>状況内容 {index + 1}</span>
+                    <textarea
+                      aria-label={`状況内容 ${index + 1}`}
+                      className={`${styles.selectInput} ${styles.statusEntryContentInput}`}
+                      data-testid={`project-status-entry-content-${index}`}
+                      onChange={(event) =>
+                        onProjectStatusEntryDraftChange(index, { content: event.target.value })
+                      }
+                      placeholder="状況の内容を入力してください"
+                      value={entry.content}
+                    />
+                  </label>
+                  <div className={styles.statusEntryRowActions}>
+                    <Button
+                      data-testid={`project-status-entry-move-up-${index}`}
+                      disabled={index === 0}
+                      onClick={() => onProjectStatusEntryMove(index, 'up')}
+                      size="small"
+                      variant="secondary"
+                    >
+                      上へ
+                    </Button>
+                    <Button
+                      data-testid={`project-status-entry-move-down-${index}`}
+                      disabled={index === projectStatusEntriesDraft.length - 1}
+                      onClick={() => onProjectStatusEntryMove(index, 'down')}
+                      size="small"
+                      variant="secondary"
+                    >
+                      下へ
+                    </Button>
+                    <Button
+                      data-testid={`project-status-entry-remove-${index}`}
+                      onClick={() => onRemoveProjectStatusEntry(index)}
+                      size="small"
+                      variant="secondary"
+                    >
+                      削除
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className={styles.phaseMetaActions}>
+              <Button
+                data-testid="project-status-entry-add-button"
+                onClick={onAddProjectStatusEntry}
+                size="small"
+                variant="secondary"
+              >
+                行追加
+              </Button>
+              <Button
+                data-testid="project-status-entries-save-button"
+                disabled={isSavingProjectStatusEntries || !projectStatusEntriesChanged}
+                onClick={onProjectStatusEntriesSave}
+                size="small"
+              >
+                {isSavingProjectStatusEntries ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                data-testid="project-status-entries-cancel-button"
+                onClick={onProjectStatusEntriesCancel}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+            {projectStatusEntriesError ? <p className={styles.metaError}>{projectStatusEntriesError}</p> : null}
+          </div>
+        ) : (
+          <div className={styles.statusEntriesDisplay}>
+            {project.statusEntries && project.statusEntries.length > 0 ? (
+              <>
+                <div className={styles.statusEntriesToolbar}>
+                  <Button
+                    data-testid="project-status-entries-sort-button"
+                    onClick={() =>
+                      setStatusEntriesSortOrder((current) => (current === 'desc' ? 'asc' : 'desc'))
+                    }
+                    size="small"
+                    variant="secondary"
+                  >
+                    {statusEntriesSortOrder === 'desc' ? '日付: 新しい順' : '日付: 古い順'}
+                  </Button>
+                </div>
+                <div className={styles.statusEntriesList}>
+                  {sortedStatusEntries.map((entry, index) => (
+                    <div className={styles.statusEntryCard} key={`${entry.date}-${index}`}>
+                      <span className={styles.statusEntryDate}>{entry.date}</span>
+                      <strong className={styles.metaValue} data-testid={`project-status-entry-value-${index}`}>
+                        {entry.content}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <strong className={styles.metaValue} data-testid="project-status-entries-empty">
+                未設定
+              </strong>
+            )}
+            <Button
+              data-testid="project-status-entries-edit-button"
+              onClick={onProjectStatusEntriesEdit}
               size="small"
               variant="secondary"
             >

@@ -16,6 +16,7 @@ import type {
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
+  UpdateProjectStatusEntriesInput,
   UpdateProjectStatusOverrideInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
@@ -56,6 +57,10 @@ export interface ProjectDataContextValue {
   updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
   updateProjectLinks: (projectId: string, input: UpdateProjectLinksInput) => Promise<Project>
   updateProjectNote: (projectId: string, input: UpdateProjectNoteInput) => Promise<Project>
+  updateProjectStatusEntries: (
+    projectId: string,
+    input: UpdateProjectStatusEntriesInput,
+  ) => Promise<Project>
   updateProjectReportStatus: (projectId: string, input: UpdateProjectReportStatusInput) => Promise<Project>
   updateProjectStatusOverride: (
     projectId: string,

@@ -4,6 +4,7 @@ import type {
   Phase,
   Project,
   ProjectLink,
+  ProjectStatusEntry,
   ProjectStatusOverride,
 } from '../../types/project'
 import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
@@ -22,6 +23,10 @@ interface UpdateProjectLinks {
 
 interface UpdateProjectNote {
   (projectId: string, input: { note?: string | null }): Promise<unknown>
+}
+
+interface UpdateProjectStatusEntries {
+  (projectId: string, input: { statusEntries: ProjectStatusEntry[] }): Promise<unknown>
 }
 
 interface UpdateProjectReportStatus {
@@ -44,10 +49,13 @@ export function useProjectSummaryEditor(
   updateProjectSchedule: UpdateProjectSchedule,
   updateProjectLinks: UpdateProjectLinks,
   updateProjectNote: UpdateProjectNote,
+  updateProjectStatusEntries: UpdateProjectStatusEntries,
   updateProjectReportStatus: UpdateProjectReportStatus,
   updateProjectStatusOverride: UpdateProjectStatusOverride,
   updateProjectSystems: UpdateProjectSystems,
 ) {
+  const createEmptyStatusEntry = (): ProjectStatusEntry => ({ date: '', content: '' })
+
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
   const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
   const [currentPhaseError, setCurrentPhaseError] = useState<string | null>(null)
@@ -67,6 +75,13 @@ export function useProjectSummaryEditor(
   const [projectNoteDraft, setProjectNoteDraft] = useState('')
   const [projectNoteError, setProjectNoteError] = useState<string | null>(null)
   const [isSavingProjectNote, setIsSavingProjectNote] = useState(false)
+
+  const [isProjectStatusEntriesEditing, setIsProjectStatusEntriesEditing] = useState(false)
+  const [projectStatusEntriesDraft, setProjectStatusEntriesDraft] = useState<ProjectStatusEntry[]>([
+    createEmptyStatusEntry(),
+  ])
+  const [projectStatusEntriesError, setProjectStatusEntriesError] = useState<string | null>(null)
+  const [isSavingProjectStatusEntries, setIsSavingProjectStatusEntries] = useState(false)
 
   const [isProjectReportStatusEditing, setIsProjectReportStatusEditing] = useState(false)
   const [projectReportStatusDraft, setProjectReportStatusDraft] = useState(false)
@@ -99,6 +114,12 @@ export function useProjectSummaryEditor(
     setProjectLinksError(null)
     setProjectNoteDraft(project.note ?? '')
     setProjectNoteError(null)
+    setProjectStatusEntriesDraft(
+      project.statusEntries && project.statusEntries.length > 0
+        ? project.statusEntries.map((entry) => ({ ...entry }))
+        : [createEmptyStatusEntry()],
+    )
+    setProjectStatusEntriesError(null)
     setProjectReportStatusDraft(project.hasReportItems ?? false)
     setProjectReportStatusError(null)
     setProjectStatusOverrideDraft(project.statusOverride ?? null)
@@ -120,6 +141,12 @@ export function useProjectSummaryEditor(
       JSON.stringify(project.projectLinks)
     : false
   const projectNoteChanged = (projectNoteDraft.trim() || '') !== (project?.note ?? '')
+  const normalizedStatusEntriesDraft = projectStatusEntriesDraft
+    .map((entry) => ({ date: entry.date.trim(), content: entry.content.trim() }))
+    .filter((entry) => entry.date || entry.content)
+  const projectStatusEntriesChanged = project
+    ? JSON.stringify(normalizedStatusEntriesDraft) !== JSON.stringify(project.statusEntries ?? [])
+    : false
   const projectReportStatusChanged = projectReportStatusDraft !== (project?.hasReportItems ?? false)
   const projectStatusOverrideChanged =
     (projectStatusOverrideDraft ?? null) !== (project?.statusOverride ?? null)
@@ -290,6 +317,60 @@ export function useProjectSummaryEditor(
     setIsProjectNoteEditing(false)
   }
 
+  function openProjectStatusEntriesEditor() {
+    setProjectStatusEntriesDraft(
+      project?.statusEntries && project.statusEntries.length > 0
+        ? project.statusEntries.map((entry) => ({ ...entry }))
+        : [createEmptyStatusEntry()],
+    )
+    setProjectStatusEntriesError(null)
+    setIsProjectStatusEntriesEditing(true)
+  }
+
+  function closeProjectStatusEntriesEditor() {
+    setProjectStatusEntriesDraft(
+      project?.statusEntries && project.statusEntries.length > 0
+        ? project.statusEntries.map((entry) => ({ ...entry }))
+        : [createEmptyStatusEntry()],
+    )
+    setProjectStatusEntriesError(null)
+    setIsProjectStatusEntriesEditing(false)
+  }
+
+  function updateProjectStatusEntryDraft(index: number, patch: Partial<ProjectStatusEntry>) {
+    setProjectStatusEntriesDraft((current) =>
+      current.map((entry, currentIndex) =>
+        currentIndex === index ? { ...entry, ...patch } : entry,
+      ),
+    )
+  }
+
+  function addProjectStatusEntryDraft() {
+    setProjectStatusEntriesDraft((current) => [...current, createEmptyStatusEntry()])
+  }
+
+  function removeProjectStatusEntryDraft(index: number) {
+    setProjectStatusEntriesDraft((current) => {
+      const nextEntries = current.filter((_, currentIndex) => currentIndex !== index)
+      return nextEntries.length > 0 ? nextEntries : [createEmptyStatusEntry()]
+    })
+  }
+
+  function moveProjectStatusEntryDraft(index: number, direction: 'up' | 'down') {
+    setProjectStatusEntriesDraft((current) => {
+      const targetIndex = direction === 'up' ? index - 1 : index + 1
+
+      if (targetIndex < 0 || targetIndex >= current.length) {
+        return current
+      }
+
+      const nextEntries = [...current]
+      const [entry] = nextEntries.splice(index, 1)
+      nextEntries.splice(targetIndex, 0, entry)
+      return nextEntries
+    })
+  }
+
   async function saveProjectNote() {
     if (!project) {
       return
@@ -307,6 +388,33 @@ export function useProjectSummaryEditor(
       )
     } finally {
       setIsSavingProjectNote(false)
+    }
+  }
+
+  async function saveProjectStatusEntries() {
+    if (!project) {
+      return
+    }
+
+    if (normalizedStatusEntriesDraft.some((entry) => !entry.date || !entry.content)) {
+      setProjectStatusEntriesError('状況は日付と内容を両方入力してください。')
+      return
+    }
+
+    setIsSavingProjectStatusEntries(true)
+    setProjectStatusEntriesError(null)
+
+    try {
+      await updateProjectStatusEntries(project.projectNumber, {
+        statusEntries: normalizedStatusEntriesDraft,
+      })
+      setIsProjectStatusEntriesEditing(false)
+    } catch (caughtError) {
+      setProjectStatusEntriesError(
+        caughtError instanceof Error ? caughtError.message : '状況の保存に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectStatusEntries(false)
     }
   }
 
@@ -433,12 +541,14 @@ export function useProjectSummaryEditor(
     isCurrentPhaseEditing,
     isProjectLinksEditing,
     isProjectNoteEditing,
+    isProjectStatusEntriesEditing,
     isProjectReportStatusEditing,
     isProjectStatusEditing,
     isProjectSystemsEditing,
     isSavingCurrentPhase,
     isSavingProjectLinks,
     isSavingProjectNote,
+    isSavingProjectStatusEntries,
     isSavingProjectReportStatus,
     isSavingProjectStatusOverride,
     isSavingProjectSystems,
@@ -450,6 +560,9 @@ export function useProjectSummaryEditor(
     projectNoteChanged,
     projectNoteDraft,
     projectNoteError,
+    projectStatusEntriesChanged,
+    projectStatusEntriesDraft,
+    projectStatusEntriesError,
     projectReportStatusChanged,
     projectReportStatusDraft,
     projectReportStatusError,
@@ -466,6 +579,7 @@ export function useProjectSummaryEditor(
     closeCurrentPhaseEditor,
     closeProjectLinksEditor,
     closeProjectNoteEditor,
+    closeProjectStatusEntriesEditor,
     closeProjectReportStatusEditor,
     closeProjectStatusEditor,
     closeProjectSystemsEditor,
@@ -473,6 +587,7 @@ export function useProjectSummaryEditor(
     openCurrentPhaseEditor,
     openProjectLinksEditor,
     openProjectNoteEditor,
+    openProjectStatusEntriesEditor,
     openProjectReportStatusEditor,
     openProjectStatusEditor,
     openProjectSystemsEditor,
@@ -481,6 +596,7 @@ export function useProjectSummaryEditor(
     saveCurrentPhase,
     saveProjectLinks,
     saveProjectNote,
+    saveProjectStatusEntries,
     saveProjectReportStatus,
     saveProjectStatusOverride,
     saveProjectSystems,
@@ -488,9 +604,13 @@ export function useProjectSummaryEditor(
     setCurrentPhaseDraftId,
     setScheduleDraft,
     setProjectNoteDraft,
+    addProjectStatusEntryDraft,
+    moveProjectStatusEntryDraft,
+    removeProjectStatusEntryDraft,
     setProjectReportStatusDraft,
     setProjectStatusOverrideDraft,
     setProjectSystemDraft,
+    updateProjectStatusEntryDraft,
     updateProjectLinkDraft,
   }
 }

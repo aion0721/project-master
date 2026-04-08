@@ -14,6 +14,7 @@ import {
   updateProjectEventsRequest,
   updateProjectLinksRequest,
   updateProjectNoteRequest,
+  updateProjectStatusEntriesRequest,
   updateProjectReportStatusRequest,
   updateProjectStatusOverrideRequest,
   updateProjectSystemsRequest,
@@ -40,6 +41,7 @@ import type {
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
+  UpdateProjectStatusEntriesInput,
   UpdateProjectStatusOverrideInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
@@ -261,6 +263,27 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectNote: async (projectId: string, input: UpdateProjectNoteInput) => {
       const payload = await updateProjectNoteRequest(projectId, input)
+      const updatedProject = payload.projects[0]
+
+      if (!updatedProject) {
+        throw new Error('Updated project payload is empty')
+      }
+
+      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
+      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+
+      return updatedProject
+    },
+    updateProjectStatusEntries: async (
+      projectId: string,
+      input: UpdateProjectStatusEntriesInput,
+    ) => {
+      const payload = await updateProjectStatusEntriesRequest(projectId, input)
       const updatedProject = payload.projects[0]
 
       if (!updatedProject) {

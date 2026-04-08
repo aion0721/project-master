@@ -9,12 +9,14 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  ProjectStatusEntry,
   SystemAssignment,
   SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
+  UpdateProjectStatusEntriesInput,
   UpdateProjectStatusOverrideInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
@@ -159,6 +161,10 @@ function normalizeProject(project: Project): Project {
     statusOverride: project.statusOverride ?? null,
     pmMemberId: project.pmMemberId,
     note: project.note ?? null,
+    statusEntries: (project.statusEntries ?? []).map((entry: ProjectStatusEntry) => ({
+      date: entry.date,
+      content: entry.content,
+    })),
     hasReportItems: project.hasReportItems ?? false,
     relatedSystemIds: [...(project.relatedSystemIds ?? [])],
     projectLinks: (project.projectLinks ?? []).map((link) => ({
@@ -641,6 +647,21 @@ export async function updateProjectNoteRequest(
 ): Promise<ProjectDataPayload> {
   const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectNoteInput>(
     `/api/projects/${projectId}/note`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
+export async function updateProjectStatusEntriesRequest(
+  projectId: string,
+  input: UpdateProjectStatusEntriesInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectStatusEntriesInput>(
+    `/api/projects/${projectId}/status-entries`,
     'PATCH',
     input,
     signal,
