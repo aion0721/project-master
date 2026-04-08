@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
@@ -154,13 +153,13 @@ export function ProjectDetailHero({
         <div className={pageStyles.heroHeading}>
           <EntityIcon className={pageStyles.heroIcon} kind="project" />
           <div className={pageStyles.heroHeadingBody}>
-            <Link className={styles.backTextLink} to="/projects">
-              案件一覧へ戻る
-            </Link>
             <div className={styles.backLinks}>
-              <Link className={styles.backTextLink} to="/cross-project">
+              <Button size="small" to="/projects" variant="secondary">
+                案件一覧へ戻る
+              </Button>
+              <Button size="small" to="/cross-project" variant="secondary">
                 横断ビューへ戻る
-              </Link>
+              </Button>
             </div>
             <h1 className={styles.title}>{project.name}</h1>
             <p className={styles.description}>

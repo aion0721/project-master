@@ -21,7 +21,6 @@ function renderLayout(initialEntries: string[]) {
               <Route element={<div>systems</div>} path="/systems" />
               <Route element={<div>new system</div>} path="/systems/new" />
               <Route element={<div>system detail</div>} path="/systems/:systemId" />
-              <Route element={<div>system relations</div>} path="/systems/relations" />
               <Route element={<div>system diagram</div>} path="/systems/diagram" />
               <Route element={<div>cross project</div>} path="/cross-project" />
             </Route>
@@ -54,10 +53,6 @@ describe('Layout', () => {
 
     expect(screen.getByText('システム管理')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'システム一覧' })).toHaveAttribute('href', '/systems')
-    expect(screen.getByRole('link', { name: '関係一覧' })).toHaveAttribute(
-      'href',
-      '/systems/relations',
-    )
     expect(screen.getByRole('link', { name: '関連図' })).toHaveAttribute('href', '/systems/diagram')
   })
 
@@ -74,7 +69,6 @@ describe('Layout', () => {
 
     const systemListLink = screen.getByRole('link', { name: 'システム一覧' })
     expect(systemListLink.className).toContain('active')
-    expect(screen.getByRole('link', { name: '関係一覧' }).className).not.toContain('active')
     expect(screen.getByRole('link', { name: '関連図' }).className).not.toContain('active')
   })
 

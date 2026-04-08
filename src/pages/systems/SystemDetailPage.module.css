@@ -15,6 +15,12 @@
   margin-bottom: 18px;
 }
 
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .metaGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -44,6 +50,23 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.systemEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.systemFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.systemTextarea {
+  min-height: 120px;
+  resize: vertical;
 }
 
 .contentGrid {
@@ -139,6 +162,39 @@
   background: var(--surface-muted);
 }
 
+.relationForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.relationFormGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.relationTextarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.relationActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.relationDirection {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f4c5c;
+}
+
 .relationNote {
   margin: 0;
   color: var(--text-subtle);
@@ -207,7 +263,9 @@
   .metaGrid,
   .contentGrid,
   .linkEditorRow,
-  .assignmentRow {
+  .assignmentRow,
+  .relationFormGrid,
+  .systemFormGrid {
     grid-template-columns: 1fr;
   }
 }

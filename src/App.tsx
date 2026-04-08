@@ -10,7 +10,6 @@ import { ProjectListPage } from './pages/projects/ProjectListPage'
 import { SystemCreatePage } from './pages/systems/SystemCreatePage'
 import { SystemDetailPage } from './pages/systems/SystemDetailPage'
 import { SystemLandscapePage } from './pages/systems/SystemLandscapePage'
-import { SystemRelationManagementPage } from './pages/systems/SystemRelationManagementPage'
 import { SystemManagementPage } from './pages/systems/SystemManagementPage'
 import { ProjectDataProvider } from './store/projectData'
 import { UserSessionProvider } from './store/userSession'
@@ -37,7 +36,6 @@ function App() {
               <Route path="/systems" element={<SystemManagementPage />} />
               <Route path="/systems/new" element={<SystemCreatePage />} />
               <Route path="/systems/:systemId" element={<SystemDetailPage />} />
-              <Route path="/systems/relations" element={<SystemRelationManagementPage />} />
               <Route path="/systems/diagram" element={<SystemLandscapePage />} />
               <Route path="/cross-project" element={<CrossProjectViewPage />} />
               <Route path="*" element={<Navigate to="/projects" replace />} />

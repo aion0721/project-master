@@ -319,6 +319,7 @@ export function mockProjectApi() {
         id: `rel-${String((existingIds.length > 0 ? Math.max(...existingIds) : 0) + 1).padStart(3, '0')}`,
         sourceSystemId: body.sourceSystemId,
         targetSystemId: body.targetSystemId,
+        protocol: body.protocol?.trim() || null,
         note: body.note?.trim() || null,
       }
 

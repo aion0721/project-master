@@ -6,9 +6,22 @@ import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
-import type { ProjectLink, SystemAssignment, UpdateSystemInput } from '../../types/project'
+import type {
+  CreateSystemRelationInput,
+  ProjectLink,
+  SystemAssignment,
+  UpdateSystemInput,
+} from '../../types/project'
 import styles from './SystemDetailPage.module.css'
 import { SystemStructureEditor, type SystemStructureDraft } from './SystemStructureEditor'
+import {
+  buildEditSystemForm,
+  buildInitialSystemRelationForm,
+  formatSystemOptionLabel,
+  toNullableValue,
+  validateSystemInput,
+  validateRelationInput,
+} from './systemFormUtils'
 
 function buildLinkDrafts(links: ProjectLink[] | undefined) {
   return (links ?? []).map((link) => ({
@@ -55,8 +68,20 @@ export function SystemDetailPage() {
     getSystemAssignments,
     updateSystem,
     updateSystemStructure,
+    createSystemRelation,
+    deleteSystemRelation,
   } = useProjectData()
   const [isLinksEditing, setIsLinksEditing] = useState(false)
+  const [isSystemEditing, setIsSystemEditing] = useState(false)
+  const [systemForm, setSystemForm] = useState({
+    id: '',
+    name: '',
+    category: '',
+    ownerMemberId: '',
+    note: '',
+  })
+  const [systemError, setSystemError] = useState<string | null>(null)
+  const [isSavingSystem, setIsSavingSystem] = useState(false)
   const [linkDrafts, setLinkDrafts] = useState<ProjectLink[]>([])
   const [linkError, setLinkError] = useState<string | null>(null)
   const [isSavingLinks, setIsSavingLinks] = useState(false)
@@ -65,12 +90,22 @@ export function SystemDetailPage() {
   const [structureDrafts, setStructureDrafts] = useState<SystemStructureDraft[]>([])
   const [structureError, setStructureError] = useState<string | null>(null)
   const [isSavingStructure, setIsSavingStructure] = useState(false)
+  const [relationForm, setRelationForm] = useState(buildInitialSystemRelationForm)
+  const [relationDirection, setRelationDirection] = useState<'incoming' | 'outgoing'>('outgoing')
+  const [relationError, setRelationError] = useState<string | null>(null)
+  const [isSavingRelation, setIsSavingRelation] = useState(false)
 
   const system = systemId ? getSystemById(systemId) : undefined
   const structureAssignments = useMemo(
     () => (system ? getSystemAssignments(system.id) : []),
     [getSystemAssignments, system],
   )
+
+  useEffect(() => {
+    setSystemForm(system ? buildEditSystemForm(system) : { id: '', name: '', category: '', ownerMemberId: '', note: '' })
+    setIsSystemEditing(false)
+    setSystemError(null)
+  }, [system])
 
   useEffect(() => {
     setLinkDrafts(buildLinkDrafts(system?.systemLinks))
@@ -118,6 +153,16 @@ export function SystemDetailPage() {
       })
   }, [system, systemRelations, systems])
 
+  const relationTargetOptions = useMemo(() => {
+    if (!system) {
+      return []
+    }
+
+    return systems
+      .filter((item) => item.id !== system.id)
+      .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
+  }, [system, systems])
+
   const structureRootId =
     system?.ownerMemberId ??
     structureAssignments.find((assignment) => !assignment.reportsToMemberId)?.memberId ??
@@ -135,6 +180,64 @@ export function SystemDetailPage() {
     const current = buildStructureDrafts(structureAssignments)
     return JSON.stringify(current) !== JSON.stringify(structureDrafts)
   }, [structureAssignments, structureDrafts, structureOwnerMemberId, system])
+
+  function updateSystemField<Key extends keyof typeof systemForm>(key: Key, value: (typeof systemForm)[Key]) {
+    setSystemForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  async function handleSaveSystem() {
+    if (!system) {
+      return
+    }
+
+    const validationMessage = validateSystemInput(systemForm)
+    if (validationMessage) {
+      setSystemError(validationMessage)
+      return
+    }
+
+    if (!systemForm.ownerMemberId.trim() && structureAssignments.length > 0) {
+      setSystemError('システム体制があるため、オーナーを未設定にはできません。')
+      return
+    }
+
+    setSystemError(null)
+    setIsSavingSystem(true)
+
+    try {
+      const nextOwnerMemberId = toNullableValue(systemForm.ownerMemberId)
+      const input: UpdateSystemInput = {
+        name: systemForm.name.trim(),
+        category: systemForm.category.trim(),
+        ownerMemberId: nextOwnerMemberId,
+        note: toNullableValue(systemForm.note),
+        systemLinks: system.systemLinks ?? [],
+      }
+
+      await updateSystem(system.id, input)
+
+      if (nextOwnerMemberId && nextOwnerMemberId !== (system.ownerMemberId ?? null)) {
+        await updateSystemStructure(system.id, {
+          ownerMemberId: nextOwnerMemberId,
+          assignments: buildStructureDrafts(structureAssignments).map((assignment) => ({
+            id: assignment.id,
+            memberId: assignment.memberId,
+            responsibility: assignment.responsibility,
+            reportsToMemberId: assignment.reportsToMemberId || null,
+          })),
+        })
+      }
+
+      setIsSystemEditing(false)
+    } catch (caughtError) {
+      setSystemError(caughtError instanceof Error ? caughtError.message : 'システム基本情報の保存に失敗しました。')
+    } finally {
+      setIsSavingSystem(false)
+    }
+  }
 
   function updateLinkDraft(index: number, patch: Partial<ProjectLink>) {
     setLinkDrafts((current) =>
@@ -243,6 +346,81 @@ export function SystemDetailPage() {
     }
   }
 
+  function updateRelationField<Key extends keyof typeof relationForm>(
+    key: Key,
+    value: (typeof relationForm)[Key],
+  ) {
+    setRelationForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  async function handleCreateRelation(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!system) {
+      return
+    }
+
+    const nextForm =
+      relationDirection === 'outgoing'
+        ? {
+            ...relationForm,
+            sourceSystemId: system.id,
+            targetSystemId: relationForm.targetSystemId,
+          }
+        : {
+            ...relationForm,
+            sourceSystemId: relationForm.targetSystemId,
+            targetSystemId: system.id,
+          }
+
+    const validationMessage = validateRelationInput(nextForm)
+    if (validationMessage) {
+      setRelationError(validationMessage)
+      return
+    }
+
+    setRelationError(null)
+    setIsSavingRelation(true)
+
+    try {
+      const input: CreateSystemRelationInput = {
+        sourceSystemId: nextForm.sourceSystemId,
+        targetSystemId: nextForm.targetSystemId,
+        protocol: toNullableValue(nextForm.protocol),
+        note: toNullableValue(nextForm.note),
+      }
+      await createSystemRelation(input)
+      setRelationForm(buildInitialSystemRelationForm())
+      setRelationDirection('outgoing')
+    } catch (caughtError) {
+      setRelationError(caughtError instanceof Error ? caughtError.message : '関連システム登録に失敗しました。')
+    } finally {
+      setIsSavingRelation(false)
+    }
+  }
+
+  async function handleDeleteRelation(relationId: string) {
+    const relation = relatedSystems.find((item) => item.relation.id === relationId)?.relation
+
+    if (!window.confirm(`関連システム ${relation?.sourceSystemId ?? relationId} -> ${relation?.targetSystemId ?? relationId} を削除します。`)) {
+      return
+    }
+
+    setRelationError(null)
+    setIsSavingRelation(true)
+
+    try {
+      await deleteSystemRelation(relationId)
+    } catch (caughtError) {
+      setRelationError(caughtError instanceof Error ? caughtError.message : '関連システム削除に失敗しました。')
+    } finally {
+      setIsSavingRelation(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <Panel>
@@ -281,9 +459,14 @@ export function SystemDetailPage() {
   return (
     <div className={styles.page}>
       <Panel className={styles.hero} variant="hero">
-        <Button className={styles.backButton} size="small" to="/systems" variant="secondary">
-          システム一覧へ戻る
-        </Button>
+        <div className={styles.heroActions}>
+          <Button className={styles.backButton} size="small" to="/systems" variant="secondary">
+            システム一覧へ戻る
+          </Button>
+          <Button className={styles.backButton} size="small" to="/systems/diagram" variant="secondary">
+            関連図を開く
+          </Button>
+        </div>
         <div className={pageStyles.heroHeading}>
           <EntityIcon className={pageStyles.heroIcon} kind="system" />
           <div className={pageStyles.heroHeadingBody}>
@@ -319,8 +502,86 @@ export function SystemDetailPage() {
             <h2 className={pageStyles.sectionTitle}>概要</h2>
             <p className={pageStyles.sectionDescription}>運用背景や補足メモを確認できます。</p>
           </div>
+          {isSystemEditing ? (
+            <div className={styles.headerActions}>
+              <Button disabled={isSavingSystem} onClick={() => void handleSaveSystem()} size="small">
+                {isSavingSystem ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setSystemForm(buildEditSystemForm(system))
+                  setIsSystemEditing(false)
+                  setSystemError(null)
+                }}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => setIsSystemEditing(true)} size="small" variant="secondary">
+              編集
+            </Button>
+          )}
         </div>
-        <p className={styles.noteText}>{system.note?.trim() || 'メモは未設定です。'}</p>
+        {isSystemEditing ? (
+          <div className={styles.systemEditor}>
+            <div className={styles.systemFormGrid}>
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>システムID</span>
+                <input className={styles.input} disabled value={system.id} />
+              </label>
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>名称</span>
+                <input
+                  className={styles.input}
+                  data-testid="system-detail-name-input"
+                  onChange={(event) => updateSystemField('name', event.target.value)}
+                  value={systemForm.name}
+                />
+              </label>
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>カテゴリ</span>
+                <input
+                  className={styles.input}
+                  data-testid="system-detail-category-input"
+                  onChange={(event) => updateSystemField('category', event.target.value)}
+                  value={systemForm.category}
+                />
+              </label>
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>オーナー</span>
+                <select
+                  className={styles.input}
+                  data-testid="system-detail-owner-select"
+                  onChange={(event) => updateSystemField('ownerMemberId', event.target.value)}
+                  value={systemForm.ownerMemberId}
+                >
+                  <option value="">未設定</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.id} / {member.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label className={styles.formField}>
+              <span className={styles.formLabel}>概要</span>
+              <textarea
+                className={`${styles.input} ${styles.systemTextarea}`}
+                data-testid="system-detail-note-input"
+                onChange={(event) => updateSystemField('note', event.target.value)}
+                placeholder="用途や影響範囲を記載"
+                value={systemForm.note}
+              />
+            </label>
+            {systemError ? <p className={styles.errorText}>{systemError}</p> : null}
+          </div>
+        ) : (
+          <p className={styles.noteText}>{system.note?.trim() || 'メモは未設定です。'}</p>
+        )}
       </Panel>
 
       <Panel className={styles.section}>
@@ -502,9 +763,83 @@ export function SystemDetailPage() {
           <div className={pageStyles.sectionHeader}>
             <div>
               <h2 className={pageStyles.sectionTitle}>関連システム</h2>
-              <p className={pageStyles.sectionDescription}>連携や依存があるシステムです。</p>
+              <p className={pageStyles.sectionDescription}>連携や依存があるシステムを、この画面で管理します。</p>
             </div>
           </div>
+          <form className={styles.relationForm} onSubmit={(event) => void handleCreateRelation(event)}>
+            <div className={styles.relationFormGrid}>
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>向き</span>
+                <select
+                  className={styles.input}
+                  onChange={(event) =>
+                    setRelationDirection(event.target.value === 'incoming' ? 'incoming' : 'outgoing')
+                  }
+                  value={relationDirection}
+                >
+                  <option value="outgoing">このシステム → 相手</option>
+                  <option value="incoming">相手 → このシステム</option>
+                </select>
+              </label>
+
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>
+                  {relationDirection === 'outgoing' ? '接続先システム' : '接続元システム'}
+                </span>
+                <select
+                  className={styles.input}
+                  onChange={(event) => updateRelationField('targetSystemId', event.target.value)}
+                  value={relationForm.targetSystemId}
+                >
+                  <option value="">選択してください</option>
+                  {relationTargetOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {formatSystemOptionLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.formField}>
+                <span className={styles.formLabel}>プロトコル</span>
+                <input
+                  className={styles.input}
+                  list="system-detail-protocol-options"
+                  onChange={(event) => updateRelationField('protocol', event.target.value)}
+                  placeholder="例: SSH / HTTPS / SFTP"
+                  value={relationForm.protocol}
+                />
+              </label>
+            </div>
+
+            <label className={styles.formField}>
+              <span className={styles.formLabel}>メモ</span>
+              <textarea
+                className={`${styles.input} ${styles.relationTextarea}`}
+                onChange={(event) => updateRelationField('note', event.target.value)}
+                placeholder="接続用途や補足を記載"
+                value={relationForm.note}
+              />
+            </label>
+
+            {relationError ? <p className={styles.errorText}>{relationError}</p> : null}
+
+            <div className={styles.relationActions}>
+              <Button disabled={isSavingRelation} size="small" type="submit">
+                {isSavingRelation ? '登録中...' : '関連システムを追加'}
+              </Button>
+            </div>
+          </form>
+
+          <datalist id="system-detail-protocol-options">
+            <option value="SSH" />
+            <option value="HTTPS" />
+            <option value="HTTP" />
+            <option value="SFTP" />
+            <option value="FTP" />
+            <option value="JDBC" />
+          </datalist>
+
           {relatedSystems.length > 0 ? (
             <div className={styles.relationList}>
               {relatedSystems.map(({ relation, system: relatedSystem }) => (
@@ -512,7 +847,25 @@ export function SystemDetailPage() {
                   <Link className={styles.projectLink} to={`/systems/${relatedSystem?.id ?? ''}`}>
                     {relatedSystem ? `${relatedSystem.id} / ${relatedSystem.name}` : '未設定'}
                   </Link>
-                  <p className={styles.relationNote}>{relation.note?.trim() || '補足メモなし'}</p>
+                  <p className={styles.relationDirection}>
+                    {relation.sourceSystemId === system.id ? 'このシステム → 相手' : '相手 → このシステム'}
+                  </p>
+                  <p className={styles.relationNote}>
+                    {relation.protocol?.trim() ? `プロトコル: ${relation.protocol}` : 'プロトコル: 未設定'}
+                    <br />
+                    {relation.note?.trim() || '補足メモなし'}
+                  </p>
+                  <div className={styles.relationActions}>
+                    <Button
+                      data-testid={`system-detail-delete-relation-${relation.id}`}
+                      disabled={isSavingRelation}
+                      onClick={() => void handleDeleteRelation(relation.id)}
+                      size="small"
+                      variant="danger"
+                    >
+                      削除
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

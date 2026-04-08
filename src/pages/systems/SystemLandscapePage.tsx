@@ -27,6 +27,7 @@ interface HoveredEdgeTooltip {
   y: number
   sourceName: string
   targetName: string
+  protocol: string | null
   note: string | null
 }
 
@@ -273,6 +274,9 @@ export function SystemLandscapePage() {
                       <strong className={styles.systemCardTitle}>{system.name}</strong>
                       <span className={styles.systemCardMeta}>{system.category}</span>
                       <span className={styles.systemCardMeta}>
+                        プロトコル {relation.protocol?.trim() || '未設定'}
+                      </span>
+                      <span className={styles.systemCardMeta}>
                         関連案件 {projectCountBySystemId.get(system.id) ?? 0} 件
                       </span>
                       {relation.note ? <p className={styles.systemCardNote}>{relation.note}</p> : null}
@@ -373,6 +377,9 @@ export function SystemLandscapePage() {
                       <strong className={styles.systemCardTitle}>{system.name}</strong>
                       <span className={styles.systemCardMeta}>{system.category}</span>
                       <span className={styles.systemCardMeta}>
+                        プロトコル {relation.protocol?.trim() || '未設定'}
+                      </span>
+                      <span className={styles.systemCardMeta}>
                         関連案件 {projectCountBySystemId.get(system.id) ?? 0} 件
                       </span>
                       {relation.note ? <p className={styles.systemCardNote}>{relation.note}</p> : null}
@@ -440,6 +447,7 @@ export function SystemLandscapePage() {
                     y: labelY - 18,
                     sourceName: source.name,
                     targetName: target.name,
+                    protocol: relation.protocol ?? null,
                     note: relation.note ?? null,
                   })
                 const hideEdgeTooltip = () =>
@@ -498,6 +506,9 @@ export function SystemLandscapePage() {
                 <strong className={styles.edgeTooltipTitle}>
                   {hoveredEdge.sourceName} → {hoveredEdge.targetName}
                 </strong>
+                <p className={styles.edgeTooltipText}>
+                  プロトコル: {hoveredEdge.protocol?.trim() || '未設定'}
+                </p>
                 <p className={styles.edgeTooltipText}>{hoveredEdge.note ?? 'メモは未設定です。'}</p>
               </div>
             ) : null}

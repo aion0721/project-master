@@ -11,6 +11,7 @@ export interface SystemFormState {
 export interface SystemRelationFormState {
   sourceSystemId: string
   targetSystemId: string
+  protocol: string
   note: string
 }
 
@@ -28,6 +29,7 @@ export function buildInitialSystemRelationForm(): SystemRelationFormState {
   return {
     sourceSystemId: '',
     targetSystemId: '',
+    protocol: '',
     note: '',
   }
 }

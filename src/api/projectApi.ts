@@ -142,6 +142,7 @@ function normalizeSystemRelation(relation: SystemRelation): SystemRelation {
     id: relation.id,
     sourceSystemId: relation.sourceSystemId,
     targetSystemId: relation.targetSystemId,
+    protocol: relation.protocol ?? null,
     note: relation.note ?? null,
   }
 }
