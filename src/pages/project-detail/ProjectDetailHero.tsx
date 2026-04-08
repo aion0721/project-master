@@ -42,24 +42,33 @@ interface ProjectDetailHeroProps {
   onCurrentPhaseCancel: () => void
   onCurrentPhaseSave: () => void
   isProjectLinksEditing: boolean
+  isProjectNoteEditing: boolean
   isProjectSystemsEditing: boolean
   projectLinksDraft: ProjectLink[]
   projectLinksChanged: boolean
   projectLinksError: string | null
+  projectNoteChanged: boolean
+  projectNoteDraft: string
+  projectNoteError: string | null
   projectSystemIdsDraft: string[]
   projectSystemsChanged: boolean
   projectSystemsError: string | null
   isSavingProjectLinks: boolean
+  isSavingProjectNote: boolean
   isSavingProjectSystems: boolean
   onAddProjectLink: () => void
   onProjectLinkDraftChange: (index: number, patch: Partial<ProjectLink>) => void
   onProjectLinksEdit: () => void
   onProjectLinksCancel: () => void
   onProjectLinksSave: () => void
+  onProjectNoteDraftChange: (note: string) => void
+  onProjectNoteEdit: () => void
+  onProjectNoteCancel: () => void
+  onProjectNoteSave: () => void
   onProjectSystemsEdit: () => void
   onProjectSystemsCancel: () => void
   onProjectSystemsSave: () => void
-  onProjectSystemToggle: (systemId: string) => void
+  onProjectSystemChange: (systemId: string) => void
   onRemoveProjectLink: (index: number) => void
 }
 
@@ -92,24 +101,33 @@ export function ProjectDetailHero({
   onCurrentPhaseCancel,
   onCurrentPhaseSave,
   isProjectLinksEditing,
+  isProjectNoteEditing,
   isProjectSystemsEditing,
   projectLinksDraft,
   projectLinksChanged,
   projectLinksError,
+  projectNoteDraft,
+  projectNoteChanged,
+  projectNoteError,
   projectSystemIdsDraft,
   projectSystemsChanged,
   projectSystemsError,
   isSavingProjectLinks,
+  isSavingProjectNote,
   isSavingProjectSystems,
   onAddProjectLink,
   onProjectLinkDraftChange,
   onProjectLinksEdit,
   onProjectLinksCancel,
   onProjectLinksSave,
+  onProjectNoteDraftChange,
+  onProjectNoteEdit,
+  onProjectNoteCancel,
+  onProjectNoteSave,
   onProjectSystemsEdit,
   onProjectSystemsCancel,
   onProjectSystemsSave,
-  onProjectSystemToggle,
+  onProjectSystemChange,
   onRemoveProjectLink,
 }: ProjectDetailHeroProps) {
   return (
@@ -160,8 +178,10 @@ export function ProjectDetailHero({
         currentPhaseError={currentPhaseError}
         isCurrentPhaseEditing={isCurrentPhaseEditing}
         isProjectLinksEditing={isProjectLinksEditing}
+        isProjectNoteEditing={isProjectNoteEditing}
         isSavingCurrentPhase={isSavingCurrentPhase}
         isSavingProjectLinks={isSavingProjectLinks}
+        isSavingProjectNote={isSavingProjectNote}
         isSavingSchedule={isSavingSchedule}
         isScheduleEditing={isScheduleEditing}
         onAddProjectLink={onAddProjectLink}
@@ -173,10 +193,14 @@ export function ProjectDetailHero({
         onProjectLinkDraftChange={onProjectLinkDraftChange}
         onProjectLinksEdit={onProjectLinksEdit}
         onProjectLinksSave={onProjectLinksSave}
+        onProjectNoteDraftChange={onProjectNoteDraftChange}
+        onProjectNoteEdit={onProjectNoteEdit}
+        onProjectNoteCancel={onProjectNoteCancel}
+        onProjectNoteSave={onProjectNoteSave}
         onProjectSystemsCancel={onProjectSystemsCancel}
         onProjectSystemsEdit={onProjectSystemsEdit}
         onProjectSystemsSave={onProjectSystemsSave}
-        onProjectSystemToggle={onProjectSystemToggle}
+         onProjectSystemChange={onProjectSystemChange}
         onRemoveProjectLink={onRemoveProjectLink}
         onScheduleCancel={onScheduleCancel}
         onScheduleDraftChange={onScheduleDraftChange}
@@ -187,6 +211,9 @@ export function ProjectDetailHero({
         projectLinksChanged={projectLinksChanged}
         projectLinksDraft={projectLinksDraft}
         projectLinksError={projectLinksError}
+        projectNoteChanged={projectNoteChanged}
+        projectNoteDraft={projectNoteDraft}
+        projectNoteError={projectNoteError}
         projectPhases={projectPhases}
         projectSystemIdsDraft={projectSystemIdsDraft}
         projectSystemsChanged={projectSystemsChanged}

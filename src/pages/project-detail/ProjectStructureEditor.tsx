@@ -1,5 +1,6 @@
 import { Button } from '../../components/ui/Button'
 import type { Member } from '../../types/project'
+import { formatMemberShortLabel } from '../members/memberFormUtils'
 import type { StructureAssignmentDraft } from './projectDetailTypes'
 import { getStructureReportingOptions } from './projectStructureUtils'
 import styles from '../projects/ProjectDetailPage.module.css'
@@ -56,7 +57,7 @@ export function ProjectStructureEditor({
           <option value="">選択してください</option>
           {members.map((member) => (
             <option key={member.id} value={member.id}>
-              {member.name} ({member.role})
+              {formatMemberShortLabel(member)}
             </option>
           ))}
         </select>
@@ -104,16 +105,16 @@ export function ProjectStructureEditor({
                   <option value="">選択してください</option>
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>
-                      {member.name} ({member.role})
+                      {formatMemberShortLabel(member)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className={styles.formField}>
-                <span className={styles.formLabel}>上位メンバー</span>
+                <span className={styles.formLabel}>報告先メンバー</span>
                 <select
-                  aria-label={`役割${index + 1} の上位メンバー`}
+                  aria-label={`役割${index + 1} の報告先メンバー`}
                   className={styles.selectInput}
                   data-testid={`structure-reports-to-${index}`}
                   onChange={(event) => {
@@ -126,7 +127,7 @@ export function ProjectStructureEditor({
                     .filter((member) => member.id !== assignment.memberId)
                     .map((member) => (
                       <option key={member.id} value={member.id}>
-                        {member.name} ({member.role})
+                        {formatMemberShortLabel(member)}
                       </option>
                     ))}
                 </select>

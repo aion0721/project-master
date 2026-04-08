@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 import { ProjectCreatePage } from './ProjectCreatePage'
 
 describe('ProjectCreatePage', () => {
-  it('案件追加フォームを送信して登録 API を呼び出す', async () => {
+  it('フォームを送信して追加 API を呼び出す', async () => {
     const fetchMock = mockProjectApi()
 
     renderWithProviders(<ProjectCreatePage />, {
@@ -15,14 +15,17 @@ describe('ProjectCreatePage', () => {
 
     await screen.findByRole('heading', { name: '案件追加' })
 
+    expect(screen.getByRole('option', { name: 'm8 / 木村' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'sys-accounting / 会計基盤' })).toBeInTheDocument()
+
     fireEvent.change(screen.getByLabelText('プロジェクト番号'), {
       target: { value: 'PRJ-006' },
     })
     fireEvent.change(screen.getByLabelText('案件名'), {
-      target: { value: '新規案件A' },
+      target: { value: '新案件A' },
     })
     fireEvent.change(screen.getByLabelText('PM'), {
-      target: { value: 'm1' },
+      target: { value: 'm8' },
     })
     fireEvent.change(screen.getByLabelText('開始日'), {
       target: { value: '2026-08-03' },
@@ -30,7 +33,9 @@ describe('ProjectCreatePage', () => {
     fireEvent.change(screen.getByLabelText('終了予定日'), {
       target: { value: '2026-10-30' },
     })
-    fireEvent.click(screen.getByTestId('create-project-system-sys-accounting'))
+    fireEvent.change(screen.getByTestId('create-project-system-select'), {
+      target: { value: 'sys-accounting' },
+    })
     fireEvent.change(screen.getByLabelText('案件リンク名 1'), {
       target: { value: 'Backlog' },
     })
@@ -48,11 +53,11 @@ describe('ProjectCreatePage', () => {
       const body = JSON.parse(String(postCall?.[1]?.body))
       expect(body).toEqual({
         projectNumber: 'PRJ-006',
-        name: '新規案件A',
+        name: '新案件A',
         startDate: '2026-08-03',
         endDate: '2026-10-30',
         status: 'not_started',
-        pmMemberId: 'm1',
+        pmMemberId: 'm8',
         relatedSystemIds: ['sys-accounting'],
         projectLinks: [
           {

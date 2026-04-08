@@ -17,6 +17,8 @@ import styles from './MemberCreatePage.module.css'
 export function MemberCreatePage() {
   const navigate = useNavigate()
   const { members, isLoading, error, createMember } = useProjectData()
+  const memberIdExample = import.meta.env.VITE_MEMBER_ID_EXAMPLE?.trim() || 'm11'
+  const memberIdPlaceholder = `例: ${memberIdExample}`
   const [formData, setFormData] = useState(buildInitialMemberForm)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -110,7 +112,7 @@ export function MemberCreatePage() {
               aria-label="メンバーID"
               className={styles.input}
               onChange={(event) => updateField('id', event.target.value)}
-              placeholder="例: m11"
+              placeholder={memberIdPlaceholder}
               value={formData.id}
             />
           </label>

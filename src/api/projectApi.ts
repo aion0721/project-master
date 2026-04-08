@@ -12,6 +12,7 @@ import type {
   SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
+  UpdateProjectNoteInput,
   UpdatePhaseInput,
   UpdateProjectLinksInput,
   UpdateProjectSystemsInput,
@@ -82,6 +83,10 @@ interface ApiPhaseUpdateResponse {
   project: Project
 }
 
+interface ApiErrorResponse {
+  message?: string
+}
+
 export interface ProjectDataPayload {
   projects: Project[]
   phases: Phase[]
@@ -141,6 +146,7 @@ function normalizeProject(project: Project): Project {
     endDate: project.endDate,
     status: project.status,
     pmMemberId: project.pmMemberId,
+    note: project.note ?? null,
     relatedSystemIds: [...(project.relatedSystemIds ?? [])],
     projectLinks: (project.projectLinks ?? []).map((link) => ({
       label: link.label,
@@ -193,7 +199,18 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    let message = `API request failed: ${response.status}`
+
+    try {
+      const errorBody = (await response.json()) as ApiErrorResponse
+      if (errorBody.message?.trim()) {
+        message = errorBody.message
+      }
+    } catch {
+      // Ignore non-JSON error responses and keep the fallback message.
+    }
+
+    throw new Error(message)
   }
 
   return (await response.json()) as T
@@ -216,7 +233,18 @@ async function sendJson<TResponse, TRequest>(
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    let message = `API request failed: ${response.status}`
+
+    try {
+      const errorBody = (await response.json()) as ApiErrorResponse
+      if (errorBody.message?.trim()) {
+        message = errorBody.message
+      }
+    } catch {
+      // Ignore non-JSON error responses and keep the fallback message.
+    }
+
+    throw new Error(message)
   }
 
   return (await response.json()) as TResponse
@@ -549,6 +577,21 @@ export async function updateProjectSystemsRequest(
 ): Promise<ProjectDataPayload> {
   const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectSystemsInput>(
     `/api/projects/${projectId}/systems`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
+export async function updateProjectNoteRequest(
+  projectId: string,
+  input: UpdateProjectNoteInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectNoteInput>(
+    `/api/projects/${projectId}/note`,
     'PATCH',
     input,
     signal,

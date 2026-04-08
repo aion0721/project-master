@@ -83,6 +83,8 @@ const logoPath = `${import.meta.env.BASE_URL}logo.svg`
 export function Layout() {
   const location = useLocation()
   const { currentUser, isLoading, error, login, logout } = useUserSession()
+  const memberIdExample = import.meta.env.VITE_MEMBER_ID_EXAMPLE?.trim() || 'm1'
+  const memberLoginPlaceholder = `例: ${memberIdExample}`
   const [memberKey, setMemberKey] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSidebarPinned, setIsSidebarPinned] = useState(() => {
@@ -101,7 +103,7 @@ export function Layout() {
 
   async function handleLogin() {
     if (!memberKey.trim()) {
-      setSubmitError('利用メンバー ID または名前を入力してください。')
+      setSubmitError('利用メンバー ID を入力してください。')
       return
     }
 
@@ -225,7 +227,7 @@ export function Layout() {
                 <input
                   className={styles.userInput}
                   onChange={(event) => setMemberKey(event.target.value)}
-                  placeholder="例: m1 / 田中"
+                  placeholder={memberLoginPlaceholder}
                   value={memberKey}
                 />
               </label>

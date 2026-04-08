@@ -113,6 +113,18 @@
   gap: 12px;
 }
 
+.projectNoteDisplay {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.projectNoteDisplay .metaValue {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .projectLinksList {
   display: flex;
   flex-direction: column;
@@ -297,6 +309,12 @@
 .selectInput {
   composes: control from '../../styles/form.module.css';
   min-width: 112px;
+}
+
+.memoInput {
+  min-height: 120px;
+  resize: vertical;
+  white-space: pre-wrap;
 }
 
 .weekInput {

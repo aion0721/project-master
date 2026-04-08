@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { MemberManagementPage } from './MemberManagementPage'
@@ -63,6 +63,7 @@ describe('MemberManagementPage', () => {
 
   it('未使用メンバーを削除できる', async () => {
     mockProjectApi()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     await fetch('/api/members', {
       method: 'POST',
@@ -90,5 +91,60 @@ describe('MemberManagementPage', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('member-row-m11')).not.toBeInTheDocument()
     })
+  })
+
+  it('削除確認をキャンセルした場合はメンバーを削除しない', async () => {
+    mockProjectApi()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    await fetch('/api/members', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: 'm11',
+        name: '山田 花子',
+        departmentCode: 'DEP-APP',
+        departmentName: 'アプリ開発部',
+        role: 'アプリエンジニア',
+        managerId: null,
+      }),
+    })
+
+    renderWithProviders(<MemberManagementPage />, {
+      initialEntries: ['/members'],
+    })
+
+    await screen.findByTestId('member-row-m11')
+
+    fireEvent.click(screen.getByTestId('delete-member-m11'))
+
+    expect(screen.getByTestId('member-row-m11')).toBeInTheDocument()
+  })
+
+  it('メンバーIDまたは部署名で絞り込める', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<MemberManagementPage />, {
+      initialEntries: ['/members'],
+    })
+
+    await screen.findByRole('heading', { name: 'メンバー一覧' })
+
+    fireEvent.change(screen.getByLabelText('メンバーIDまたは部署名で絞り込み'), {
+      target: { value: 'm10' },
+    })
+
+    expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
+    expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('メンバーIDまたは部署名で絞り込み'), {
+      target: { value: '品質保証部' },
+    })
+
+    expect(screen.getByTestId('member-row-m5')).toBeInTheDocument()
+    expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
+    expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
   })
 })

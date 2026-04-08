@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProjectDataProvider } from '../store/projectData'
 import { UserSessionProvider } from '../store/userSession'
 import { Layout } from './Layout'
@@ -34,6 +34,10 @@ function renderLayout(initialEntries: string[]) {
 describe('Layout', () => {
   beforeEach(() => {
     window.localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('renders grouped navigation links', () => {
@@ -89,5 +93,13 @@ describe('Layout', () => {
 
     expect(sidebar).toHaveAttribute('data-state', 'expanded')
     expect(window.localStorage.getItem('project-master:sidebar-pinned')).toBe('true')
+  })
+
+  it('uses env placeholder for member login input', () => {
+    vi.stubEnv('VITE_MEMBER_ID_EXAMPLE', 'EMP0001')
+
+    renderLayout(['/projects'])
+
+    expect(screen.getByPlaceholderText('例: EMP0001')).toBeInTheDocument()
   })
 })

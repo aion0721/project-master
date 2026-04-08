@@ -4,17 +4,27 @@ import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { formatMemberShortLabel } from '../members/memberFormUtils'
 import { useProjectData } from '../../store/useProjectData'
 import { useUserSession } from '../../store/useUserSession'
 import pageStyles from '../../styles/page.module.css'
-import type { Project } from '../../types/project'
+import type { Member, Project, ProjectAssignment } from '../../types/project'
 import { allWorkStatuses, getMemberDefaultProjectStatusFilters } from '../../utils/userPreferences'
 import { getActivePhasesForWeek, getProjectPm, isDateInWeekSlot } from '../../utils/projectUtils'
 import { getPhaseToneKey, useCrossProjectView } from './useCrossProjectView'
 import styles from './CrossProjectViewPage.module.css'
 
 export function CrossProjectViewPage() {
-  const { projects, members, getProjectPhases, getProjectEvents, isLoading, error } = useProjectData()
+  const {
+    projects,
+    members,
+    getProjectPhases,
+    getProjectEvents,
+    getProjectAssignments,
+    getMemberById,
+    isLoading,
+    error,
+  } = useProjectData()
   const { currentUser, saveDefaultProjectStatusFilters } = useUserSession()
   const currentUserId = currentUser?.id ?? null
   const currentUserRef = useRef(currentUser)
@@ -24,6 +34,10 @@ export function CrossProjectViewPage() {
   )
   const [isSavingDefaults, setIsSavingDefaults] = useState(false)
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
+  const [isStructureVisible, setIsStructureVisible] = useState(false)
+  const [isNoteVisible, setIsNoteVisible] = useState(false)
+  const [isCompactMode, setIsCompactMode] = useState(false)
+  const [expandedNoteProjectIds, setExpandedNoteProjectIds] = useState<string[]>([])
 
   useEffect(() => {
     setSelectedStatuses(getMemberDefaultProjectStatusFilters(currentUserRef.current))
@@ -74,6 +88,14 @@ export function CrossProjectViewPage() {
     } finally {
       setIsSavingDefaults(false)
     }
+  }
+
+  const toggleExpandedNote = (projectNumber: string) => {
+    setExpandedNoteProjectIds((current) =>
+      current.includes(projectNumber)
+        ? current.filter((id) => id !== projectNumber)
+        : current.concat(projectNumber),
+    )
   }
 
   if (isLoading) {
@@ -203,6 +225,35 @@ export function CrossProjectViewPage() {
               ? `${currentUser.name} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
               : '利用メンバーを選ぶと、ブックマーク案件だけで絞り込めます。'}
           </p>
+
+          <div className={styles.structureToggleRow}>
+            <p className={styles.structureToggleHint}>
+              体制は必要なときだけ表示できます。横断比較の見やすさは維持したまま全員を確認できます。
+            </p>
+            <div className={styles.toggleActionGroup}>
+              <Button
+                onClick={() => setIsStructureVisible((current) => !current)}
+                size="small"
+                variant="secondary"
+              >
+                {isStructureVisible ? '体制を隠す' : '体制を表示'}
+              </Button>
+              <Button
+                onClick={() => setIsNoteVisible((current) => !current)}
+                size="small"
+                variant="secondary"
+              >
+                {isNoteVisible ? 'メモを隠す' : 'メモを表示'}
+              </Button>
+              <Button
+                onClick={() => setIsCompactMode((current) => !current)}
+                size="small"
+                variant="secondary"
+              >
+                {isCompactMode ? '標準表示' : '短く表示'}
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className={styles.heroStats}>
@@ -250,18 +301,102 @@ export function CrossProjectViewPage() {
                 {filteredProjects.map((project) => {
                   const projectPhases = getProjectPhases(project.projectNumber)
                   const projectEvents = getProjectEvents(project.projectNumber)
+                  const structureMembers = getProjectAssignments(project.projectNumber)
+                    .map((assignment) => ({
+                      assignment,
+                      member: getMemberById(assignment.memberId),
+                    }))
+                    .filter(
+                      (
+                        item,
+                      ): item is {
+                        assignment: ProjectAssignment
+                        member: Member
+                      } => item.member !== undefined,
+                    )
+                    .sort((left, right) => {
+                      const responsibilityCompare = left.assignment.responsibility.localeCompare(
+                        right.assignment.responsibility,
+                        'ja',
+                      )
+
+                      if (responsibilityCompare !== 0) {
+                        return responsibilityCompare
+                      }
+
+                      return left.member.name.localeCompare(right.member.name, 'ja')
+                    })
                   const pm = getProjectPm(project, members)
+                  const hasLongNote = (project.note?.trim().length ?? 0) > 90
+                  const isNoteExpanded = expandedNoteProjectIds.includes(project.projectNumber)
 
                   return (
                     <tr key={project.projectNumber}>
                       <td className={styles.stickyColumn}>
-                        <div className={styles.projectInfo}>
+                        <div
+                          className={
+                            isCompactMode
+                              ? `${styles.projectInfo} ${styles.projectInfoCompact}`
+                              : styles.projectInfo
+                          }
+                          data-testid={`cross-project-project-info-${project.projectNumber}`}
+                        >
                           <Link className={styles.projectLink} to={`/projects/${project.projectNumber}`}>
                             {project.name}
                           </Link>
                           <div className={styles.metaLine}>{project.projectNumber}</div>
-                          <div className={styles.metaLine}>PM: {pm?.name ?? '未設定'}</div>
+                          {!isCompactMode ? (
+                            <>
+                              <div className={styles.metaLine}>PM: {pm?.name ?? '未設定'}</div>
+                              <div className={styles.metaLine}>体制: {structureMembers.length}名</div>
+                              <div className={styles.metaLine}>
+                                メモ: {project.note?.trim() ? 'あり' : 'なし'}
+                              </div>
+                            </>
+                          ) : null}
                           <StatusBadge status={project.status} />
+                          {isNoteVisible && project.note?.trim() ? (
+                            <div className={styles.noteBlock}>
+                              <p
+                                className={
+                                  isNoteExpanded
+                                    ? `${styles.noteText} ${styles.noteTextExpanded}`
+                                    : isCompactMode
+                                      ? `${styles.noteText} ${styles.noteTextCompact}`
+                                      : styles.noteText
+                                }
+                                data-testid={`cross-project-note-${project.projectNumber}`}
+                              >
+                                {project.note}
+                              </p>
+                              {hasLongNote ? (
+                                <button
+                                  className={styles.noteToggle}
+                                  data-testid={`cross-project-note-toggle-${project.projectNumber}`}
+                                  onClick={() => toggleExpandedNote(project.projectNumber)}
+                                  type="button"
+                                >
+                                  {isNoteExpanded ? '折りたたむ' : '全文表示'}
+                                </button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {isStructureVisible ? (
+                            <div className={styles.structureList}>
+                              {structureMembers.map(({ assignment, member }) => (
+                                <div
+                                  key={assignment.id}
+                                  className={styles.structureItem}
+                                  data-testid={`cross-project-structure-${project.projectNumber}-${assignment.id}`}
+                                >
+                                  <span className={styles.structureRole}>{assignment.responsibility}</span>
+                                  <span className={styles.structureMember}>
+                                    {formatMemberShortLabel(member)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </td>
 

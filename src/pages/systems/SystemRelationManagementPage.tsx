@@ -84,6 +84,18 @@ export function SystemRelationManagementPage() {
   }
 
   async function handleDeleteRelation(relationId: string) {
+    const relation = systemRelations.find((item) => item.id === relationId)
+    const sourceLabel = relation
+      ? `${relation.sourceSystemId} / ${systemNameById.get(relation.sourceSystemId) ?? relation.sourceSystemId}`
+      : relationId
+    const targetLabel = relation
+      ? `${relation.targetSystemId} / ${systemNameById.get(relation.targetSystemId) ?? relation.targetSystemId}`
+      : relationId
+
+    if (!window.confirm(`関連システム ${sourceLabel} -> ${targetLabel} を削除します。`)) {
+      return
+    }
+
     setSubmitError(null)
     setIsSubmitting(true)
 

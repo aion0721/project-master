@@ -27,6 +27,7 @@ describe('ProjectDetailPage', () => {
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
     expect(screen.getAllByText('会計基盤').length).toBeGreaterThan(0)
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
+    expect(screen.getByTestId('project-note-value')).toHaveTextContent(project.note ?? '')
     expect(screen.getByTestId('project-link-anchor-0')).toHaveAttribute(
       'href',
       project.projectLinks[0]?.url,
@@ -117,6 +118,32 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('状況メモを更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-note-edit-button'))
+    fireEvent.change(screen.getByTestId('project-note-input'), {
+      target: { value: 'レビュー指摘を反映中。金曜に再確認予定。' },
+    })
+    fireEvent.click(screen.getByTestId('project-note-save-button'))
+
+    await waitFor(() => {
+      const noteCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/note') && init?.method === 'PATCH'
+      })
+
+      expect(noteCall).toBeDefined()
+      const body = JSON.parse(String(noteCall?.[1]?.body))
+      expect(body).toEqual({
+        note: 'レビュー指摘を反映中。金曜に再確認予定。',
+      })
+    })
+  })
+
   it('関連システムを更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -125,8 +152,9 @@ describe('ProjectDetailPage', () => {
     await screen.findByRole('heading', { name: project.name })
 
     fireEvent.click(screen.getByTestId('project-systems-edit-button'))
-    fireEvent.click(screen.getByTestId('project-system-checkbox-sys-infra-common'))
-    fireEvent.click(screen.getByTestId('project-system-checkbox-sys-sales-bi'))
+    fireEvent.change(screen.getByTestId('project-system-select'), {
+      target: { value: 'sys-sales-bi' },
+    })
     fireEvent.click(screen.getByTestId('project-systems-save-button'))
 
     await waitFor(() => {
@@ -137,7 +165,7 @@ describe('ProjectDetailPage', () => {
       expect(systemsCall).toBeDefined()
       const body = JSON.parse(String(systemsCall?.[1]?.body))
       expect(body).toEqual({
-        relatedSystemIds: ['sys-accounting', 'sys-sales-bi'],
+        relatedSystemIds: ['sys-sales-bi'],
       })
     })
   })

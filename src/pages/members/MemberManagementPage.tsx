@@ -3,16 +3,17 @@ import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
-import type { UpdateMemberInput } from '../../types/project'
+import formStyles from '../../styles/form.module.css'
 import pageStyles from '../../styles/page.module.css'
+import type { UpdateMemberInput } from '../../types/project'
 import {
   buildEditForm,
   formatMemberOptionLabel,
   formatMemberShortLabel,
   toNullableManagerId,
   validateMemberInput,
+  type MemberFormState,
 } from './memberFormUtils'
-import type { MemberFormState } from './memberFormUtils'
 import styles from './MemberManagementPage.module.css'
 
 export function MemberManagementPage() {
@@ -20,6 +21,7 @@ export function MemberManagementPage() {
     useProjectData()
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<MemberFormState | null>(null)
+  const [filterKeyword, setFilterKeyword] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -44,10 +46,7 @@ export function MemberManagementPage() {
     })
 
     return new Map(
-      Array.from(projectIdsByMember.entries()).map(([memberId, projectIds]) => [
-        memberId,
-        projectIds.size,
-      ]),
+      [...projectIdsByMember.entries()].map(([memberId, projectIds]) => [memberId, projectIds.size]),
     )
   }, [assignments, projects])
 
@@ -55,6 +54,19 @@ export function MemberManagementPage() {
     () => [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
     [members],
   )
+
+  const filteredMembers = useMemo(() => {
+    const normalizedKeyword = filterKeyword.trim().toLowerCase()
+
+    if (!normalizedKeyword) {
+      return sortedMembers
+    }
+
+    return sortedMembers.filter((member) => {
+      const searchableText = `${member.id} ${member.departmentName}`.toLowerCase()
+      return searchableText.includes(normalizedKeyword)
+    })
+  }, [filterKeyword, sortedMembers])
 
   function updateEditField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
     setEditForm((current) => (current ? { ...current, [key]: value } : current))
@@ -94,6 +106,12 @@ export function MemberManagementPage() {
   }
 
   async function handleDelete(memberId: string) {
+    const member = memberById.get(memberId)
+
+    if (!window.confirm(`メンバー ${member?.id ?? memberId} / ${member?.name ?? ''} を削除します。`)) {
+      return
+    }
+
     setSubmitError(null)
     setIsSubmitting(true)
 
@@ -139,7 +157,7 @@ export function MemberManagementPage() {
             <h1 className={pageStyles.title}>メンバー一覧</h1>
             <p className={pageStyles.description}>
               利用中のメンバーを一覧で管理します。上司は `ID / 名前`
-              表記でそろえているので、入力時も一覧確認時も迷いにくくしています。
+              表示でそろえているので、対象メンバーを識別しやすくしています。
             </p>
           </div>
         </div>
@@ -150,12 +168,25 @@ export function MemberManagementPage() {
           <div>
             <h2 className={pageStyles.sectionTitle}>登録済みメンバー</h2>
             <p className={pageStyles.sectionDescription}>
-              名前、部署、ロール、上司、関連案件数を確認できます。利用中のメンバーは削除前にチェックします。
+              名前、部署コード、部署名、ロール、上司、関連案件数を確認できます。利用中のメンバーは削除前にチェックします。
             </p>
           </div>
-          <Button to="/members/new" variant="secondary">
-            メンバーを追加
-          </Button>
+          <div className={styles.headerActions}>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>絞り込み</span>
+              <input
+                aria-label="メンバーIDまたは部署名で絞り込み"
+                className={formStyles.control}
+                onChange={(event) => setFilterKeyword(event.target.value)}
+                placeholder="例: m1 / 品質保証部"
+                type="search"
+                value={filterKeyword}
+              />
+            </label>
+            <Button to="/members/new" variant="secondary">
+              メンバーを追加
+            </Button>
+          </div>
         </div>
 
         {submitError ? <p className={styles.errorText}>{submitError}</p> : null}
@@ -175,7 +206,7 @@ export function MemberManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {sortedMembers.map((member) => {
+              {filteredMembers.map((member) => {
                 const isEditing = editingMemberId === member.id && editForm
                 const managerOptions = sortedMembers.filter((option) => option.id !== member.id)
                 const manager = member.managerId ? memberById.get(member.managerId) : null

@@ -77,6 +77,12 @@ export function SystemManagementPage() {
   }
 
   async function handleDelete(systemId: string) {
+    const system = systems.find((item) => item.id === systemId)
+
+    if (!window.confirm(`システム ${system?.id ?? systemId} / ${system?.name ?? ''} を削除します。`)) {
+      return
+    }
+
     setSubmitError(null)
     setIsSubmitting(true)
 

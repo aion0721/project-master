@@ -288,9 +288,7 @@ export function mockProjectApi() {
       const body = JSON.parse(String(init?.body)) as { memberKey: string }
       const normalizedMemberKey = body.memberKey.trim().toLocaleLowerCase()
       const user = fixtureData.members.find(
-        (member) =>
-          member.id.toLocaleLowerCase() === normalizedMemberKey ||
-          member.name.toLocaleLowerCase() === normalizedMemberKey,
+        (member) => member.id.toLocaleLowerCase() === normalizedMemberKey,
       )
 
       return new Response(JSON.stringify(user ? { user } : { message: 'Member not found' }), {
@@ -447,6 +445,7 @@ export function mockProjectApi() {
         endDate: body.endDate,
         status: statusLabelByCode[body.status],
         pmMemberId: body.pmMemberId,
+        note: body.note?.trim() || null,
         relatedSystemIds: body.relatedSystemIds ?? [],
         projectLinks: body.projectLinks ?? [],
       }
@@ -582,6 +581,33 @@ export function mockProjectApi() {
       }
 
       project.relatedSystemIds = [...new Set(body.relatedSystemIds)]
+
+      const detail = buildProjectDetailResponse(fixtureData, projectNumber)
+
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const noteMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/note$/)
+    if (noteMatch && method === 'PATCH') {
+      const projectNumber = noteMatch[1]
+      const body = JSON.parse(String(init?.body)) as { note?: string | null }
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      project.note = body.note?.trim() || null
 
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 

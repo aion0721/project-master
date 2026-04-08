@@ -1,11 +1,15 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { MemberCreatePage } from './MemberCreatePage'
 
 describe('MemberCreatePage', () => {
-  it('追加フォームを送信して登録APIを呼ぶ', async () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('フォームを送信して追加APIを呼ぶ', async () => {
     const fetchMock = mockProjectApi()
 
     renderWithProviders(<MemberCreatePage />, {
@@ -56,5 +60,18 @@ describe('MemberCreatePage', () => {
         }),
       ])
     })
+  })
+
+  it('uses env placeholder for member id input', async () => {
+    vi.stubEnv('VITE_MEMBER_ID_EXAMPLE', 'EMP0001')
+
+    renderWithProviders(<MemberCreatePage />, {
+      initialEntries: ['/members/new'],
+      routePath: '*',
+    })
+
+    await screen.findByRole('heading', { name: 'メンバー追加' })
+
+    expect(screen.getByLabelText('メンバーID')).toHaveAttribute('placeholder', '例: EMP0001')
   })
 })

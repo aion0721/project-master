@@ -16,9 +16,11 @@ interface ProjectDetailMetaGridProps {
   currentPhaseError: string | null
   isCurrentPhaseEditing: boolean
   isProjectLinksEditing: boolean
+  isProjectNoteEditing: boolean
   isProjectSystemsEditing: boolean
   isSavingCurrentPhase: boolean
   isSavingProjectLinks: boolean
+  isSavingProjectNote: boolean
   isSavingProjectSystems: boolean
   isSavingSchedule: boolean
   isScheduleEditing: boolean
@@ -32,10 +34,14 @@ interface ProjectDetailMetaGridProps {
   onProjectLinksCancel: () => void
   onProjectLinksEdit: () => void
   onProjectLinksSave: () => void
+  onProjectNoteCancel: () => void
+  onProjectNoteDraftChange: (note: string) => void
+  onProjectNoteEdit: () => void
+  onProjectNoteSave: () => void
   onProjectSystemsCancel: () => void
   onProjectSystemsEdit: () => void
   onProjectSystemsSave: () => void
-  onProjectSystemToggle: (systemId: string) => void
+  onProjectSystemChange: (systemId: string) => void
   onRemoveProjectLink: (index: number) => void
   onScheduleCancel: () => void
   onScheduleDraftChange: (patch: Partial<ScheduleDraft>) => void
@@ -46,6 +52,9 @@ interface ProjectDetailMetaGridProps {
   projectLinksChanged: boolean
   projectLinksDraft: ProjectLink[]
   projectLinksError: string | null
+  projectNoteChanged: boolean
+  projectNoteDraft: string
+  projectNoteError: string | null
   projectPhases: Phase[]
   projectSystemIdsDraft: string[]
   projectSystemsChanged: boolean
@@ -71,9 +80,11 @@ export function ProjectDetailMetaGrid({
   currentPhaseError,
   isCurrentPhaseEditing,
   isProjectLinksEditing,
+  isProjectNoteEditing,
   isProjectSystemsEditing,
   isSavingCurrentPhase,
   isSavingProjectLinks,
+  isSavingProjectNote,
   isSavingProjectSystems,
   isSavingSchedule,
   isScheduleEditing,
@@ -87,10 +98,14 @@ export function ProjectDetailMetaGrid({
   onProjectLinksCancel,
   onProjectLinksEdit,
   onProjectLinksSave,
+  onProjectNoteCancel,
+  onProjectNoteDraftChange,
+  onProjectNoteEdit,
+  onProjectNoteSave,
   onProjectSystemsCancel,
   onProjectSystemsEdit,
   onProjectSystemsSave,
-  onProjectSystemToggle,
+  onProjectSystemChange,
   onRemoveProjectLink,
   onScheduleCancel,
   onScheduleDraftChange,
@@ -101,6 +116,9 @@ export function ProjectDetailMetaGrid({
   projectLinksChanged,
   projectLinksDraft,
   projectLinksError,
+  projectNoteChanged,
+  projectNoteDraft,
+  projectNoteError,
   projectPhases,
   projectSystemIdsDraft,
   projectSystemsChanged,
@@ -175,7 +193,7 @@ export function ProjectDetailMetaGrid({
               size="small"
               variant="secondary"
             >
-              変更
+              編集
             </Button>
           </div>
         )}
@@ -229,7 +247,7 @@ export function ProjectDetailMetaGrid({
               size="small"
               variant="secondary"
             >
-              変更
+              編集
             </Button>
           </div>
         )}
@@ -239,7 +257,7 @@ export function ProjectDetailMetaGrid({
         {isProjectLinksEditing ? (
           <div className={styles.phaseMetaEditor}>
             <div className={styles.projectLinksHeader}>
-              <span className={styles.metaHelperText}>名称と URL をセットで管理できます。</span>
+              <span className={styles.metaHelperText}>リンク名と URL をセットで登録できます。</span>
               <Button onClick={onAddProjectLink} size="small" variant="secondary">
                 追加
               </Button>
@@ -333,7 +351,58 @@ export function ProjectDetailMetaGrid({
               size="small"
               variant="secondary"
             >
-              変更
+              編集
+            </Button>
+          </div>
+        )}
+      </MetaCard>
+
+      <MetaCard label="状況メモ">
+        {isProjectNoteEditing ? (
+          <div className={styles.phaseMetaEditor}>
+            <label className={styles.formField}>
+              <span className={styles.visuallyHidden}>状況メモ</span>
+              <textarea
+                aria-label="状況メモ"
+                className={`${styles.selectInput} ${styles.memoInput}`}
+                data-testid="project-note-input"
+                onChange={(event) => onProjectNoteDraftChange(event.target.value)}
+                placeholder="状況、懸念、次のアクションを記録"
+                value={projectNoteDraft}
+              />
+            </label>
+            <div className={styles.phaseMetaActions}>
+              <Button
+                data-testid="project-note-save-button"
+                disabled={isSavingProjectNote || !projectNoteChanged}
+                onClick={onProjectNoteSave}
+                size="small"
+              >
+                {isSavingProjectNote ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                data-testid="project-note-cancel-button"
+                onClick={onProjectNoteCancel}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+            {projectNoteError ? <p className={styles.metaError}>{projectNoteError}</p> : null}
+          </div>
+        ) : (
+          <div className={styles.projectNoteDisplay}>
+            <strong className={styles.metaValue} data-testid="project-note-value">
+              {project.note?.trim() || '未設定'}
+            </strong>
+            <Button
+              data-testid="project-note-edit-button"
+              onClick={onProjectNoteEdit}
+              size="small"
+              variant="secondary"
+            >
+              編集
             </Button>
           </div>
         )}
@@ -342,27 +411,29 @@ export function ProjectDetailMetaGrid({
       <MetaCard label="関連システム">
         {isProjectSystemsEditing ? (
           <div className={styles.phaseMetaEditor}>
-            <div className={styles.systemSelectionList}>
-              {availableSystems.length > 0 ? (
-                availableSystems.map((system) => (
-                  <label className={styles.systemSelectionItem} key={system.id}>
-                    <input
-                      checked={projectSystemIdsDraft.includes(system.id)}
-                      className={styles.systemCheckbox}
-                      data-testid={`project-system-checkbox-${system.id}`}
-                      onChange={() => onProjectSystemToggle(system.id)}
-                      type="checkbox"
-                    />
-                    <span className={styles.systemSelectionText}>
-                      <strong>{system.name}</strong>
-                      <span>{system.category}</span>
-                    </span>
+              <div className={styles.systemSelectionList}>
+                {availableSystems.length > 0 ? (
+                  <label className={styles.formField}>
+                    <span className={styles.visuallyHidden}>関連システム</span>
+                    <select
+                      aria-label="関連システム"
+                      className={styles.selectInput}
+                      data-testid="project-system-select"
+                      onChange={(event) => onProjectSystemChange(event.target.value)}
+                      value={projectSystemIdsDraft[0] ?? ''}
+                    >
+                      <option value="">選択してください</option>
+                      {availableSystems.map((system) => (
+                        <option key={system.id} value={system.id}>
+                          {system.id} / {system.name}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                ))
-              ) : (
-                <p className={styles.emptyText}>選択できるシステムがありません。</p>
-              )}
-            </div>
+                ) : (
+                  <p className={styles.emptyText}>登録済みシステムがありません。</p>
+                )}
+              </div>
             <div className={styles.phaseMetaActions}>
               <Button
                 data-testid="project-systems-save-button"
@@ -389,7 +460,7 @@ export function ProjectDetailMetaGrid({
               <div className={styles.systemChipList}>
                 {selectedSystems.map((system) => (
                   <span className={styles.systemChip} key={system.id}>
-                    {system.name}
+                    {system.id} / {system.name}
                   </span>
                 ))}
               </div>
@@ -404,7 +475,7 @@ export function ProjectDetailMetaGrid({
               size="small"
               variant="secondary"
             >
-              変更
+              編集
             </Button>
           </div>
         )}

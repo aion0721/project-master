@@ -1,6 +1,7 @@
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import type { Member, Phase, WorkStatus } from '../../types/project'
+import { formatMemberShortLabel } from '../members/memberFormUtils'
 import type { EventFormState } from './projectDetailTypes'
 import styles from '../projects/ProjectDetailPage.module.css'
 
@@ -134,7 +135,7 @@ export function ProjectEventSection({
                       <option value="">未設定</option>
                       {members.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {member.name}
+                          {formatMemberShortLabel(member)}
                         </option>
                       ))}
                     </select>

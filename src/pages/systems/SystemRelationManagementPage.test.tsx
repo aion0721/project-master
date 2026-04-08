@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { SystemRelationManagementPage } from './SystemRelationManagementPage'
@@ -7,6 +7,7 @@ import { SystemRelationManagementPage } from './SystemRelationManagementPage'
 describe('SystemRelationManagementPage', () => {
   it('関連システムを追加して削除できる', async () => {
     mockProjectApi()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderWithProviders(<SystemRelationManagementPage />, {
       initialEntries: ['/systems/relations'],

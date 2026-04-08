@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { SystemManagementPage } from './SystemManagementPage'
@@ -20,6 +20,7 @@ describe('SystemManagementPage', () => {
 
   it('システムを編集、削除できる', async () => {
     mockProjectApi()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     await fetch('/api/systems', {
       method: 'POST',

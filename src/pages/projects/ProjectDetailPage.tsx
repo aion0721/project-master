@@ -33,6 +33,7 @@ export function ProjectDetailPage() {
     updateProjectCurrentPhase,
     updateProjectEvents,
     updateProjectLinks,
+    updateProjectNote,
     updatePhase,
     updateProjectSystems,
     updateProjectPhases,
@@ -74,6 +75,7 @@ export function ProjectDetailPage() {
     updateProjectCurrentPhase,
     updateProjectSchedule,
     updateProjectLinks,
+    updateProjectNote,
     updateProjectSystems,
   )
   const phaseEditor = useProjectPhaseEditor(
@@ -230,12 +232,18 @@ export function ProjectDetailPage() {
         onProjectLinksSave={() => {
           void summaryEditor.saveProjectLinks()
         }}
+        onProjectNoteDraftChange={summaryEditor.setProjectNoteDraft}
+        onProjectNoteEdit={summaryEditor.openProjectNoteEditor}
+        onProjectNoteCancel={summaryEditor.closeProjectNoteEditor}
+        onProjectNoteSave={() => {
+          void summaryEditor.saveProjectNote()
+        }}
         onProjectSystemsCancel={summaryEditor.closeProjectSystemsEditor}
         onProjectSystemsEdit={summaryEditor.openProjectSystemsEditor}
         onProjectSystemsSave={() => {
           void summaryEditor.saveProjectSystems()
         }}
-        onProjectSystemToggle={summaryEditor.toggleProjectSystemDraft}
+        onProjectSystemChange={summaryEditor.setProjectSystemDraft}
         onRemoveProjectLink={summaryEditor.removeProjectLinkDraft}
         onScheduleCancel={summaryEditor.closeScheduleEditor}
         onScheduleDraftChange={(patch) => {
@@ -253,13 +261,18 @@ export function ProjectDetailPage() {
         projectLinksChanged={summaryEditor.projectLinksChanged}
         projectLinksDraft={summaryEditor.projectLinksDraft}
         projectLinksError={summaryEditor.projectLinksError}
+        projectNoteChanged={summaryEditor.projectNoteChanged}
+        projectNoteDraft={summaryEditor.projectNoteDraft}
+        projectNoteError={summaryEditor.projectNoteError}
         projectPhases={projectPhases}
         projectSystemIdsDraft={summaryEditor.projectSystemIdsDraft}
         projectSystemsChanged={summaryEditor.projectSystemsChanged}
         projectSystemsError={summaryEditor.projectSystemsError}
         availableSystems={systems}
         isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
+        isProjectNoteEditing={summaryEditor.isProjectNoteEditing}
         isSavingProjectSystems={summaryEditor.isSavingProjectSystems}
+        isSavingProjectNote={summaryEditor.isSavingProjectNote}
         relatedSystems={relatedSystems}
         scheduleChanged={summaryEditor.scheduleChanged}
         scheduleDraft={summaryEditor.scheduleDraft}

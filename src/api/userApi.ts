@@ -7,6 +7,10 @@ interface UserResponse {
   user: Member
 }
 
+interface ApiErrorResponse {
+  message?: string
+}
+
 async function sendJson<TResponse, TRequest>(
   path: string,
   method: 'POST' | 'PATCH',
@@ -24,7 +28,18 @@ async function sendJson<TResponse, TRequest>(
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    let message = `API request failed: ${response.status}`
+
+    try {
+      const errorBody = (await response.json()) as ApiErrorResponse
+      if (errorBody.message?.trim()) {
+        message = errorBody.message
+      }
+    } catch {
+      // Ignore non-JSON error responses and keep the fallback message.
+    }
+
+    throw new Error(message)
   }
 
   return (await response.json()) as TResponse
@@ -39,7 +54,18 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    let message = `API request failed: ${response.status}`
+
+    try {
+      const errorBody = (await response.json()) as ApiErrorResponse
+      if (errorBody.message?.trim()) {
+        message = errorBody.message
+      }
+    } catch {
+      // Ignore non-JSON error responses and keep the fallback message.
+    }
+
+    throw new Error(message)
   }
 
   return (await response.json()) as T

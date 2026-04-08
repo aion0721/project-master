@@ -14,6 +14,10 @@ interface UpdateProjectLinks {
   (projectId: string, input: { projectLinks: ProjectLink[] }): Promise<unknown>
 }
 
+interface UpdateProjectNote {
+  (projectId: string, input: { note?: string | null }): Promise<unknown>
+}
+
 interface UpdateProjectSystems {
   (projectId: string, input: { relatedSystemIds: string[] }): Promise<unknown>
 }
@@ -25,6 +29,7 @@ export function useProjectSummaryEditor(
   updateProjectCurrentPhase: UpdateProjectCurrentPhase,
   updateProjectSchedule: UpdateProjectSchedule,
   updateProjectLinks: UpdateProjectLinks,
+  updateProjectNote: UpdateProjectNote,
   updateProjectSystems: UpdateProjectSystems,
 ) {
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
@@ -41,6 +46,11 @@ export function useProjectSummaryEditor(
   const [projectLinksDraft, setProjectLinksDraft] = useState<ProjectLink[]>([createEmptyProjectLink()])
   const [projectLinksError, setProjectLinksError] = useState<string | null>(null)
   const [isSavingProjectLinks, setIsSavingProjectLinks] = useState(false)
+
+  const [isProjectNoteEditing, setIsProjectNoteEditing] = useState(false)
+  const [projectNoteDraft, setProjectNoteDraft] = useState('')
+  const [projectNoteError, setProjectNoteError] = useState<string | null>(null)
+  const [isSavingProjectNote, setIsSavingProjectNote] = useState(false)
 
   const [isProjectSystemsEditing, setIsProjectSystemsEditing] = useState(false)
   const [projectSystemIdsDraft, setProjectSystemIdsDraft] = useState<string[]>([])
@@ -60,6 +70,8 @@ export function useProjectSummaryEditor(
         : [createEmptyProjectLink()],
     )
     setProjectLinksError(null)
+    setProjectNoteDraft(project.note ?? '')
+    setProjectNoteError(null)
     setProjectSystemIdsDraft([...(project.relatedSystemIds ?? [])])
     setProjectSystemsError(null)
   }, [project])
@@ -76,6 +88,7 @@ export function useProjectSummaryEditor(
     ? JSON.stringify(validateProjectLinks(projectLinksDraft).links) !==
       JSON.stringify(project.projectLinks)
     : false
+  const projectNoteChanged = (projectNoteDraft.trim() || '') !== (project?.note ?? '')
   const projectSystemsChanged = project
     ? JSON.stringify([...projectSystemIdsDraft].sort()) !==
       JSON.stringify([...(project.relatedSystemIds ?? [])].sort())
@@ -177,6 +190,38 @@ export function useProjectSummaryEditor(
     setIsProjectLinksEditing(true)
   }
 
+  function openProjectNoteEditor() {
+    setProjectNoteDraft(project?.note ?? '')
+    setProjectNoteError(null)
+    setIsProjectNoteEditing(true)
+  }
+
+  function closeProjectNoteEditor() {
+    setProjectNoteDraft(project?.note ?? '')
+    setProjectNoteError(null)
+    setIsProjectNoteEditing(false)
+  }
+
+  async function saveProjectNote() {
+    if (!project) {
+      return
+    }
+
+    setIsSavingProjectNote(true)
+    setProjectNoteError(null)
+
+    try {
+      await updateProjectNote(project.projectNumber, { note: projectNoteDraft.trim() || null })
+      setIsProjectNoteEditing(false)
+    } catch (caughtError) {
+      setProjectNoteError(
+        caughtError instanceof Error ? caughtError.message : '状況メモの保存に失敗しました。',
+      )
+    } finally {
+      setIsSavingProjectNote(false)
+    }
+  }
+
   function closeProjectLinksEditor() {
     setProjectLinksDraft(
       project && project.projectLinks.length > 0
@@ -243,12 +288,8 @@ export function useProjectSummaryEditor(
     setIsProjectSystemsEditing(false)
   }
 
-  function toggleProjectSystemDraft(systemId: string) {
-    setProjectSystemIdsDraft((current) =>
-      current.includes(systemId)
-        ? current.filter((id) => id !== systemId)
-        : current.concat(systemId),
-    )
+  function setProjectSystemDraft(systemId: string) {
+    setProjectSystemIdsDraft(systemId ? [systemId] : [])
     setProjectSystemsError(null)
   }
 
@@ -257,7 +298,7 @@ export function useProjectSummaryEditor(
       return
     }
 
-    const uniqueSystemIds = [...new Set(projectSystemIdsDraft)]
+    const uniqueSystemIds = projectSystemIdsDraft[0] ? [projectSystemIdsDraft[0]] : []
 
     if (uniqueSystemIds.some((systemId) => !availableSystems.some((system) => system.id === systemId))) {
       setProjectSystemsError('関連システムに不正な選択が含まれています。')
@@ -285,15 +326,20 @@ export function useProjectSummaryEditor(
     currentPhaseError,
     isCurrentPhaseEditing,
     isProjectLinksEditing,
+    isProjectNoteEditing,
     isProjectSystemsEditing,
     isSavingCurrentPhase,
     isSavingProjectLinks,
+    isSavingProjectNote,
     isSavingProjectSystems,
     isSavingSchedule,
     isScheduleEditing,
     projectLinksChanged,
     projectLinksDraft,
     projectLinksError,
+    projectNoteChanged,
+    projectNoteDraft,
+    projectNoteError,
     projectSystemIdsDraft,
     projectSystemsChanged,
     projectSystemsError,
@@ -303,20 +349,24 @@ export function useProjectSummaryEditor(
     addProjectLinkDraft,
     closeCurrentPhaseEditor,
     closeProjectLinksEditor,
+    closeProjectNoteEditor,
     closeProjectSystemsEditor,
     closeScheduleEditor,
     openCurrentPhaseEditor,
     openProjectLinksEditor,
+    openProjectNoteEditor,
     openProjectSystemsEditor,
     openScheduleEditor,
     removeProjectLinkDraft,
     saveCurrentPhase,
     saveProjectLinks,
+    saveProjectNote,
     saveProjectSystems,
     saveSchedule,
     setCurrentPhaseDraftId,
     setScheduleDraft,
-    toggleProjectSystemDraft,
+    setProjectNoteDraft,
+    setProjectSystemDraft,
     updateProjectLinkDraft,
   }
 }
