@@ -1,137 +1,169 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { ListPageHero } from '../../components/ListPageHero'
-import { ProjectTable } from '../../components/ProjectTable'
-import { Button } from '../../components/ui/Button'
-import { Panel } from '../../components/ui/Panel'
-import { useProjectData } from '../../store/useProjectData'
-import { useUserSession } from '../../store/useUserSession'
-import type { Project } from '../../types/project'
-import { getProjectCurrentPhase, getProjectPm } from '../../utils/projectUtils'
-import { allWorkStatuses, getMemberDefaultProjectStatusFilters } from '../../utils/userPreferences'
-import styles from './ProjectListPage.module.css'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ListPageContentSection } from "../../components/ListPageContentSection";
+import { ListPageFilterSection } from "../../components/ListPageFilterSection";
+import { ListPageHero } from "../../components/ListPageHero";
+import { ProjectTable } from "../../components/ProjectTable";
+import { Button } from "../../components/ui/Button";
+import { Panel } from "../../components/ui/Panel";
+import { useProjectData } from "../../store/useProjectData";
+import { useUserSession } from "../../store/useUserSession";
+import type { Project } from "../../types/project";
+import { getProjectCurrentPhase, getProjectPm } from "../../utils/projectUtils";
+import {
+  allWorkStatuses,
+  getMemberDefaultProjectStatusFilters,
+} from "../../utils/userPreferences";
+import styles from "./ProjectListPage.module.css";
 
-type ViewMode = 'all' | 'bookmarks'
+type ViewMode = "all" | "bookmarks";
 
 export function ProjectListPage() {
-  const { projects, members, systems, getProjectPhases, isLoading, error } = useProjectData()
-  const { currentUser, saveDefaultProjectStatusFilters, toggleBookmark } = useUserSession()
-  const [viewMode, setViewMode] = useState<ViewMode>('all')
-  const currentUserId = currentUser?.id ?? null
-  const currentUserRef = useRef(currentUser)
-  currentUserRef.current = currentUser
-  const [selectedStatuses, setSelectedStatuses] = useState<Project['status'][]>(() =>
-    getMemberDefaultProjectStatusFilters(currentUser),
-  )
-  const [isSavingDefaults, setIsSavingDefaults] = useState(false)
-  const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
+  const { projects, members, systems, getProjectPhases, isLoading, error } =
+    useProjectData();
+  const { currentUser, saveDefaultProjectStatusFilters, toggleBookmark } =
+    useUserSession();
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<Project["status"][]>(
+    () => getMemberDefaultProjectStatusFilters(currentUser),
+  );
+  const [isSavingDefaults, setIsSavingDefaults] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const currentUserId = currentUser?.id ?? null;
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
 
   useEffect(() => {
-    setSelectedStatuses(getMemberDefaultProjectStatusFilters(currentUserRef.current))
-    setSaveFeedback(null)
-  }, [currentUserId])
+    setSelectedStatuses(
+      getMemberDefaultProjectStatusFilters(currentUserRef.current),
+    );
+    setSaveFeedback(null);
+  }, [currentUserId]);
 
   const systemNameById = useMemo(
     () => new Map(systems.map((system) => [system.id, system.name])),
     [systems],
-  )
+  );
 
   const bookmarkFilteredProjects = useMemo(() => {
-    if (viewMode !== 'bookmarks' || !currentUser) {
-      return projects
+    if (viewMode !== "bookmarks" || !currentUser) {
+      return projects;
     }
 
-    const bookmarkedSet = new Set(currentUser.bookmarkedProjectIds)
-    return projects.filter((project) => bookmarkedSet.has(project.projectNumber))
-  }, [currentUser, projects, viewMode])
+    const bookmarkedSet = new Set(currentUser.bookmarkedProjectIds);
+    return projects.filter((project) =>
+      bookmarkedSet.has(project.projectNumber),
+    );
+  }, [currentUser, projects, viewMode]);
 
   const filteredProjects = useMemo(
-    () => bookmarkFilteredProjects.filter((project) => selectedStatuses.includes(project.status)),
+    () =>
+      bookmarkFilteredProjects.filter((project) =>
+        selectedStatuses.includes(project.status),
+      ),
     [bookmarkFilteredProjects, selectedStatuses],
-  )
+  );
 
   const rows = useMemo(
     () =>
       filteredProjects.map((project) => {
-        const projectPhases = getProjectPhases(project.projectNumber)
-        const currentPhase = getProjectCurrentPhase(projectPhases)
-        const pm = getProjectPm(project, members)
+        const projectPhases = getProjectPhases(project.projectNumber);
+        const currentPhase = getProjectCurrentPhase(projectPhases);
+        const pm = getProjectPm(project, members);
 
         return {
           project,
-          currentPhaseName: currentPhase?.name ?? '未設定',
-          pmName: pm?.name ?? '未設定',
-          primarySystemName: systemNameById.get(project.relatedSystemIds?.[0] ?? ''),
-        }
+          currentPhaseName: currentPhase?.name ?? "未設定",
+          pmName: pm?.name ?? "未設定",
+          primarySystemName: systemNameById.get(
+            project.relatedSystemIds?.[0] ?? "",
+          ),
+        };
       }),
     [filteredProjects, getProjectPhases, members, systemNameById],
-  )
+  );
 
-  const summary = {
-    total: filteredProjects.length,
-    inProgress: filteredProjects.filter((project) => project.status === '進行中').length,
-    delayed: filteredProjects.filter((project) => project.status === '遅延').length,
-    completed: filteredProjects.filter((project) => project.status === '完了').length,
-  }
+  const summary = useMemo(
+    () => ({
+      total: filteredProjects.length,
+      inProgress: filteredProjects.filter(
+        (project) => project.status === "進行中",
+      ).length,
+      delayed: filteredProjects.filter((project) => project.status === "遅延")
+        .length,
+      completed: filteredProjects.filter((project) => project.status === "完了")
+        .length,
+    }),
+    [filteredProjects],
+  );
 
-  const bookmarkedCount = currentUser?.bookmarkedProjectIds.length ?? 0
-  const hasStatusSelection = selectedStatuses.length > 0
+  const bookmarkedCount = currentUser?.bookmarkedProjectIds.length ?? 0;
+  const hasStatusSelection = selectedStatuses.length > 0;
 
   const emptyState =
-    viewMode === 'bookmarks' && currentUser && rows.length === 0 && hasStatusSelection
+    viewMode === "bookmarks" &&
+    currentUser &&
+    rows.length === 0 &&
+    hasStatusSelection
       ? {
-          title: '条件に一致するブックマーク案件はありません',
+          title: "条件に一致するブックマーク案件はありません",
           description:
-            'ブックマークした案件はありますが、現在の状態フィルターに一致していません。条件を見直してください。',
+            "ブックマーク済みの案件はありますが、現在の状態フィルターには一致していません。絞り込み条件を見直してください。",
         }
-      : viewMode === 'bookmarks' && currentUser && rows.length === 0
+      : viewMode === "bookmarks" && currentUser && rows.length === 0
         ? {
-            title: 'ブックマーク案件はまだありません',
-            description: '一覧の追加ボタンから案件をブックマークできます。',
+            title: "ブックマーク案件はまだありません",
+            description: "一覧の追加ボタンから案件をブックマークできます。",
           }
         : !hasStatusSelection
           ? {
-              title: '状態フィルターが選択されていません',
-              description: '表示したい状態にチェックを入れると、案件一覧が表示されます。',
+              title: "状態フィルターが選択されていません",
+              description:
+                "表示したい状態にチェックを入れると、案件一覧が表示されます。",
             }
           : rows.length === 0
             ? {
-                title: '条件に一致する案件はありません',
-                description: '状態フィルターや表示モードを調整してください。',
+                title: "条件に一致する案件はありません",
+                description: "状態フィルターや表示モードを調整してください。",
               }
-            : null
+            : null;
 
-  const handleStatusToggle = (status: Project['status']) => {
-    setSaveFeedback(null)
+  const handleStatusToggle = (status: Project["status"]) => {
+    setSaveFeedback(null);
     setSelectedStatuses((current) =>
-      current.includes(status) ? current.filter((value) => value !== status) : [...current, status],
-    )
-  }
+      current.includes(status)
+        ? current.filter((value) => value !== status)
+        : [...current, status],
+    );
+  };
 
   const handleSaveDefaults = async () => {
     if (!currentUser) {
-      return
+      return;
     }
 
-    setIsSavingDefaults(true)
-    setSaveFeedback(null)
+    setIsSavingDefaults(true);
+    setSaveFeedback(null);
 
     try {
-      await saveDefaultProjectStatusFilters(selectedStatuses)
-      setSaveFeedback('現在の状態フィルターを既定値として保存しました。')
+      await saveDefaultProjectStatusFilters(selectedStatuses);
+      setSaveFeedback("現在の状態フィルターを既定値として保存しました。");
     } catch {
-      setSaveFeedback('既定値フィルターの保存に失敗しました。')
+      setSaveFeedback("既定値フィルターの保存に失敗しました。");
     } finally {
-      setIsSavingDefaults(false)
+      setIsSavingDefaults(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <Panel className={styles.section}>
         <h1 className={styles.sectionTitle}>案件一覧を読み込み中です</h1>
-        <p className={styles.sectionDescription}>バックエンドから案件データを取得しています。</p>
+        <p className={styles.sectionDescription}>
+          バックエンドから案件データを取得しています。
+        </p>
       </Panel>
-    )
+    );
   }
 
   if (error) {
@@ -140,7 +172,7 @@ export function ProjectListPage() {
         <h1 className={styles.sectionTitle}>案件一覧を表示できませんでした</h1>
         <p className={styles.sectionDescription}>{error}</p>
       </Panel>
-    )
+    );
   }
 
   return (
@@ -150,132 +182,127 @@ export function ProjectListPage() {
         className={styles.hero}
         description="進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。"
         eyebrow="Project Portfolio"
-        headerClassName={styles.heroHeader}
         iconKind="project"
-        statCardClassName={styles.heroStatCard}
-        statLabelClassName={styles.heroStatLabel}
         stats={[
-          { label: '表示中案件', value: summary.total },
-          { label: '進行中', value: summary.inProgress },
-          { label: 'ブックマーク', value: bookmarkedCount },
+          { label: "総案件数", value: summary.total },
+          { label: "進行中", value: summary.inProgress },
+          { label: "遅延", value: summary.delayed },
+          { label: "完了", value: summary.completed },
         ]}
-        statsClassName={styles.heroStats}
-        statValueClassName={styles.heroStatValue}
         title="案件一覧"
       />
 
-      <Panel className={styles.controls} variant="section">
-        <div className={styles.filterRow}>
-          <div className={styles.toggleGroup}>
-            <button
-              className={viewMode === 'all' ? `${styles.toggle} ${styles.toggleActive}` : styles.toggle}
-              onClick={() => setViewMode('all')}
-              type="button"
-            >
-              全案件
-            </button>
-            <button
-              className={viewMode === 'bookmarks' ? `${styles.toggle} ${styles.toggleActive}` : styles.toggle}
-              disabled={!currentUser}
-              onClick={() => setViewMode('bookmarks')}
-              type="button"
-            >
-              ブックマーク
-            </button>
-          </div>
-          <p className={styles.filterHint}>
-            {currentUser
-              ? `${currentUser.name} さんのブックマーク ${bookmarkedCount} 件`
-              : '利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。'}
-          </p>
-        </div>
-
-        <div className={styles.statusFilters}>
-          <div className={styles.statusFilterHeader}>
-            <p className={styles.statusFilterTitle}>状態フィルター</p>
-            <p className={styles.statusFilterHint}>複数選択できます。完了だけ外す使い方を想定しています。</p>
-          </div>
-          <div className={styles.statusFilterActions}>
-            <Button
-              disabled={!currentUser || isSavingDefaults}
-              onClick={() => void handleSaveDefaults()}
-              size="small"
-              variant="secondary"
-            >
-              {isSavingDefaults ? '保存中...' : 'この状態を既定値に保存'}
-            </Button>
-            <p className={styles.statusFilterMeta}>
-              {saveFeedback ??
-                (currentUser
-                  ? '利用メンバーごとに次回表示時の初期状態として保存されます。'
-                  : '利用メンバーを選ぶと既定値を保存できます。')}
-            </p>
-          </div>
-          <div className={styles.statusCheckboxGroup}>
-            {allWorkStatuses.map((status) => (
-              <label className={styles.statusCheckbox} key={status}>
-                <input
-                  checked={selectedStatuses.includes(status)}
-                  onChange={() => handleStatusToggle(status)}
-                  type="checkbox"
-                />
-                <span>{status}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </Panel>
-
-      <section className={styles.summaryGrid}>
-        <Panel as="article" className={styles.summaryCard} variant="compact">
-          <span className={styles.summaryLabel}>総案件数</span>
-          <strong className={styles.summaryValue}>{summary.total}</strong>
-        </Panel>
-        <Panel as="article" className={styles.summaryCard} variant="compact">
-          <span className={styles.summaryLabel}>進行中</span>
-          <strong className={styles.summaryValue}>{summary.inProgress}</strong>
-        </Panel>
-        <Panel as="article" className={styles.summaryCard} variant="compact">
-          <span className={styles.summaryLabel}>遅延</span>
-          <strong className={styles.summaryValue}>{summary.delayed}</strong>
-        </Panel>
-        <Panel as="article" className={styles.summaryCard} variant="compact">
-          <span className={styles.summaryLabel}>完了</span>
-          <strong className={styles.summaryValue}>{summary.completed}</strong>
-        </Panel>
-      </section>
-
-      <Panel className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <div>
-            <h2 className={styles.sectionTitle}>
-              {viewMode === 'bookmarks' && currentUser ? 'ブックマーク案件一覧' : '案件ステータス一覧'}
-            </h2>
-            <p className={styles.sectionDescription}>
-              案件ごとの PM、現在フェーズ、開始日、終了日、主システムを比較できます。
-            </p>
-          </div>
-        </div>
-
-        {emptyState ? (
-          <div className={styles.emptyState}>
-            <h3 className={styles.emptyStateTitle}>{emptyState.title}</h3>
-            <p className={styles.emptyStateText}>{emptyState.description}</p>
-          </div>
-        ) : (
-          <ProjectTable
-            bookmarkedProjectIds={currentUser?.bookmarkedProjectIds ?? []}
-            onToggleBookmark={
-              currentUser
-                ? (projectId) => {
-                    void toggleBookmark(projectId).catch(() => undefined)
+      {isFilterVisible ? (
+        <ListPageFilterSection
+          className={styles.controls}
+          topRow={
+            <div className={styles.filterTopRow}>
+              <div className={styles.toggleGroup}>
+                <button
+                  className={
+                    viewMode === "all"
+                      ? `${styles.toggle} ${styles.toggleActive}`
+                      : styles.toggle
                   }
-                : undefined
-            }
-            rows={rows}
-          />
-        )}
-      </Panel>
+                  onClick={() => setViewMode("all")}
+                  type="button"
+                >
+                  全案件
+                </button>
+                <button
+                  className={
+                    viewMode === "bookmarks"
+                      ? `${styles.toggle} ${styles.toggleActive}`
+                      : styles.toggle
+                  }
+                  disabled={!currentUser}
+                  onClick={() => setViewMode("bookmarks")}
+                  type="button"
+                >
+                  ブックマーク
+                </button>
+              </div>
+              <p className={styles.filterHint}>
+                {currentUser
+                  ? `${currentUser.name} さんのブックマーク ${bookmarkedCount} 件`
+                  : "利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。"}
+              </p>
+            </div>
+          }
+          summary={
+            <div className={styles.filterSummaryRow}>
+              <div className={styles.filterSummaryHeading}>
+                <p className={styles.statusFilterTitle}>状態フィルター</p>
+                <p className={styles.statusFilterHint}>
+                  複数選択できます。完了だけ外す使い方を想定しています。
+                </p>
+              </div>
+              <div className={styles.statusFilterActions}>
+                <Button
+                  disabled={!currentUser || isSavingDefaults}
+                  onClick={() => void handleSaveDefaults()}
+                  size="small"
+                  variant="secondary"
+                >
+                  {isSavingDefaults ? "保存中..." : "この状態を既定値に保存"}
+                </Button>
+                <p className={styles.statusFilterMeta}>
+                  {saveFeedback ?? "利用メンバーを選ぶと既定値を保存できます。"}
+                </p>
+              </div>
+            </div>
+          }
+          body={
+            <div className={styles.statusFilters}>
+              <div className={styles.statusCheckboxGroup}>
+                {allWorkStatuses.map((status) => (
+                  <label className={styles.statusCheckbox} key={status}>
+                    <input
+                      checked={selectedStatuses.includes(status)}
+                      onChange={() => handleStatusToggle(status)}
+                      type="checkbox"
+                    />
+                    <span>{status}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          }
+        />
+      ) : null}
+
+      <ListPageContentSection
+        actions={
+          <Button
+            aria-expanded={isFilterVisible}
+            onClick={() => setIsFilterVisible((current) => !current)}
+            size="small"
+            variant="secondary"
+          >
+            {isFilterVisible ? "絞り込みを非表示" : "絞り込みを表示"}
+          </Button>
+        }
+        className={styles.section}
+        description="案件番号、現在フェーズ、PM、主システムをまとめて確認できます。"
+        emptyState={emptyState}
+        title={
+          viewMode === "bookmarks" && currentUser
+            ? "ブックマーク案件一覧"
+            : "案件ステータス一覧"
+        }
+      >
+        <ProjectTable
+          bookmarkedProjectIds={currentUser?.bookmarkedProjectIds ?? []}
+          onToggleBookmark={
+            currentUser
+              ? (projectId) => {
+                  void toggleBookmark(projectId).catch(() => undefined);
+                }
+              : undefined
+          }
+          rows={rows}
+        />
+      </ListPageContentSection>
     </div>
-  )
+  );
 }

@@ -32,24 +32,10 @@
   z-index: 1;
 }
 
-.heroHeader {
-  composes: listHeroHeader from '../../styles/page.module.css';
-}
-
-.heroStats {
-  composes: listHeroStats from '../../styles/page.module.css';
-}
-
-.heroStatCard {
-  composes: listHeroStatCard from '../../styles/page.module.css';
-}
-
-.heroStatLabel {
-  composes: listHeroStatLabel from '../../styles/page.module.css';
-}
-
-.heroStatValue {
-  composes: listHeroStatValue from '../../styles/page.module.css';
+.controls {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(236, 253, 245, 0.94)),
+    linear-gradient(135deg, rgba(16, 185, 129, 0.06), transparent 72%);
 }
 
 .errorText {
@@ -66,6 +52,24 @@
 
 .filterField {
   min-width: 260px;
+}
+
+.filterSummary {
+  display: grid;
+  gap: 4px;
+  min-width: 132px;
+}
+
+.filterSummaryLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.filterSummaryValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-strong);
 }
 
 .form {

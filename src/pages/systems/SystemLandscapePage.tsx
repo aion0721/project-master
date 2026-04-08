@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -235,37 +235,19 @@ export function SystemLandscapePage() {
 
   return (
     <div className={pageStyles.page}>
-      <Panel className={styles.hero} variant="hero">
-        <div className={styles.heroHeader}>
-          <div className={pageStyles.heroHeading}>
-            <EntityIcon className={pageStyles.heroIcon} kind="system" />
-            <div className={pageStyles.heroHeadingBody}>
-              <p className={pageStyles.eyebrow}>System Diagram</p>
-              <h1 className={pageStyles.title}>システム関連図</h1>
-              <p className={pageStyles.description}>
-                システム同士のつながりを俯瞰で表示します。上流からの受け取りと下流への連携を、選択ビューと全体図の両方で確認できます。
-              </p>
-            </div>
-          </div>
-
-          <Button to="/systems">システム一覧</Button>
-        </div>
-
-        <div className={styles.heroStats}>
-          <div className={styles.heroStatCard}>
-            <span className={styles.heroStatLabel}>登録システム</span>
-            <strong className={styles.heroStatValue}>{summary.systems}</strong>
-          </div>
-          <div className={styles.heroStatCard}>
-            <span className={styles.heroStatLabel}>関連線</span>
-            <strong className={styles.heroStatValue}>{summary.relations}</strong>
-          </div>
-          <div className={styles.heroStatCard}>
-            <span className={styles.heroStatLabel}>関連案件あり</span>
-            <strong className={styles.heroStatValue}>{summary.projects}</strong>
-          </div>
-        </div>
-      </Panel>
+      <ListPageHero
+        action={<Button to="/systems">システム一覧</Button>}
+        className={styles.hero}
+        description="システム同士のつながりを俯瞰で表示します。上流からの受け取りと下流への連携を、選択ビューと全体図の両方で確認できます。"
+        eyebrow="System Diagram"
+        iconKind="system"
+        stats={[
+          { label: '登録システム', value: summary.systems },
+          { label: '関連線', value: summary.relations },
+          { label: '関連案件あり', value: summary.projects },
+        ]}
+        title="システム関連図"
+      />
 
       <Panel>
         <div className={pageStyles.sectionHeader}>

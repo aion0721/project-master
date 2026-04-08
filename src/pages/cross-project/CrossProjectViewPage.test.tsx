@@ -5,22 +5,26 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 import { CrossProjectViewPage } from './CrossProjectViewPage'
 import styles from './CrossProjectViewPage.module.css'
 
+async function openFilterPanel() {
+  const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
+  fireEvent.click(toggleButton)
+}
+
 describe('CrossProjectViewPage', () => {
-  it('横断ビューと案件フェーズを表示する', async () => {
+  it('横断ビューと週表示データを表示する', async () => {
     mockProjectApi()
 
     renderWithProviders(<CrossProjectViewPage />, {
       initialEntries: ['/cross-project'],
     })
 
-    expect(await screen.findByRole('heading', { name: '複数案件横断ビュー' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '横断案件ビュー' })).toBeInTheDocument()
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
     expect(screen.getByText('表示案件数')).toBeInTheDocument()
-    expect(screen.getAllByText('詳細設計').length).toBeGreaterThan(0)
     expect(screen.getByTestId('cross-project-event-PRJ-001-ev-p1-1')).toHaveTextContent('環境提供')
   })
 
-  it('ブックマーク表示と検索で絞り込める', async () => {
+  it('ブックマーク表示と検索で案件を絞り込める', async () => {
     mockProjectApi()
     window.localStorage.setItem('project-master:user-id', 'm1')
 
@@ -28,13 +32,14 @@ describe('CrossProjectViewPage', () => {
       initialEntries: ['/cross-project'],
     })
 
+    await openFilterPanel()
     expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'ブックマーク' }))
 
     await waitFor(() => {
       expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-      expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
+      expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
     })
 
     fireEvent.change(screen.getByLabelText('プロジェクト番号または案件名でフィルター'), {
@@ -47,35 +52,36 @@ describe('CrossProjectViewPage', () => {
     })
   })
 
-  it('状態フィルターを複数選択で絞り込める', async () => {
+  it('状態フィルターを開いて案件を絞り込める', async () => {
     mockProjectApi()
 
     renderWithProviders(<CrossProjectViewPage />, {
       initialEntries: ['/cross-project'],
     })
 
-    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
+    await screen.findByRole('heading', { name: '横断案件ビュー' })
 
-    const checkboxes = screen.getAllByRole('checkbox')
-    fireEvent.click(checkboxes[3])
+    await openFilterPanel()
+    fireEvent.click(screen.getByRole('checkbox', { name: '完了' }))
 
     await waitFor(() => {
       expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
       expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-      expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
+      expect(screen.getByText('販売促進モバイル連携')).toBeInTheDocument()
     })
 
-    fireEvent.click(checkboxes[0])
-    fireEvent.click(checkboxes[1])
+    fireEvent.click(screen.getByRole('checkbox', { name: '未着手' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: '進行中' }))
 
     await waitFor(() => {
       expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
       expect(screen.queryByText('基幹会計刷新')).not.toBeInTheDocument()
+      expect(screen.queryByText('社内ポータル刷新')).not.toBeInTheDocument()
       expect(screen.queryByText('販売促進モバイル連携')).not.toBeInTheDocument()
     })
   })
 
-  it('既定値として状態フィルターを保存できる', async () => {
+  it('状態フィルターの既定値を保存できる', async () => {
     mockProjectApi()
     window.localStorage.setItem('project-master:user-id', 'm1')
 
@@ -83,12 +89,11 @@ describe('CrossProjectViewPage', () => {
       initialEntries: ['/cross-project'],
     })
 
+    await openFilterPanel()
     expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
-
-    const checkboxes = screen.getAllByRole('checkbox')
-    fireEvent.click(checkboxes[0])
+    fireEvent.click(screen.getByRole('checkbox', { name: '未着手' }))
     await waitFor(() => {
-      expect(checkboxes[0]).not.toBeChecked()
+      expect(screen.getByRole('checkbox', { name: '未着手' })).not.toBeChecked()
     })
     fireEvent.click(screen.getByRole('button', { name: 'この状態を既定値に保存' }))
 
@@ -102,63 +107,23 @@ describe('CrossProjectViewPage', () => {
       initialEntries: ['/cross-project'],
     })
 
-    expect(await screen.findByRole('heading', { name: '複数案件横断ビュー' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '横断案件ビュー' })).toBeInTheDocument()
 
+    await openFilterPanel()
     await waitFor(() => {
-      const persistedCheckboxes = screen.getAllByRole('checkbox')
-      expect(persistedCheckboxes[0]).not.toBeChecked()
-      expect(persistedCheckboxes[3]).toBeChecked()
+      expect(screen.getByRole('checkbox', { name: '未着手' })).not.toBeChecked()
+      expect(screen.getByRole('checkbox', { name: '完了' })).toBeChecked()
     })
   })
 
-  it('体制表示を切り替えると案件メンバー一覧を表示できる', async () => {
+  it('報告対象ありの案件セルを強調表示できる', async () => {
     mockProjectApi()
 
     renderWithProviders(<CrossProjectViewPage />, {
       initialEntries: ['/cross-project'],
     })
 
-    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
-
-    expect(screen.queryByTestId('cross-project-structure-PRJ-001-as-p1-1')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: '体制を表示' }))
-
-    expect(screen.getByTestId('cross-project-structure-PRJ-001-as-p1-1')).toHaveTextContent('PM')
-    expect(screen.getByTestId('cross-project-structure-PRJ-001-as-p1-1')).toHaveTextContent('m1 / 田中')
-    expect(screen.getByTestId('cross-project-structure-PRJ-001-as-p1-2')).toHaveTextContent('m8 / 木村')
-  })
-
-  it('短縮モードで左列の補助情報をたたんで表示できる', async () => {
-    mockProjectApi()
-
-    renderWithProviders(<CrossProjectViewPage />, {
-      initialEntries: ['/cross-project'],
-    })
-
-    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
-
-    const projectInfo = screen.getByTestId('cross-project-project-info-PRJ-001')
-    expect(projectInfo).toHaveTextContent('PM: 田中')
-    expect(projectInfo).toHaveTextContent('体制: 7名')
-    expect(projectInfo).not.toHaveClass(styles.projectInfoCompact)
-
-    fireEvent.click(screen.getByRole('button', { name: '短く表示' }))
-
-    expect(projectInfo).not.toHaveTextContent('PM: 田中')
-    expect(projectInfo).not.toHaveTextContent('体制: 7名')
-    expect(projectInfo).toHaveClass(styles.projectInfoCompact)
-    expect(screen.getByRole('button', { name: '標準表示' })).toBeInTheDocument()
-  })
-
-  it('報告事項ありの案件セルをグラデーション表示できる', async () => {
-    mockProjectApi()
-
-    renderWithProviders(<CrossProjectViewPage />, {
-      initialEntries: ['/cross-project'],
-    })
-
-    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
+    await screen.findByRole('heading', { name: '横断案件ビュー' })
 
     expect(screen.getByTestId('cross-project-project-info-PRJ-001').closest('td')).toHaveClass(
       styles.stickyColumnAlert,
@@ -168,29 +133,6 @@ describe('CrossProjectViewPage', () => {
     )
   })
 
-  it('主システム別でグルーピング表示できる', async () => {
-    mockProjectApi()
-
-    renderWithProviders(<CrossProjectViewPage />, {
-      initialEntries: ['/cross-project'],
-    })
-
-    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
-
-    expect(screen.queryByTestId('cross-project-group-sys-accounting / 会計基盤')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: '主システム別' }))
-
-    expect(
-      screen.getByTestId('cross-project-group-sys-accounting / 会計基盤'),
-    ).toHaveTextContent('主システム: sys-accounting / 会計基盤')
-    expect(
-      screen.getByTestId('cross-project-group-sys-mobile-app / 販促モバイル'),
-    ).toHaveTextContent('主システム: sys-mobile-app / 販促モバイル')
-    expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '通常並び' })).toBeInTheDocument()
-  })
-
   it('主システムのクエリで案件を絞り込める', async () => {
     mockProjectApi()
 
@@ -198,9 +140,10 @@ describe('CrossProjectViewPage', () => {
       initialEntries: ['/cross-project?systemId=sys-accounting'],
     })
 
+    await openFilterPanel()
     expect(await screen.findByText('主システム絞り込み中: sys-accounting / 会計基盤')).toBeInTheDocument()
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-    expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
+    expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '解除' })).toHaveAttribute('href', '/cross-project')
   })
 })

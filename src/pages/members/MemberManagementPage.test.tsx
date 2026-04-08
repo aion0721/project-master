@@ -4,6 +4,11 @@ import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { MemberManagementPage } from './MemberManagementPage'
 
+async function openFilterPanel() {
+  const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
+  fireEvent.click(toggleButton)
+}
+
 describe('MemberManagementPage', () => {
   it('メンバー一覧を表示する', async () => {
     mockProjectApi()
@@ -20,7 +25,7 @@ describe('MemberManagementPage', () => {
     expect(
       within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '体制図' }),
     ).toHaveAttribute('href', '/members/hierarchy?memberId=m1')
-    expect(screen.getByRole('link', { name: 'メンバーを追加' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '新規メンバー' })).toHaveAttribute(
       'href',
       '/members/new',
     )
@@ -131,6 +136,7 @@ describe('MemberManagementPage', () => {
     })
 
     await screen.findByRole('heading', { name: 'メンバー一覧' })
+    await openFilterPanel()
 
     fireEvent.change(screen.getByLabelText('メンバーIDまたは部署名で絞り込み'), {
       target: { value: 'm10' },
@@ -156,6 +162,7 @@ describe('MemberManagementPage', () => {
     })
 
     await screen.findByTestId('member-row-m1')
+    await openFilterPanel()
 
     fireEvent.change(screen.getByLabelText('ロールで絞り込み'), {
       target: { value: 'PM' },

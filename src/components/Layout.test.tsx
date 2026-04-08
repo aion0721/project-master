@@ -44,7 +44,7 @@ describe('Layout', () => {
     renderLayout(['/projects'])
 
     expect(screen.getByText('案件管理')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '一覧' })).toHaveAttribute('href', '/projects')
+    expect(screen.getByRole('link', { name: '案件一覧' })).toHaveAttribute('href', '/projects')
     expect(screen.getByRole('link', { name: '横断ビュー' })).toHaveAttribute('href', '/cross-project')
 
     expect(screen.getByText('メンバー管理')).toBeInTheDocument()
@@ -59,7 +59,7 @@ describe('Layout', () => {
   it('keeps project list active on project detail routes', () => {
     renderLayout(['/projects/PRJ-001'])
 
-    const projectListLink = screen.getByRole('link', { name: '一覧' })
+    const projectListLink = screen.getByRole('link', { name: '案件一覧' })
     expect(projectListLink.className).toContain('active')
     expect(screen.getByRole('link', { name: '横断ビュー' }).className).not.toContain('active')
   })

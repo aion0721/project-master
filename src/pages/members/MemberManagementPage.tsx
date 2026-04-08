@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { ListPageContentSection } from '../../components/ListPageContentSection'
+import { ListPageFilterSection } from '../../components/ListPageFilterSection'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -19,6 +21,7 @@ import styles from './MemberManagementPage.module.css'
 export function MemberManagementPage() {
   const { members, projects, assignments, isLoading, error, updateMember, deleteMember } =
     useProjectData()
+  const [isFilterVisible, setIsFilterVisible] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<MemberFormState | null>(null)
   const [filterKeyword, setFilterKeyword] = useState('')
@@ -26,10 +29,7 @@ export function MemberManagementPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const memberById = useMemo(
-    () => new Map(members.map((member) => [member.id, member])),
-    [members],
-  )
+  const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members])
 
   const projectCountByMemberId = useMemo(() => {
     const projectIdsByMember = new Map<string, Set<string>>()
@@ -116,7 +116,9 @@ export function MemberManagementPage() {
       setEditingMemberId(null)
       setEditForm(null)
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバーの更新に失敗しました。')
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : 'メンバーの更新に失敗しました。',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -140,7 +142,9 @@ export function MemberManagementPage() {
         setEditForm(null)
       }
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'メンバーの削除に失敗しました。')
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : 'メンバーの削除に失敗しました。',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -150,7 +154,9 @@ export function MemberManagementPage() {
     return (
       <Panel>
         <h1 className={pageStyles.emptyStateTitle}>メンバー一覧を読み込み中です</h1>
-        <p className={pageStyles.emptyStateText}>バックエンドからメンバー情報を取得しています。</p>
+        <p className={pageStyles.emptyStateText}>
+          バックエンドからメンバー情報を取得しています。
+        </p>
       </Panel>
     )
   }
@@ -164,6 +170,10 @@ export function MemberManagementPage() {
     )
   }
 
+  const keywordSummary = filterKeyword.trim() ? ` / "${filterKeyword.trim()}"` : ''
+  const roleSummary = filterRole ? ` / ${filterRole}` : ''
+  const filterSummaryText = `${filteredMembers.length} 件表示${roleSummary}${keywordSummary}`
+
   return (
     <div className={pageStyles.page}>
       <ListPageHero
@@ -171,62 +181,84 @@ export function MemberManagementPage() {
         className={styles.hero}
         description="利用中のメンバーを一覧で管理します。検索、ロール確認、上下関係の整理、担当案件数の確認をこの画面から行えます。"
         eyebrow="Member Directory"
-        headerClassName={styles.heroHeader}
         iconKind="member"
-        statCardClassName={styles.heroStatCard}
-        statLabelClassName={styles.heroStatLabel}
         stats={[
           { label: '登録メンバー', value: memberSummary.total },
           { label: '担当案件あり', value: memberSummary.assigned },
           { label: 'ロール種別', value: memberSummary.roles },
         ]}
-        statsClassName={styles.heroStats}
-        statValueClassName={styles.heroStatValue}
         title="メンバー一覧"
       />
 
-      <Panel>
-        <div className={pageStyles.sectionHeader}>
-          <div>
-            <h2 className={pageStyles.sectionTitle}>管理対象メンバー</h2>
-            <p className={pageStyles.sectionDescription}>
-              部署コード、部署名、ロール、上長、関連案件数を比較できます。利用中のメンバーは削除前にチェックします。
-            </p>
-          </div>
-          <div className={styles.headerActions}>
-            <label className={`${formStyles.field} ${styles.filterField}`}>
-              <span className={formStyles.label}>絞り込み</span>
-              <input
-                aria-label="メンバーIDまたは部署名で絞り込み"
-                className={formStyles.control}
-                onChange={(event) => setFilterKeyword(event.target.value)}
-                placeholder="例: m1 / 営業本部"
-                type="search"
-                value={filterKeyword}
-              />
-            </label>
-            <label className={`${formStyles.field} ${styles.filterField}`}>
-              <span className={formStyles.label}>ロール</span>
-              <select
-                aria-label="ロールで絞り込み"
-                className={formStyles.control}
-                onChange={(event) => setFilterRole(event.target.value)}
-                value={filterRole}
-              >
-                <option value="">すべて</option>
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button to="/members/new" variant="secondary">
-              メンバーを追加
-            </Button>
-          </div>
-        </div>
+      {isFilterVisible ? (
+        <ListPageFilterSection
+          className={styles.controls}
+          topRow={
+            <div className={styles.headerActions}>
+              <label className={`${formStyles.field} ${styles.filterField}`}>
+                <span className={formStyles.label}>絞り込み</span>
+                <input
+                  aria-label="メンバーIDまたは部署名で絞り込み"
+                  className={formStyles.control}
+                  onChange={(event) => setFilterKeyword(event.target.value)}
+                  placeholder="例: m1 / 営業本部"
+                  type="search"
+                  value={filterKeyword}
+                />
+              </label>
+              <label className={`${formStyles.field} ${styles.filterField}`}>
+                <span className={formStyles.label}>ロール</span>
+                <select
+                  aria-label="ロールで絞り込み"
+                  className={formStyles.control}
+                  onChange={(event) => setFilterRole(event.target.value)}
+                  value={filterRole}
+                >
+                  <option value="">すべて</option>
+                  {roleOptions.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button to="/members/new" variant="secondary">
+                メンバーを追加
+              </Button>
+            </div>
+          }
+          summary={
+            <div className={styles.filterSummary}>
+              <span className={styles.filterSummaryLabel}>表示条件</span>
+              <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
+            </div>
+          }
+        />
+      ) : null}
 
+      <ListPageContentSection
+        actions={
+          <Button
+            aria-expanded={isFilterVisible}
+            onClick={() => setIsFilterVisible((current) => !current)}
+            size="small"
+            variant="secondary"
+          >
+            {isFilterVisible ? '絞り込みを非表示' : '絞り込みを表示'}
+          </Button>
+        }
+        description="部署コード、ロール、上長、関連案件数を比較しながら確認できます。利用中のメンバーはこの一覧から直接編集できます。"
+        emptyState={
+          filteredMembers.length === 0
+            ? {
+                title: '条件に一致するメンバーはありません',
+                description:
+                  '絞り込み条件やロールを見直して、表示されるメンバーを確認してください。',
+              }
+            : null
+        }
+        title="管理対象メンバー"
+      >
         {submitError ? <p className={styles.errorText}>{submitError}</p> : null}
 
         <div className={styles.tableWrap}>
@@ -387,7 +419,7 @@ export function MemberManagementPage() {
             </tbody>
           </table>
         </div>
-      </Panel>
+      </ListPageContentSection>
     </div>
   )
 }

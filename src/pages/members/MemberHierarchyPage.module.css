@@ -1,64 +1,16 @@
 .hero {
-  position: relative;
-  overflow: hidden;
+  --accent: #0f766e;
+  --accent-strong: #0f5d56;
+  --page-hero-accent: #0f766e;
+  --page-hero-icon-bg: rgba(236, 253, 245, 0.94);
+  --page-hero-icon-tint: rgba(16, 185, 129, 0.12);
+  --page-hero-stat-bg: rgba(255, 255, 255, 0.72);
+  --page-hero-stat-border: rgba(52, 211, 153, 0.26);
   background:
-    linear-gradient(135deg, #ecfdf5 0%, #dff7ee 46%, #f6fffb 100%);
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 10% 16%, rgba(52, 211, 153, 0.32), transparent 0 20%),
-    radial-gradient(circle at 88% 12%, rgba(16, 185, 129, 0.28), transparent 0 26%),
-    radial-gradient(circle at 52% 100%, rgba(167, 243, 208, 0.3), transparent 0 32%);
-  pointer-events: none;
-}
-
-.hero > * {
-  position: relative;
-  z-index: 1;
-}
-
-.heroHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.heroStats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 24px;
-}
-
-.heroStatCard {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 96px;
-  padding: 18px 20px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
-}
-
-.heroStatLabel {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-subtle);
-}
-
-.heroStatValue {
-  font-size: 32px;
-  line-height: 1;
-  color: var(--text-strong);
+    radial-gradient(circle at 88% 12%, rgba(16, 185, 129, 0.24), transparent 0 30%),
+    radial-gradient(circle at 10% 18%, rgba(52, 211, 153, 0.24), transparent 0 28%),
+    radial-gradient(circle at 52% 100%, rgba(167, 243, 208, 0.32), transparent 0 34%),
+    linear-gradient(135deg, rgba(236, 253, 245, 0.96), rgba(246, 255, 251, 0.99));
 }
 
 .hierarchySection {
@@ -288,14 +240,6 @@
 }
 
 @media (max-width: 960px) {
-  .heroHeader {
-    flex-direction: column;
-  }
-
-  .heroStats {
-    grid-template-columns: 1fr;
-  }
-
   .viewToggle {
     width: 100%;
   }

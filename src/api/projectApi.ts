@@ -130,6 +130,7 @@ function normalizeSystem(system: ManagedSystem): ManagedSystem {
     name: system.name,
     category: system.category,
     ownerMemberId: system.ownerMemberId ?? null,
+    departmentNames: [...(system.departmentNames ?? [])],
     note: system.note ?? null,
     systemLinks: (system.systemLinks ?? []).map((link) => ({
       label: link.label,

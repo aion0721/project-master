@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
@@ -6,11 +6,7 @@ import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
 import type { CreateSystemInput } from '../../types/project'
-import {
-  buildInitialSystemForm,
-  toNullableValue,
-  validateSystemInput,
-} from './systemFormUtils'
+import { buildInitialSystemForm, toNullableValue, validateSystemInput } from './systemFormUtils'
 import styles from './SystemCreatePage.module.css'
 
 export function SystemCreatePage() {
@@ -20,10 +16,27 @@ export function SystemCreatePage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const departmentOptions = useMemo(
+    () =>
+      [...new Set(members.map((member) => member.departmentName))].sort((left, right) =>
+        left.localeCompare(right, 'ja'),
+      ),
+    [members],
+  )
+
   function updateField<Key extends keyof typeof formData>(key: Key, value: (typeof formData)[Key]) {
     setFormData((current) => ({
       ...current,
       [key]: value,
+    }))
+  }
+
+  function toggleDepartmentName(departmentName: string) {
+    setFormData((current) => ({
+      ...current,
+      departmentNames: current.departmentNames.includes(departmentName)
+        ? current.departmentNames.filter((value) => value !== departmentName)
+        : [...current.departmentNames, departmentName],
     }))
   }
 
@@ -45,12 +58,15 @@ export function SystemCreatePage() {
         name: formData.name.trim(),
         category: formData.category.trim(),
         ownerMemberId: toNullableValue(formData.ownerMemberId),
+        departmentNames: formData.departmentNames,
         note: toNullableValue(formData.note),
       }
       await createSystem(input)
       navigate('/systems')
     } catch (caughtError) {
-      setSubmitError(caughtError instanceof Error ? caughtError.message : 'システム追加に失敗しました。')
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : 'システム追加に失敗しました。',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -85,7 +101,7 @@ export function SystemCreatePage() {
           <div className={pageStyles.heroHeadingBody}>
             <h1 className={styles.title}>システム追加</h1>
             <p className={styles.description}>
-              システムID、名称、カテゴリ、オーナー、メモを登録します。登録後は案件との紐付けにも利用できます。
+              システムID、名称、カテゴリ、オーナー、所管部署、メモを登録します。登録後は案件との紐づけにも利用できます。
             </p>
           </div>
         </div>
@@ -96,6 +112,7 @@ export function SystemCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>システムID</span>
             <input
+              aria-label="システムID"
               className={styles.input}
               onChange={(event) => updateField('id', event.target.value)}
               placeholder="例: sys-customer"
@@ -106,6 +123,7 @@ export function SystemCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>名称</span>
             <input
+              aria-label="名称"
               className={styles.input}
               onChange={(event) => updateField('name', event.target.value)}
               placeholder="例: 顧客管理基盤"
@@ -116,9 +134,10 @@ export function SystemCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>カテゴリ</span>
             <input
+              aria-label="カテゴリ"
               className={styles.input}
               onChange={(event) => updateField('category', event.target.value)}
-              placeholder="例: 基盤"
+              placeholder="例: 基幹"
               value={formData.category}
             />
           </label>
@@ -126,6 +145,7 @@ export function SystemCreatePage() {
           <label className={styles.field}>
             <span className={styles.label}>オーナー</span>
             <select
+              aria-label="オーナー"
               className={styles.input}
               onChange={(event) => updateField('ownerMemberId', event.target.value)}
               value={formData.ownerMemberId}
@@ -139,12 +159,29 @@ export function SystemCreatePage() {
             </select>
           </label>
 
+          <div className={`${styles.field} ${styles.departmentField}`}>
+            <span className={styles.label}>所管部署</span>
+            <div className={styles.checkboxGroup}>
+              {departmentOptions.map((departmentName) => (
+                <label className={styles.checkboxItem} key={departmentName}>
+                  <input
+                    checked={formData.departmentNames.includes(departmentName)}
+                    onChange={() => toggleDepartmentName(departmentName)}
+                    type="checkbox"
+                  />
+                  <span>{departmentName}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <label className={`${styles.field} ${styles.noteField}`}>
             <span className={styles.label}>メモ</span>
             <textarea
+              aria-label="メモ"
               className={styles.textarea}
               onChange={(event) => updateField('note', event.target.value)}
-              placeholder="用途や影響範囲を記載"
+              placeholder="運用背景や補足情報を入力"
               value={formData.note}
             />
           </label>

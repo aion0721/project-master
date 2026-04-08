@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { EntityIcon, type EntityIconKind } from './EntityIcon'
 import { Panel } from './ui/Panel'
-import pageStyles from '../styles/page.module.css'
+import styles from './ListPageHero.module.css'
 
 interface ListPageHeroStat {
   label: string
@@ -15,12 +15,7 @@ interface ListPageHeroProps {
   eyebrow: string
   iconKind: EntityIconKind
   stats: ListPageHeroStat[]
-  statsClassName: string
-  statCardClassName: string
-  statLabelClassName: string
-  statValueClassName: string
   title: ReactNode
-  headerClassName: string
 }
 
 export function ListPageHero({
@@ -30,33 +25,28 @@ export function ListPageHero({
   eyebrow,
   iconKind,
   stats,
-  statsClassName,
-  statCardClassName,
-  statLabelClassName,
-  statValueClassName,
   title,
-  headerClassName,
 }: ListPageHeroProps) {
   return (
     <Panel className={className} variant="hero">
-      <div className={headerClassName}>
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind={iconKind} />
-          <div className={pageStyles.heroHeadingBody}>
-            <p className={pageStyles.eyebrow}>{eyebrow}</p>
-            <h1 className={pageStyles.title}>{title}</h1>
-            <p className={pageStyles.description}>{description}</p>
+      <div className={styles.header}>
+        <div className={styles.heading}>
+          <EntityIcon className={styles.icon} kind={iconKind} />
+          <div className={styles.headingBody}>
+            <p className={styles.eyebrow}>{eyebrow}</p>
+            <h1 className={styles.title}>{title}</h1>
+            <p className={styles.description}>{description}</p>
           </div>
         </div>
 
         {action}
       </div>
 
-      <div className={statsClassName}>
+      <div className={styles.stats}>
         {stats.map((stat, index) => (
-          <div className={statCardClassName} key={`${stat.label}-${index}`}>
-            <span className={statLabelClassName}>{stat.label}</span>
-            <strong className={statValueClassName}>{stat.value}</strong>
+          <div className={styles.statCard} key={`${stat.label}-${index}`}>
+            <span className={styles.statLabel}>{stat.label}</span>
+            <strong className={styles.statValue}>{stat.value}</strong>
           </div>
         ))}
       </div>

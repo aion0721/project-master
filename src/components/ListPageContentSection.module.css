@@ -1,0 +1,31 @@
+.panel {
+  composes: section from './ui/Panel.module.css';
+}
+
+.header {
+  composes: sectionHeader from '../styles/page.module.css';
+}
+
+.title {
+  composes: sectionTitle from '../styles/page.module.css';
+}
+
+.description {
+  composes: sectionDescription from '../styles/page.module.css';
+}
+
+.emptyState {
+  padding: 20px 6px 4px;
+}
+
+.emptyStateTitle {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.emptyStateText {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}

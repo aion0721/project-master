@@ -46,7 +46,11 @@ function cloneFixtures() {
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
-    systems: systems.map((system) => ({ ...system })),
+    systems: systems.map((system) => ({
+      ...system,
+      departmentNames: [...(system.departmentNames ?? [])],
+      systemLinks: (system.systemLinks ?? []).map((link) => ({ ...link })),
+    })),
     systemRelations: systemRelations.map((relation) => ({ ...relation })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
     systemAssignments: systemAssignments.map((assignment) => ({ ...assignment })),
@@ -316,6 +320,7 @@ export function mockProjectApi() {
         name: string
         category: string
         ownerMemberId?: string | null
+        departmentNames?: string[]
         note?: string | null
         systemLinks?: Array<{ label: string; url: string }>
       }
@@ -325,6 +330,7 @@ export function mockProjectApi() {
         name: body.name.trim(),
         category: body.category.trim(),
         ownerMemberId: body.ownerMemberId ?? null,
+        departmentNames: [...new Set((body.departmentNames ?? []).map((name) => name.trim()).filter(Boolean))],
         note: body.note?.trim() || null,
         systemLinks: body.systemLinks ?? [],
       }
@@ -453,6 +459,7 @@ export function mockProjectApi() {
         name: string
         category: string
         ownerMemberId?: string | null
+        departmentNames?: string[]
         note?: string | null
         systemLinks?: Array<{ label: string; url: string }>
       }
@@ -460,6 +467,7 @@ export function mockProjectApi() {
       system.name = body.name.trim()
       system.category = body.category.trim()
       system.ownerMemberId = body.ownerMemberId ?? null
+      system.departmentNames = [...new Set((body.departmentNames ?? []).map((name) => name.trim()).filter(Boolean))]
       system.note = body.note?.trim() || null
       if (body.systemLinks) {
         system.systemLinks = body.systemLinks

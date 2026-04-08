@@ -73,15 +73,19 @@ export function SystemDetailPage() {
   } = useProjectData()
   const [isLinksEditing, setIsLinksEditing] = useState(false)
   const [isSystemEditing, setIsSystemEditing] = useState(false)
+  const [isDepartmentEditing, setIsDepartmentEditing] = useState(false)
   const [systemForm, setSystemForm] = useState({
     id: '',
     name: '',
     category: '',
     ownerMemberId: '',
+    departmentNames: [] as string[],
     note: '',
   })
   const [systemError, setSystemError] = useState<string | null>(null)
   const [isSavingSystem, setIsSavingSystem] = useState(false)
+  const [departmentError, setDepartmentError] = useState<string | null>(null)
+  const [isSavingDepartment, setIsSavingDepartment] = useState(false)
   const [linkDrafts, setLinkDrafts] = useState<ProjectLink[]>([])
   const [linkError, setLinkError] = useState<string | null>(null)
   const [isSavingLinks, setIsSavingLinks] = useState(false)
@@ -102,9 +106,15 @@ export function SystemDetailPage() {
   )
 
   useEffect(() => {
-    setSystemForm(system ? buildEditSystemForm(system) : { id: '', name: '', category: '', ownerMemberId: '', note: '' })
+    setSystemForm(
+      system
+        ? buildEditSystemForm(system)
+        : { id: '', name: '', category: '', ownerMemberId: '', departmentNames: [], note: '' },
+    )
     setIsSystemEditing(false)
+    setIsDepartmentEditing(false)
     setSystemError(null)
+    setDepartmentError(null)
   }, [system])
 
   useEffect(() => {
@@ -123,6 +133,14 @@ export function SystemDetailPage() {
   const owner = useMemo(
     () => members.find((member) => member.id === system?.ownerMemberId),
     [members, system?.ownerMemberId],
+  )
+
+  const departmentOptions = useMemo(
+    () =>
+      [...new Set(members.map((member) => member.departmentName))].sort((left, right) =>
+        left.localeCompare(right, 'ja'),
+      ),
+    [members],
   )
 
   const relatedProjects = useMemo(() => {
@@ -188,6 +206,15 @@ export function SystemDetailPage() {
     }))
   }
 
+  function toggleSystemDepartmentName(departmentName: string) {
+    setSystemForm((current) => ({
+      ...current,
+      departmentNames: current.departmentNames.includes(departmentName)
+        ? current.departmentNames.filter((value) => value !== departmentName)
+        : [...current.departmentNames, departmentName],
+    }))
+  }
+
   async function handleSaveSystem() {
     if (!system) {
       return
@@ -213,6 +240,7 @@ export function SystemDetailPage() {
         name: systemForm.name.trim(),
         category: systemForm.category.trim(),
         ownerMemberId: nextOwnerMemberId,
+        departmentNames: systemForm.departmentNames,
         note: toNullableValue(systemForm.note),
         systemLinks: system.systemLinks ?? [],
       }
@@ -236,6 +264,33 @@ export function SystemDetailPage() {
       setSystemError(caughtError instanceof Error ? caughtError.message : 'システム基本情報の保存に失敗しました。')
     } finally {
       setIsSavingSystem(false)
+    }
+  }
+
+  async function handleSaveDepartments() {
+    if (!system) {
+      return
+    }
+
+    setDepartmentError(null)
+    setIsSavingDepartment(true)
+
+    try {
+      const input: UpdateSystemInput = {
+        name: system.name,
+        category: system.category,
+        ownerMemberId: system.ownerMemberId ?? null,
+        departmentNames: systemForm.departmentNames,
+        note: system.note ?? null,
+        systemLinks: system.systemLinks ?? [],
+      }
+
+      await updateSystem(system.id, input)
+      setIsDepartmentEditing(false)
+    } catch (caughtError) {
+      setDepartmentError(caughtError instanceof Error ? caughtError.message : '所管部署の保存に失敗しました。')
+    } finally {
+      setIsSavingDepartment(false)
     }
   }
 
@@ -278,6 +333,7 @@ export function SystemDetailPage() {
         name: system.name,
         category: system.category,
         ownerMemberId: system.ownerMemberId ?? null,
+        departmentNames: system.departmentNames ?? [],
         note: system.note ?? null,
         systemLinks: sanitizedLinks,
       }
@@ -494,7 +550,80 @@ export function SystemDetailPage() {
           <span className={styles.metaLabel}>関連システム</span>
           <strong className={styles.metaValue}>{relatedSystems.length} 件</strong>
         </Panel>
+        <Panel as="article" className={styles.metaCard}>
+          <span className={styles.metaLabel}>所管部署</span>
+          <strong className={styles.metaValue}>
+            {system.departmentNames && system.departmentNames.length > 0
+              ? system.departmentNames.join(' / ')
+              : '未設定'}
+          </strong>
+        </Panel>
       </div>
+
+      <Panel className={styles.section}>
+        <div className={pageStyles.sectionHeader}>
+          <div>
+            <h2 className={pageStyles.sectionTitle}>所管部署</h2>
+            <p className={pageStyles.sectionDescription}>このシステムの所管部署をここから直接変更できます。</p>
+          </div>
+          {isDepartmentEditing ? (
+            <div className={styles.headerActions}>
+              <Button
+                disabled={isSavingDepartment}
+                onClick={() => void handleSaveDepartments()}
+                size="small"
+              >
+                {isSavingDepartment ? '保存中...' : '保存'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setSystemForm(buildEditSystemForm(system))
+                  setIsDepartmentEditing(false)
+                  setDepartmentError(null)
+                }}
+                size="small"
+                variant="secondary"
+              >
+                キャンセル
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => setIsDepartmentEditing(true)} size="small" variant="secondary">
+              編集
+            </Button>
+          )}
+        </div>
+        {isDepartmentEditing ? (
+          <div className={styles.systemEditor}>
+            <div className={styles.checkboxGroup} data-testid="system-department-editor">
+              {departmentOptions.map((departmentName) => (
+                <label className={styles.checkboxItem} key={departmentName}>
+                  <input
+                    checked={systemForm.departmentNames.includes(departmentName)}
+                    data-testid={`system-detail-department-${departmentName}`}
+                    onChange={() => toggleSystemDepartmentName(departmentName)}
+                    type="checkbox"
+                  />
+                  <span>{departmentName}</span>
+                </label>
+              ))}
+            </div>
+            {departmentError ? <p className={styles.errorText}>{departmentError}</p> : null}
+          </div>
+        ) : (
+          <div className={styles.departmentSummary}>
+            {system.departmentNames && system.departmentNames.length > 0 ? (
+              system.departmentNames.map((departmentName) => (
+                <span className={styles.checkboxItem} key={`summary-${departmentName}`}>
+                  {departmentName}
+                </span>
+              ))
+            ) : (
+              <p className={styles.emptyText}>所管部署は未設定です。</p>
+            )}
+          </div>
+        )}
+      </Panel>
 
       <Panel className={styles.section}>
         <div className={pageStyles.sectionHeader}>

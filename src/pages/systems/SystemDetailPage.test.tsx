@@ -129,6 +129,34 @@ describe('SystemDetailPage', () => {
     expect(await screen.findByText('m6 / 中村')).toBeInTheDocument()
   })
 
+  it('所管部署を専用セクションから編集保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: '会計基盤' })
+
+    const departmentSection = screen.getByRole('heading', { name: '所管部署' }).closest('section')
+    expect(departmentSection).not.toBeNull()
+
+    fireEvent.click(within(departmentSection!).getByRole('button', { name: '編集' }))
+    fireEvent.click(screen.getByTestId('system-detail-department-事業推進部'))
+    fireEvent.click(screen.getByTestId('system-detail-department-PMO室'))
+    fireEvent.click(within(departmentSection!).getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      const systemCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/systems/sys-accounting') && init?.method === 'PATCH'
+      })
+
+      expect(systemCall).toBeDefined()
+      const body = JSON.parse(String(systemCall?.[1]?.body))
+      expect(body.departmentNames).toEqual(['システム設計部', 'PMO室'])
+    })
+
+    expect(await screen.findByText('システム設計部 / PMO室')).toBeInTheDocument()
+  })
+
   it('システム体制を編集保存できる', async () => {
     const fetchSpy = mockProjectApi()
 

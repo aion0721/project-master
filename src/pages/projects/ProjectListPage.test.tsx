@@ -4,6 +4,11 @@ import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { ProjectListPage } from './ProjectListPage'
 
+async function openFilterPanel() {
+  const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
+  fireEvent.click(toggleButton)
+}
+
 describe('ProjectListPage', () => {
   it('案件一覧と主要カラムを表示する', async () => {
     mockProjectApi()
@@ -29,6 +34,7 @@ describe('ProjectListPage', () => {
       initialEntries: ['/projects'],
     })
 
+    await openFilterPanel()
     expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
 
     const bookmarkToggle = screen
@@ -44,7 +50,7 @@ describe('ProjectListPage', () => {
     })
   })
 
-  it('状態フィルターを複数選択で絞り込める', async () => {
+  it('状態フィルターで表示案件を絞り込める', async () => {
     mockProjectApi()
 
     renderWithProviders(<ProjectListPage />, {
@@ -53,6 +59,7 @@ describe('ProjectListPage', () => {
 
     expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
 
+    await openFilterPanel()
     fireEvent.click(screen.getByLabelText('完了'))
 
     await waitFor(() => {
@@ -79,6 +86,7 @@ describe('ProjectListPage', () => {
       initialEntries: ['/projects'],
     })
 
+    await openFilterPanel()
     expect(await screen.findByText('田中 さんのブックマーク 2 件')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('完了'))
@@ -95,6 +103,7 @@ describe('ProjectListPage', () => {
     })
 
     expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
+    await openFilterPanel()
 
     await waitFor(() => {
       expect(screen.getByLabelText('完了')).not.toBeChecked()

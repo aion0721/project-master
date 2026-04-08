@@ -3,13 +3,24 @@
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
-  gap: 20px;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --page-hero-accent: #2563eb;
+  --page-hero-icon-bg: rgba(219, 234, 254, 0.92);
+  --page-hero-icon-tint: rgba(59, 130, 246, 0.12);
+  --page-hero-stat-bg: rgba(255, 255, 255, 0.76);
+  --page-hero-stat-border: rgba(96, 165, 250, 0.22);
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.18), transparent 34%),
-    radial-gradient(circle at left center, rgba(14, 165, 233, 0.14), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(37, 99, 235, 0.24), transparent 0 30%),
+    radial-gradient(circle at 8% 22%, rgba(14, 165, 233, 0.18), transparent 0 28%),
+    radial-gradient(circle at 52% 100%, rgba(191, 219, 254, 0.28), transparent 0 34%),
     linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.99));
+}
+
+.controls {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.94)),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.06), transparent 72%);
 }
 
 .heroMain {
@@ -89,6 +100,33 @@
   margin: 12px 0 0;
   font-size: 13px;
   color: var(--text-subtle);
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.filterSummary {
+  display: grid;
+  gap: 4px;
+}
+
+.filterSummaryLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.filterSummaryValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-strong);
 }
 
 .structureToggleRow {
@@ -181,7 +219,9 @@
 
 .heroStats {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 24px;
 }
 
 .statCard {
@@ -189,10 +229,11 @@
   flex-direction: column;
   gap: 10px;
   min-height: 96px;
+  padding: 18px 20px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: var(--page-hero-stat-bg);
+  border: 1px solid var(--page-hero-stat-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
 }
 
 .statLabel {
@@ -204,12 +245,15 @@
 }
 
 .statValue {
-  font-size: 28px;
+  font-size: 32px;
+  line-height: 1;
   color: var(--text-strong);
 }
 
 .tableWrap {
+  max-height: clamp(420px, 72vh, 960px);
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .table {
@@ -232,7 +276,7 @@
 .table thead th {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 4;
   background: var(--surface-muted);
 }
 
@@ -254,12 +298,13 @@
 .stickyColumn {
   position: sticky;
   left: 0;
-  z-index: 3;
+  z-index: 2;
   min-width: 280px;
   background: var(--surface);
 }
 
 .table thead .stickyColumn {
+  z-index: 5;
   background: var(--surface-muted);
 }
 
@@ -520,13 +565,14 @@
 }
 
 @media (max-width: 1120px) {
-  .hero {
-    grid-template-columns: 1fr;
-  }
-
   .filterRow {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .filterBar {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .structureToggleRow {

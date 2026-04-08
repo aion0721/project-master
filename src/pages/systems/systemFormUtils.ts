@@ -5,6 +5,7 @@ export interface SystemFormState {
   name: string
   category: string
   ownerMemberId: string
+  departmentNames: string[]
   note: string
 }
 
@@ -21,6 +22,7 @@ export function buildInitialSystemForm(): SystemFormState {
     name: '',
     category: '',
     ownerMemberId: '',
+    departmentNames: [],
     note: '',
   }
 }
@@ -40,6 +42,7 @@ export function buildEditSystemForm(system: ManagedSystem): SystemFormState {
     name: system.name,
     category: system.category,
     ownerMemberId: system.ownerMemberId ?? '',
+    departmentNames: [...(system.departmentNames ?? [])],
     note: system.note ?? '',
   }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { MemberHierarchyTree } from '../../components/MemberHierarchyTree'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -164,37 +164,19 @@ export function MemberHierarchyPage() {
 
   return (
     <div className={pageStyles.page}>
-      <Panel className={styles.hero} variant="hero">
-        <div className={styles.heroHeader}>
-          <div className={pageStyles.heroHeading}>
-            <EntityIcon className={pageStyles.heroIcon} kind="member" />
-            <div className={pageStyles.heroHeadingBody}>
-              <p className={pageStyles.eyebrow}>Organization View</p>
-              <h1 className={pageStyles.title}>メンバー体制図</h1>
-              <p className={pageStyles.description}>
-                メンバーを起点に上長と配下をツリーで確認できます。選択したメンバーを中心に、指揮系統と周辺メンバーを追いやすく整理しています。
-              </p>
-            </div>
-          </div>
-
-          <Button to="/members">メンバー一覧</Button>
-        </div>
-
-        <div className={styles.heroStats}>
-          <div className={styles.heroStatCard}>
-            <span className={styles.heroStatLabel}>登録メンバー</span>
-            <strong className={styles.heroStatValue}>{members.length}</strong>
-          </div>
-          <div className={styles.heroStatCard}>
-            <span className={styles.heroStatLabel}>最上位ノード</span>
-            <strong className={styles.heroStatValue}>{topLevelCount}</strong>
-          </div>
-          <div className={styles.heroStatCard}>
-            <span className={styles.heroStatLabel}>ロール種別</span>
-            <strong className={styles.heroStatValue}>{roleCount}</strong>
-          </div>
-        </div>
-      </Panel>
+      <ListPageHero
+        action={<Button to="/members">メンバー一覧</Button>}
+        className={styles.hero}
+        description="メンバーを起点に上長と配下をツリーで確認できます。選択したメンバーを中心に、指揮系統と周辺メンバーを追いやすく整理しています。"
+        eyebrow="Organization View"
+        iconKind="member"
+        stats={[
+          { label: '登録メンバー', value: members.length },
+          { label: '最上位ノード', value: topLevelCount },
+          { label: 'ロール種別', value: roleCount },
+        ]}
+        title="メンバー体制図"
+      />
 
       <Panel>
         <div className={pageStyles.sectionHeader}>
