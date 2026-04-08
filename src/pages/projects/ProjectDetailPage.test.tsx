@@ -25,6 +25,10 @@ describe('ProjectDetailPage', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '横断ビューへ戻る' })).toHaveAttribute(
+      'href',
+      '/cross-project',
+    )
     expect(screen.getByText('主システム: sys-accounting / 会計基盤')).toBeInTheDocument()
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
     expect(screen.getByTestId('project-note-value')).toHaveTextContent(project.note ?? '')

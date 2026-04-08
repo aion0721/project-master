@@ -73,9 +73,17 @@ interface ProjectDetailMetaGridProps {
   scheduleError: string | null
 }
 
-function MetaCard({ children, label }: { children: ReactNode; label: string }) {
+function MetaCard({
+  children,
+  className,
+  label,
+}: {
+  children: ReactNode
+  className?: string
+  label: string
+}) {
   return (
-    <article className={styles.metaCard}>
+    <article className={className ? `${styles.metaCard} ${className}` : styles.metaCard}>
       <span className={styles.metaLabel}>{label}</span>
       {children}
     </article>
@@ -375,7 +383,7 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard label="状況メモ">
+      <MetaCard className={styles.metaCardWide} label="状況メモ">
         {isProjectNoteEditing ? (
           <div className={styles.phaseMetaEditor}>
             <label className={styles.formField}>
@@ -426,7 +434,7 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard label="報告事項">
+      <MetaCard className={styles.metaCardReport} label="報告事項">
         {isProjectReportStatusEditing ? (
           <div className={styles.phaseMetaEditor}>
             <label className={styles.formField}>
@@ -479,7 +487,7 @@ export function ProjectDetailMetaGrid({
         )}
       </MetaCard>
 
-      <MetaCard label="主システム">
+      <MetaCard className={styles.metaCardSystem} label="主システム">
         {isProjectSystemsEditing ? (
           <div className={styles.phaseMetaEditor}>
             <div className={styles.systemSelectionList}>

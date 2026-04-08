@@ -258,6 +258,12 @@
   background: var(--surface-muted);
 }
 
+.stickyColumnAlert {
+  background:
+    linear-gradient(90deg, rgba(245, 158, 11, 0.26) 0%, rgba(251, 191, 36, 0.18) 18%, rgba(255, 247, 237, 0.92) 42%, var(--surface) 100%);
+  box-shadow: inset 8px 0 0 #f97316;
+}
+
 .groupRow td {
   border-right: 0;
 }
@@ -328,54 +334,6 @@
   color: var(--text-strong);
   line-height: 1.5;
   overflow-wrap: anywhere;
-}
-
-.noteBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid var(--border-subtle);
-}
-
-.noteText {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--text-strong);
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.noteTextExpanded {
-  display: block;
-  -webkit-line-clamp: unset;
-}
-
-.noteTextCompact {
-  -webkit-line-clamp: 1;
-}
-
-.noteToggle {
-  align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.noteToggle:hover {
-  text-decoration: underline;
 }
 
 .weekLabel,

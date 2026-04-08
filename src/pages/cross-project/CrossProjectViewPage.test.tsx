@@ -1,9 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import styles from './CrossProjectViewPage.module.css'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { CrossProjectViewPage } from './CrossProjectViewPage'
+import styles from './CrossProjectViewPage.module.css'
 
 describe('CrossProjectViewPage', () => {
   it('横断ビューと案件フェーズを表示する', async () => {
@@ -129,40 +129,6 @@ describe('CrossProjectViewPage', () => {
     expect(screen.getByTestId('cross-project-structure-PRJ-001-as-p1-2')).toHaveTextContent('m8 / 木村')
   })
 
-  it('状況メモを表示して全文展開できる', async () => {
-    mockProjectApi()
-
-    await fetch('/api/projects/PRJ-001/note', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        note:
-          '基本設計はレビュー待ち。会計基盤とのIF確定を今週中に詰める。テスト環境の払出し条件も未確定のため、関係者調整を継続する。週次レビュー向けに論点整理を進め、関連システムの担当部署にも確認を依頼済み。承認後は詳細設計への移行判断とスケジュール再調整までまとめて実施する。',
-      }),
-    })
-
-    renderWithProviders(<CrossProjectViewPage />, {
-      initialEntries: ['/cross-project'],
-    })
-
-    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
-
-    expect(screen.queryByTestId('cross-project-note-PRJ-001')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'メモを表示' }))
-
-    expect(screen.getByTestId('cross-project-note-PRJ-001')).toHaveTextContent(
-      '基本設計はレビュー待ち。会計基盤とのIF確定を今週中に詰める。',
-    )
-    expect(screen.getByTestId('cross-project-note-toggle-PRJ-001')).toHaveTextContent('全文表示')
-
-    fireEvent.click(screen.getByTestId('cross-project-note-toggle-PRJ-001'))
-
-    expect(screen.getByTestId('cross-project-note-toggle-PRJ-001')).toHaveTextContent('折りたたむ')
-  })
-
   it('短縮モードで左列の補助情報をたたんで表示できる', async () => {
     mockProjectApi()
 
@@ -175,18 +141,31 @@ describe('CrossProjectViewPage', () => {
     const projectInfo = screen.getByTestId('cross-project-project-info-PRJ-001')
     expect(projectInfo).toHaveTextContent('PM: 田中')
     expect(projectInfo).toHaveTextContent('体制: 7名')
-    expect(projectInfo).toHaveTextContent('報告事項: あり')
-    expect(projectInfo).toHaveTextContent('メモ: あり')
     expect(projectInfo).not.toHaveClass(styles.projectInfoCompact)
 
     fireEvent.click(screen.getByRole('button', { name: '短く表示' }))
 
     expect(projectInfo).not.toHaveTextContent('PM: 田中')
     expect(projectInfo).not.toHaveTextContent('体制: 7名')
-    expect(projectInfo).not.toHaveTextContent('報告事項: あり')
-    expect(projectInfo).not.toHaveTextContent('メモ: あり')
     expect(projectInfo).toHaveClass(styles.projectInfoCompact)
     expect(screen.getByRole('button', { name: '標準表示' })).toBeInTheDocument()
+  })
+
+  it('報告事項ありの案件セルをグラデーション表示できる', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<CrossProjectViewPage />, {
+      initialEntries: ['/cross-project'],
+    })
+
+    await screen.findByRole('heading', { name: '複数案件横断ビュー' })
+
+    expect(screen.getByTestId('cross-project-project-info-PRJ-001').closest('td')).toHaveClass(
+      styles.stickyColumnAlert,
+    )
+    expect(screen.getByTestId('cross-project-project-info-PRJ-004').closest('td')).not.toHaveClass(
+      styles.stickyColumnAlert,
+    )
   })
 
   it('主システム別でグルーピング表示できる', async () => {

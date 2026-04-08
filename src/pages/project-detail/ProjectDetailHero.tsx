@@ -157,6 +157,11 @@ export function ProjectDetailHero({
             <Link className={styles.backTextLink} to="/projects">
               案件一覧へ戻る
             </Link>
+            <div className={styles.backLinks}>
+              <Link className={styles.backTextLink} to="/cross-project">
+                横断ビューへ戻る
+              </Link>
+            </div>
             <h1 className={styles.title}>{project.name}</h1>
             <p className={styles.description}>
               プロジェクト番号: {project.projectNumber}

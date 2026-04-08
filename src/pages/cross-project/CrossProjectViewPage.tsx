@@ -36,10 +36,8 @@ export function CrossProjectViewPage() {
   const [isSavingDefaults, setIsSavingDefaults] = useState(false)
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
   const [isStructureVisible, setIsStructureVisible] = useState(false)
-  const [isNoteVisible, setIsNoteVisible] = useState(false)
   const [isCompactMode, setIsCompactMode] = useState(false)
   const [isGroupedByPrimarySystem, setIsGroupedByPrimarySystem] = useState(false)
-  const [expandedNoteProjectIds, setExpandedNoteProjectIds] = useState<string[]>([])
 
   useEffect(() => {
     setSelectedStatuses(getMemberDefaultProjectStatusFilters(currentUserRef.current))
@@ -90,14 +88,6 @@ export function CrossProjectViewPage() {
     } finally {
       setIsSavingDefaults(false)
     }
-  }
-
-  const toggleExpandedNote = (projectNumber: string) => {
-    setExpandedNoteProjectIds((current) =>
-      current.includes(projectNumber)
-        ? current.filter((id) => id !== projectNumber)
-        : current.concat(projectNumber),
-    )
   }
 
   const systemNameById = useMemo(
@@ -279,13 +269,6 @@ export function CrossProjectViewPage() {
                 {isStructureVisible ? '体制を隠す' : '体制を表示'}
               </Button>
               <Button
-                onClick={() => setIsNoteVisible((current) => !current)}
-                size="small"
-                variant="secondary"
-              >
-                {isNoteVisible ? 'メモを隠す' : 'メモを表示'}
-              </Button>
-              <Button
                 onClick={() => setIsCompactMode((current) => !current)}
                 size="small"
                 variant="secondary"
@@ -395,12 +378,15 @@ export function CrossProjectViewPage() {
                       return left.member.name.localeCompare(right.member.name, 'ja')
                     })
                   const pm = getProjectPm(project, members)
-                  const hasLongNote = (project.note?.trim().length ?? 0) > 90
-                  const isNoteExpanded = expandedNoteProjectIds.includes(project.projectNumber)
-
                   return (
                     <tr key={project.projectNumber}>
-                      <td className={styles.stickyColumn}>
+                      <td
+                        className={
+                          project.hasReportItems
+                            ? `${styles.stickyColumn} ${styles.stickyColumnAlert}`
+                            : styles.stickyColumn
+                        }
+                      >
                         <div
                           className={
                             isCompactMode
@@ -417,41 +403,9 @@ export function CrossProjectViewPage() {
                             <>
                               <div className={styles.metaLine}>PM: {pm?.name ?? '未設定'}</div>
                               <div className={styles.metaLine}>体制: {structureMembers.length}名</div>
-                              <div className={styles.metaLine}>
-                                報告事項: {project.hasReportItems ? 'あり' : 'なし'}
-                              </div>
-                              <div className={styles.metaLine}>
-                                メモ: {project.note?.trim() ? 'あり' : 'なし'}
-                              </div>
                             </>
                           ) : null}
                           <StatusBadge status={project.status} />
-                          {isNoteVisible && project.note?.trim() ? (
-                            <div className={styles.noteBlock}>
-                              <p
-                                className={
-                                  isNoteExpanded
-                                    ? `${styles.noteText} ${styles.noteTextExpanded}`
-                                    : isCompactMode
-                                      ? `${styles.noteText} ${styles.noteTextCompact}`
-                                      : styles.noteText
-                                }
-                                data-testid={`cross-project-note-${project.projectNumber}`}
-                              >
-                                {project.note}
-                              </p>
-                              {hasLongNote ? (
-                                <button
-                                  className={styles.noteToggle}
-                                  data-testid={`cross-project-note-toggle-${project.projectNumber}`}
-                                  onClick={() => toggleExpandedNote(project.projectNumber)}
-                                  type="button"
-                                >
-                                  {isNoteExpanded ? '折りたたむ' : '全文表示'}
-                                </button>
-                              ) : null}
-                            </div>
-                          ) : null}
                           {isStructureVisible ? (
                             <div className={styles.structureList}>
                               {structureMembers.map(({ assignment, member }) => (
