@@ -133,7 +133,7 @@ export function SystemCreatePage() {
               <option value="">未設定</option>
               {members.map((member) => (
                 <option key={member.id} value={member.id}>
-                  {member.name} ({member.role})
+                  {member.id} / {member.name}
                 </option>
               ))}
             </select>

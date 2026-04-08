@@ -20,6 +20,7 @@ import {
   updateProjectScheduleRequest,
   updateProjectStructureRequest,
   updateSystemRequest,
+  updateSystemStructureRequest,
 } from '../api/projectApi'
 import type {
   CreateMemberInput,
@@ -32,6 +33,7 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  SystemAssignment,
   SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
@@ -43,6 +45,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemStructureInput,
   UpdateSystemInput,
 } from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
@@ -78,6 +81,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [systems, setSystems] = useState<ManagedSystem[]>([])
   const [systemRelations, setSystemRelations] = useState<SystemRelation[]>([])
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([])
+  const [systemAssignments, setSystemAssignments] = useState<SystemAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -99,6 +103,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         setSystems(payload.systems)
         setSystemRelations(payload.systemRelations)
         setAssignments(payload.assignments)
+        setSystemAssignments(payload.systemAssignments)
       } catch (caughtError) {
         if (controller.signal.aborted) {
           return
@@ -127,6 +132,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     systems,
     systemRelations,
     assignments,
+    systemAssignments,
     isLoading,
     error,
     refresh: () => setRefreshKey((current) => current + 1),
@@ -156,6 +162,19 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     createSystem: async (input: CreateSystemInput) => {
       const system = await createSystemRequest(input)
       setSystems((current) => mergeByKey(current, [system], (item) => item.id))
+      const ownerMemberId = system.ownerMemberId ?? null
+      if (ownerMemberId) {
+        setSystemAssignments((current) => [
+          ...current,
+          {
+            id: `sys-as-${system.id}-1`,
+            systemId: system.id,
+            memberId: ownerMemberId,
+            responsibility: 'オーナー',
+            reportsToMemberId: null,
+          },
+        ])
+      }
       return system
     },
     createSystemRelation: async (input: CreateSystemRelationInput) => {
@@ -173,6 +192,14 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setSystems((current) => mergeByKey(current, [system], (item) => item.id))
       return system
     },
+    updateSystemStructure: async (systemId: string, input: UpdateSystemStructureInput) => {
+      const payload = await updateSystemStructureRequest(systemId, input)
+      setSystems((current) => mergeByKey(current, [payload.system], (item) => item.id))
+      setSystemAssignments((current) =>
+        current.filter((assignment) => assignment.systemId !== systemId).concat(payload.assignments),
+      )
+      return payload
+    },
     deleteMember: async (memberId: string) => {
       await deleteMemberRequest(memberId)
       setMembers((current) => current.filter((member) => member.id !== memberId))
@@ -180,6 +207,9 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     deleteSystem: async (systemId: string) => {
       await deleteSystemRequest(systemId)
       setSystems((current) => current.filter((system) => system.id !== systemId))
+      setSystemAssignments((current) =>
+        current.filter((assignment) => assignment.systemId !== systemId),
+      )
     },
     deleteSystemRelation: async (relationId: string) => {
       await deleteSystemRelationRequest(relationId)
@@ -362,6 +392,8 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     getProjectEvents: (projectId) => events.filter((event) => event.projectId === projectId),
     getMemberById: (memberId) => members.find((member) => member.id === memberId),
     getSystemById: (systemId) => systems.find((system) => system.id === systemId),
+    getSystemAssignments: (systemId) =>
+      systemAssignments.filter((assignment) => assignment.systemId === systemId),
   }
 
   return <ProjectDataContext.Provider value={value}>{children}</ProjectDataContext.Provider>

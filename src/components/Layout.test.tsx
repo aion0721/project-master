@@ -20,6 +20,7 @@ function renderLayout(initialEntries: string[]) {
               <Route element={<div>hierarchy</div>} path="/members/hierarchy" />
               <Route element={<div>systems</div>} path="/systems" />
               <Route element={<div>new system</div>} path="/systems/new" />
+              <Route element={<div>system detail</div>} path="/systems/:systemId" />
               <Route element={<div>system relations</div>} path="/systems/relations" />
               <Route element={<div>system diagram</div>} path="/systems/diagram" />
               <Route element={<div>cross project</div>} path="/cross-project" />
@@ -66,6 +67,15 @@ describe('Layout', () => {
     const projectListLink = screen.getByRole('link', { name: '一覧' })
     expect(projectListLink.className).toContain('active')
     expect(screen.getByRole('link', { name: '横断ビュー' }).className).not.toContain('active')
+  })
+
+  it('keeps system list active on system detail routes', () => {
+    renderLayout(['/systems/sys-accounting'])
+
+    const systemListLink = screen.getByRole('link', { name: 'システム一覧' })
+    expect(systemListLink.className).toContain('active')
+    expect(screen.getByRole('link', { name: '関係一覧' }).className).not.toContain('active')
+    expect(screen.getByRole('link', { name: '関連図' }).className).not.toContain('active')
   })
 
   it('expands the rail while hovering', () => {

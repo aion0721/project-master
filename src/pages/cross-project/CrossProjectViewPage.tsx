@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { EntityIcon } from '../../components/EntityIcon'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
@@ -15,6 +15,7 @@ import { getPhaseToneKey, useCrossProjectView } from './useCrossProjectView'
 import styles from './CrossProjectViewPage.module.css'
 
 export function CrossProjectViewPage() {
+  const [searchParams] = useSearchParams()
   const {
     projects,
     members,
@@ -27,6 +28,7 @@ export function CrossProjectViewPage() {
     error,
   } = useProjectData()
   const { currentUser, saveDefaultProjectStatusFilters } = useUserSession()
+  const selectedSystemId = searchParams.get('systemId')?.trim() || ''
   const currentUserId = currentUser?.id ?? null
   const currentUserRef = useRef(currentUser)
   currentUserRef.current = currentUser
@@ -95,10 +97,22 @@ export function CrossProjectViewPage() {
     [systems],
   )
 
+  const selectedSystemLabel = selectedSystemId
+    ? `${selectedSystemId} / ${systemNameById.get(selectedSystemId) ?? selectedSystemId}`
+    : null
+
+  const scopedProjects = useMemo(() => {
+    if (!selectedSystemId) {
+      return filteredProjects
+    }
+
+    return filteredProjects.filter((project) => project.relatedSystemIds?.[0] === selectedSystemId)
+  }, [filteredProjects, selectedSystemId])
+
   const groupedProjects = useMemo(() => {
     const groups = new Map<string, Project[]>()
 
-    filteredProjects.forEach((project) => {
+    scopedProjects.forEach((project) => {
       const primarySystemId = project.relatedSystemIds?.[0]
       const groupLabel = primarySystemId
         ? `${primarySystemId} / ${systemNameById.get(primarySystemId) ?? primarySystemId}`
@@ -126,7 +140,7 @@ export function CrossProjectViewPage() {
           left.name.localeCompare(right.name, 'ja'),
         ),
       }))
-  }, [filteredProjects, systemNameById])
+  }, [scopedProjects, systemNameById])
 
   if (isLoading) {
     return (
@@ -169,6 +183,14 @@ export function CrossProjectViewPage() {
                 description: 'プロジェクト番号または案件名で検索条件を見直してください。',
               }
             : null
+
+  const scopedEmptyState =
+    !emptyState && selectedSystemId && scopedProjects.length === 0
+      ? {
+          title: '対象システムに一致する案件がありません',
+          description: `${selectedSystemLabel ?? selectedSystemId} を主システムに持つ案件は、現在の表示条件では見つかりません。`,
+        }
+      : emptyState
 
   return (
     <div className={styles.page}>
@@ -256,6 +278,15 @@ export function CrossProjectViewPage() {
               : '利用メンバーを選ぶと、ブックマーク案件だけで絞り込めます。'}
           </p>
 
+          {selectedSystemLabel ? (
+            <p className={styles.filterHint}>
+              主システム絞り込み中: {selectedSystemLabel}{' '}
+              <Link className={styles.projectLink} to="/cross-project">
+                解除
+              </Link>
+            </p>
+          ) : null}
+
           <div className={styles.structureToggleRow}>
             <p className={styles.structureToggleHint}>
               体制は必要なときだけ表示できます。横断比較の見やすさは維持したまま全員を確認できます。
@@ -289,7 +320,7 @@ export function CrossProjectViewPage() {
         <div className={styles.heroStats}>
           <Panel as="article" className={styles.statCard} variant="compact">
             <span className={styles.statLabel}>表示案件数</span>
-            <strong className={styles.statValue}>{filteredProjects.length}</strong>
+            <strong className={styles.statValue}>{scopedProjects.length}</strong>
           </Panel>
           <Panel as="article" className={styles.statCard} variant="compact">
             <span className={styles.statLabel}>最大混雑度</span>
@@ -299,10 +330,10 @@ export function CrossProjectViewPage() {
       </Panel>
 
       <Panel className={styles.section}>
-        {emptyState ? (
+        {scopedEmptyState ? (
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>{emptyState.title}</h2>
-            <p className={styles.emptyStateText}>{emptyState.description}</p>
+            <h2 className={styles.emptyStateTitle}>{scopedEmptyState.title}</h2>
+            <p className={styles.emptyStateText}>{scopedEmptyState.description}</p>
           </div>
         ) : (
           <div className={styles.tableWrap}>
@@ -333,7 +364,7 @@ export function CrossProjectViewPage() {
                       { type: 'group' as const, label: group.label },
                       ...group.projects.map((project) => ({ type: 'project' as const, project })),
                     ])
-                  : filteredProjects.map((project) => ({ type: 'project' as const, project }))
+                  : scopedProjects.map((project) => ({ type: 'project' as const, project }))
                 ).map((row) => {
                   if (row.type === 'group') {
                     return (

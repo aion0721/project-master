@@ -47,7 +47,7 @@ describe('MemberManagementPage', () => {
       target: { value: 'DEP-TEST' },
     })
     fireEvent.change(within(editableRow).getByDisplayValue('品質保証部'), {
-      target: { value: 'テスト推進部' },
+      target: { value: 'テスト品質部' },
     })
     fireEvent.change(screen.getByLabelText('上司'), {
       target: { value: 'm2' },
@@ -56,7 +56,7 @@ describe('MemberManagementPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('member-row-m10')).toHaveTextContent('DEP-TEST')
-      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('テスト推進部')
+      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('テスト品質部')
       expect(screen.getByTestId('member-row-m10')).toHaveTextContent('m2 / 山本')
     })
   })
@@ -72,7 +72,7 @@ describe('MemberManagementPage', () => {
       },
       body: JSON.stringify({
         id: 'm11',
-        name: '山田 花子',
+        name: '新田 智也',
         departmentCode: 'DEP-APP',
         departmentName: 'アプリ開発部',
         role: 'アプリエンジニア',
@@ -104,7 +104,7 @@ describe('MemberManagementPage', () => {
       },
       body: JSON.stringify({
         id: 'm11',
-        name: '山田 花子',
+        name: '新田 智也',
         departmentCode: 'DEP-APP',
         departmentName: 'アプリ開発部',
         role: 'アプリエンジニア',
@@ -145,6 +145,31 @@ describe('MemberManagementPage', () => {
 
     expect(screen.getByTestId('member-row-m5')).toBeInTheDocument()
     expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
+    expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
+  })
+
+  it('ロールでも絞り込める', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<MemberManagementPage />, {
+      initialEntries: ['/members'],
+    })
+
+    await screen.findByTestId('member-row-m1')
+
+    fireEvent.change(screen.getByLabelText('ロールで絞り込み'), {
+      target: { value: 'PM' },
+    })
+
+    expect(screen.getByTestId('member-row-m1')).toBeInTheDocument()
+    expect(screen.queryByTestId('member-row-m10')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('ロールで絞り込み'), {
+      target: { value: 'QAエンジニア' },
+    })
+
+    expect(screen.getByTestId('member-row-m5')).toBeInTheDocument()
+    expect(screen.queryByTestId('member-row-m10')).not.toBeInTheDocument()
     expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
   })
 })

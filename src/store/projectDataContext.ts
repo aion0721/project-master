@@ -10,6 +10,7 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  SystemAssignment,
   SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
@@ -21,6 +22,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemStructureInput,
   UpdateSystemInput,
 } from '../types/project'
 
@@ -32,6 +34,7 @@ export interface ProjectDataContextValue {
   systems: ManagedSystem[]
   systemRelations: SystemRelation[]
   assignments: ProjectAssignment[]
+  systemAssignments: SystemAssignment[]
   isLoading: boolean
   error: string | null
   refresh: () => void
@@ -41,6 +44,10 @@ export interface ProjectDataContextValue {
   createSystemRelation: (input: CreateSystemRelationInput) => Promise<SystemRelation>
   updateMember: (memberId: string, input: UpdateMemberInput) => Promise<Member>
   updateSystem: (systemId: string, input: UpdateSystemInput) => Promise<ManagedSystem>
+  updateSystemStructure: (
+    systemId: string,
+    input: UpdateSystemStructureInput,
+  ) => Promise<{ system: ManagedSystem; assignments: SystemAssignment[] }>
   deleteMember: (memberId: string) => Promise<void>
   deleteSystem: (systemId: string) => Promise<void>
   deleteSystemRelation: (relationId: string) => Promise<void>
@@ -60,6 +67,7 @@ export interface ProjectDataContextValue {
   getProjectEvents: (projectId: string) => ProjectEvent[]
   getMemberById: (memberId: string) => Member | undefined
   getSystemById: (systemId: string) => ManagedSystem | undefined
+  getSystemAssignments: (systemId: string) => SystemAssignment[]
 }
 
 export const ProjectDataContext = createContext<ProjectDataContextValue | null>(null)

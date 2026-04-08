@@ -190,4 +190,17 @@ describe('CrossProjectViewPage', () => {
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '通常並び' })).toBeInTheDocument()
   })
+
+  it('主システムのクエリで案件を絞り込める', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<CrossProjectViewPage />, {
+      initialEntries: ['/cross-project?systemId=sys-accounting'],
+    })
+
+    expect(await screen.findByText('主システム絞り込み中: sys-accounting / 会計基盤')).toBeInTheDocument()
+    expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
+    expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '解除' })).toHaveAttribute('href', '/cross-project')
+  })
 })

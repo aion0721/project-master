@@ -1,6 +1,7 @@
-import type { Member, ProjectAssignment } from '../types/project'
-import { getResponsibilitiesForMember } from '../utils/projectUtils'
+import type { Member, ProjectAssignment, SystemAssignment } from '../types/project'
 import styles from './MemberTree.module.css'
+
+type TreeAssignment = ProjectAssignment | SystemAssignment
 
 interface MemberNode {
   member: Member
@@ -32,15 +33,15 @@ function sortResponsibilities(values: string[]) {
 
 function buildTree(
   relevantMembers: Member[],
-  projectAssignments: ProjectAssignment[],
-  pmMemberId: string,
+  assignments: TreeAssignment[],
+  rootMemberId: string,
 ) {
   const memberIdSet = new Set(relevantMembers.map((member) => member.id))
   const childrenByManager = new Map<string | null, Member[]>()
   const managerByMemberId = new Map<string, string | null>()
 
-  projectAssignments.forEach((assignment) => {
-    if (assignment.memberId === pmMemberId) {
+  assignments.forEach((assignment) => {
+    if (assignment.memberId === rootMemberId) {
       managerByMemberId.set(assignment.memberId, null)
       return
     }
@@ -57,7 +58,7 @@ function buildTree(
     managerByMemberId.set(assignment.memberId, nextManagerId)
   })
 
-  managerByMemberId.set(pmMemberId, null)
+  managerByMemberId.set(rootMemberId, null)
 
   relevantMembers.forEach((member) => {
     const managerKey = managerByMemberId.get(member.id) ?? null
@@ -68,11 +69,11 @@ function buildTree(
 
   const sortMembers = (entries: Member[]) =>
     [...entries].sort((left, right) => {
-      if (left.id === pmMemberId) {
+      if (left.id === rootMemberId) {
         return -1
       }
 
-      if (right.id === pmMemberId) {
+      if (right.id === rootMemberId) {
         return 1
       }
 
@@ -81,7 +82,11 @@ function buildTree(
 
   const makeNode = (member: Member): MemberNode => ({
     member,
-    responsibilities: sortResponsibilities(getResponsibilitiesForMember(projectAssignments, member.id)),
+    responsibilities: sortResponsibilities(
+      assignments
+        .filter((assignment) => assignment.memberId === member.id)
+        .map((assignment) => assignment.responsibility),
+    ),
     children: sortMembers(childrenByManager.get(member.id) ?? []).map(makeNode),
   })
 
@@ -121,19 +126,19 @@ function MemberTreeNodeView({ node }: { node: MemberNode }) {
 
 interface MemberTreeProps {
   members: Member[]
-  projectAssignments: ProjectAssignment[]
-  pmMemberId: string
+  assignments: TreeAssignment[]
+  rootMemberId: string
 }
 
-export function MemberTree({ members, projectAssignments, pmMemberId }: MemberTreeProps) {
+export function MemberTree({ members, assignments, rootMemberId }: MemberTreeProps) {
   const memberIds = new Set(
-    projectAssignments
+    assignments
       .flatMap((assignment) => [assignment.memberId, assignment.reportsToMemberId ?? undefined])
       .filter((memberId): memberId is string => Boolean(memberId))
-      .concat(pmMemberId),
+      .concat(rootMemberId),
   )
   const relevantMembers = members.filter((member) => memberIds.has(member.id))
-  const tree = buildTree(relevantMembers, projectAssignments, pmMemberId)
+  const tree = buildTree(relevantMembers, assignments, rootMemberId)
 
   return (
     <ul className={styles.rootList}>

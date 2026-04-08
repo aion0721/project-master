@@ -22,6 +22,7 @@ export function MemberManagementPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<MemberFormState | null>(null)
   const [filterKeyword, setFilterKeyword] = useState('')
+  const [filterRole, setFilterRole] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -55,18 +56,25 @@ export function MemberManagementPage() {
     [members],
   )
 
+  const roleOptions = useMemo(
+    () =>
+      [...new Set(members.map((member) => member.role.trim()).filter(Boolean))].sort((left, right) =>
+        left.localeCompare(right, 'ja'),
+      ),
+    [members],
+  )
+
   const filteredMembers = useMemo(() => {
     const normalizedKeyword = filterKeyword.trim().toLowerCase()
 
-    if (!normalizedKeyword) {
-      return sortedMembers
-    }
-
     return sortedMembers.filter((member) => {
       const searchableText = `${member.id} ${member.departmentName}`.toLowerCase()
-      return searchableText.includes(normalizedKeyword)
+      const matchesKeyword = !normalizedKeyword || searchableText.includes(normalizedKeyword)
+      const matchesRole = !filterRole || member.role === filterRole
+
+      return matchesKeyword && matchesRole
     })
-  }, [filterKeyword, sortedMembers])
+  }, [filterKeyword, filterRole, sortedMembers])
 
   function updateEditField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
     setEditForm((current) => (current ? { ...current, [key]: value } : current))
@@ -182,6 +190,22 @@ export function MemberManagementPage() {
                 type="search"
                 value={filterKeyword}
               />
+            </label>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>ロール</span>
+              <select
+                aria-label="ロールで絞り込み"
+                className={formStyles.control}
+                onChange={(event) => setFilterRole(event.target.value)}
+                value={filterRole}
+              >
+                <option value="">すべて</option>
+                {roleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
             </label>
             <Button to="/members/new" variant="secondary">
               メンバーを追加

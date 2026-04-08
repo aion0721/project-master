@@ -1,6 +1,15 @@
 import { vi } from 'vitest'
 import { buildProjectDetailResponse, buildProjectListResponse } from '../api/projectApi'
-import { assignments, events, members, phases, projects, systemRelations, systems } from '../data/mockData'
+import {
+  assignments,
+  events,
+  members,
+  phases,
+  projects,
+  systemAssignments,
+  systemRelations,
+  systems,
+} from '../data/mockData'
 import type {
   CreateMemberInput,
   CreateProjectInput,
@@ -8,6 +17,7 @@ import type {
   Phase,
   Project,
   ProjectEvent,
+  SystemAssignment,
   UpdateProjectEventsInput,
   UpdateMemberInput,
   UpdatePhaseInput,
@@ -16,6 +26,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemStructureInput,
 } from '../types/project'
 
 const allWorkStatuses = ['未着手', '進行中', '遅延', '完了'] as const
@@ -38,6 +49,7 @@ function cloneFixtures() {
     systems: systems.map((system) => ({ ...system })),
     systemRelations: systemRelations.map((relation) => ({ ...relation })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
+    systemAssignments: systemAssignments.map((assignment) => ({ ...assignment })),
   }
 }
 
@@ -83,6 +95,21 @@ function createPhaseIdGenerator(projectId: string, currentIds: string[]) {
 
   return () => {
     const nextId = `ph-${projectId}-${nextSuffix}`
+    nextSuffix += 1
+    return nextId
+  }
+}
+
+function createSystemAssignmentIdGenerator(systemId: string, currentIds: string[]) {
+  let nextSuffix =
+    currentIds
+      .filter((id) => id.startsWith(`sys-as-${systemId}-`))
+      .map((id) => Number(id.split('-').at(-1)))
+      .filter((value) => Number.isFinite(value))
+      .reduce((max, value) => Math.max(max, value), 0) + 1
+
+  return () => {
+    const nextId = `sys-as-${systemId}-${nextSuffix}`
     nextSuffix += 1
     return nextId
   }
@@ -208,6 +235,10 @@ export function mockProjectApi() {
       return buildJsonResponse({ items: fixtureData.systemRelations }, 200)
     }
 
+    if (requestUrl.endsWith('/api/system-assignments') && method === 'GET') {
+      return buildJsonResponse({ items: fixtureData.systemAssignments }, 200)
+    }
+
     if (requestUrl.endsWith('/api/members') && method === 'POST') {
       const body = JSON.parse(String(init?.body)) as CreateMemberInput
 
@@ -254,6 +285,7 @@ export function mockProjectApi() {
         category: string
         ownerMemberId?: string | null
         note?: string | null
+        systemLinks?: Array<{ label: string; url: string }>
       }
 
       const system = {
@@ -262,9 +294,19 @@ export function mockProjectApi() {
         category: body.category.trim(),
         ownerMemberId: body.ownerMemberId ?? null,
         note: body.note?.trim() || null,
+        systemLinks: body.systemLinks ?? [],
       }
 
       fixtureData.systems.push(system)
+      if (system.ownerMemberId) {
+        fixtureData.systemAssignments.push({
+          id: `sys-as-${system.id}-1`,
+          systemId: system.id,
+          memberId: system.ownerMemberId,
+          responsibility: 'オーナー',
+          reportsToMemberId: null,
+        })
+      }
       return buildJsonResponse({ system }, 201)
     }
 
@@ -379,12 +421,16 @@ export function mockProjectApi() {
         category: string
         ownerMemberId?: string | null
         note?: string | null
+        systemLinks?: Array<{ label: string; url: string }>
       }
 
       system.name = body.name.trim()
       system.category = body.category.trim()
       system.ownerMemberId = body.ownerMemberId ?? null
       system.note = body.note?.trim() || null
+      if (body.systemLinks) {
+        system.systemLinks = body.systemLinks
+      }
 
       return buildJsonResponse({ system }, 200)
     }
@@ -409,7 +455,54 @@ export function mockProjectApi() {
       }
 
       fixtureData.systems = fixtureData.systems.filter((item) => item.id !== system.id)
+      fixtureData.systemAssignments = fixtureData.systemAssignments.filter(
+        (assignment) => assignment.systemId !== system.id,
+      )
       return buildJsonResponse({ systemId: system.id }, 200)
+    }
+
+    const systemStructureMatch = requestUrl.match(/\/api\/systems\/([^/]+)\/structure$/)
+    if (systemStructureMatch && method === 'PATCH') {
+      const systemId = systemStructureMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateSystemStructureInput
+      const system = fixtureData.systems.find((item) => item.id === systemId)
+
+      if (!system) {
+        return buildJsonResponse({ message: 'System not found' }, 404)
+      }
+
+      system.ownerMemberId = body.ownerMemberId
+      const currentAssignments = fixtureData.systemAssignments.filter(
+        (assignment) => assignment.systemId === systemId,
+      )
+      const nextAssignmentId = createSystemAssignmentIdGenerator(
+        systemId,
+        currentAssignments.map((assignment) => assignment.id),
+      )
+      const nextAssignments: SystemAssignment[] = [
+        {
+          id:
+            currentAssignments.find((assignment) => assignment.responsibility === 'オーナー')?.id ??
+            nextAssignmentId(),
+          systemId,
+          memberId: body.ownerMemberId,
+          responsibility: 'オーナー',
+          reportsToMemberId: null,
+        },
+        ...body.assignments.map((assignment) => ({
+          id: assignment.id ?? nextAssignmentId(),
+          systemId,
+          memberId: assignment.memberId,
+          responsibility: assignment.responsibility.trim(),
+          reportsToMemberId: assignment.reportsToMemberId ?? null,
+        })),
+      ]
+
+      fixtureData.systemAssignments = fixtureData.systemAssignments
+        .filter((assignment) => assignment.systemId !== systemId)
+        .concat(nextAssignments)
+
+      return buildJsonResponse({ system, assignments: nextAssignments }, 200)
     }
 
     const relationMatch = requestUrl.match(/\/api\/system-relations\/([^/]+)$/)

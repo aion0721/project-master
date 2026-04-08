@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 import { SystemCreatePage } from './SystemCreatePage'
 
 describe('SystemCreatePage', () => {
-  it('システム追加フォームを送信して登録 API を呼び出す', async () => {
+  it('システム追加フォームを送信して登録 API を呼ぶ', async () => {
     const fetchMock = mockProjectApi()
 
     renderWithProviders(<SystemCreatePage />, {
@@ -24,6 +24,7 @@ describe('SystemCreatePage', () => {
     fireEvent.change(screen.getByLabelText('カテゴリ'), {
       target: { value: '基盤' },
     })
+    expect(screen.getByRole('option', { name: 'm1 / 田中' })).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('オーナー'), {
       target: { value: 'm1' },
     })

@@ -9,6 +9,7 @@ import type {
   Project,
   ProjectAssignment,
   ProjectEvent,
+  SystemAssignment,
   SystemRelation,
   UpdateMemberInput,
   UpdateProjectEventsInput,
@@ -20,6 +21,7 @@ import type {
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
   UpdateProjectStructureInput,
+  UpdateSystemStructureInput,
   UpdateSystemInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
@@ -96,6 +98,7 @@ export interface ProjectDataPayload {
   systems: ManagedSystem[]
   systemRelations: SystemRelation[]
   assignments: ProjectAssignment[]
+  systemAssignments: SystemAssignment[]
 }
 
 export interface PhaseUpdatePayload {
@@ -127,6 +130,10 @@ function normalizeSystem(system: ManagedSystem): ManagedSystem {
     category: system.category,
     ownerMemberId: system.ownerMemberId ?? null,
     note: system.note ?? null,
+    systemLinks: (system.systemLinks ?? []).map((link) => ({
+      label: link.label,
+      url: link.url,
+    })),
   }
 }
 
@@ -174,6 +181,16 @@ function normalizeAssignment(assignment: ProjectAssignment): ProjectAssignment {
   return {
     id: assignment.id,
     projectId: assignment.projectId,
+    memberId: assignment.memberId,
+    responsibility: assignment.responsibility,
+    reportsToMemberId: assignment.reportsToMemberId ?? null,
+  }
+}
+
+function normalizeSystemAssignment(assignment: SystemAssignment): SystemAssignment {
+  return {
+    id: assignment.id,
+    systemId: assignment.systemId,
     memberId: assignment.memberId,
     responsibility: assignment.responsibility,
     reportsToMemberId: assignment.reportsToMemberId ?? null,
@@ -282,15 +299,23 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
     members: [...memberMap.values()],
     systems: [],
     systemRelations: [],
+    systemAssignments: [],
   }
 }
 
 export async function loadProjectData(signal?: AbortSignal): Promise<ProjectDataPayload> {
-  const [listResponse, memberResponse, systemResponse, systemRelationResponse] = await Promise.all([
+  const [
+    listResponse,
+    memberResponse,
+    systemResponse,
+    systemRelationResponse,
+    systemAssignmentResponse,
+  ] = await Promise.all([
     fetchJson<ApiProjectListResponse>('/api/projects', signal),
     fetchJson<ApiMemberListResponse>('/api/members', signal),
     fetchJson<ApiSystemListResponse>('/api/systems', signal),
     fetchJson<ApiSystemRelationListResponse>('/api/system-relations', signal),
+    fetchJson<{ items: SystemAssignment[] }>('/api/system-assignments', signal),
   ])
 
   const detailResponses = await Promise.all(
@@ -348,6 +373,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     systems: systemResponse.items.map(normalizeSystem),
     systemRelations: systemRelationResponse.items.map(normalizeSystemRelation),
     assignments: [...assignmentMap.values()],
+    systemAssignments: systemAssignmentResponse.items.map(normalizeSystemAssignment),
   }
 }
 
@@ -469,6 +495,22 @@ export async function updateSystemRequest(
   )
 
   return normalizeSystem(response.system)
+}
+
+export async function updateSystemStructureRequest(
+  systemId: string,
+  input: UpdateSystemStructureInput,
+  signal?: AbortSignal,
+): Promise<{ system: ManagedSystem; assignments: SystemAssignment[] }> {
+  const response = await sendJson<
+    { system: ManagedSystem; assignments: SystemAssignment[] },
+    UpdateSystemStructureInput
+  >(`/api/systems/${systemId}/structure`, 'PATCH', input, signal)
+
+  return {
+    system: normalizeSystem(response.system),
+    assignments: response.assignments.map(normalizeSystemAssignment),
+  }
 }
 
 export async function deleteSystemRequest(

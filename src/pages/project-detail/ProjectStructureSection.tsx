@@ -94,7 +94,7 @@ export function ProjectStructureSection({
       ) : null}
 
       <div className={styles.treeSection}>
-        <MemberTree members={members} pmMemberId={pmMemberId} projectAssignments={projectAssignments} />
+        <MemberTree members={members} rootMemberId={pmMemberId} assignments={projectAssignments} />
       </div>
     </Panel>
   )

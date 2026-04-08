@@ -1,0 +1,213 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hero {
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%),
+    radial-gradient(circle at left bottom, rgba(16, 185, 129, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
+}
+
+.backButton {
+  margin-bottom: 18px;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metaLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.metaValue {
+  font-size: 20px;
+  color: var(--text-strong);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.structureEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--surface-muted);
+}
+
+.assignmentEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assignmentTitle {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-strong);
+}
+
+.assignmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignmentRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.noteText {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  color: var(--text-strong);
+}
+
+.linkList,
+.projectList,
+.relationList,
+.linkEditorList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.externalLink,
+.projectLink {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.externalLink:hover,
+.projectLink:hover {
+  text-decoration: underline;
+}
+
+.relationItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.relationNote {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+.linkEditorRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.input {
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text-strong);
+  font: inherit;
+}
+
+.input:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.18);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+.errorText {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.structureActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.treeSection {
+  margin-top: 8px;
+}
+
+@media (max-width: 1100px) {
+  .metaGrid,
+  .contentGrid,
+  .linkEditorRow,
+  .assignmentRow {
+    grid-template-columns: 1fr;
+  }
+}

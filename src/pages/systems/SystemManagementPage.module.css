@@ -35,6 +35,16 @@
   color: var(--text-strong);
 }
 
+.systemLink {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.systemLink:hover {
+  text-decoration: underline;
+}
+
 .inlineInput {
   composes: control from '../../styles/form.module.css';
   min-width: 140px;

@@ -59,7 +59,12 @@ const navigationSections: NavigationSection[] = [
         to: '/systems',
         label: 'システム一覧',
         icon: 'system',
-        isActive: (pathname) => pathname === '/systems' || pathname === '/systems/new',
+        isActive: (pathname) =>
+          pathname === '/systems' ||
+          pathname === '/systems/new' ||
+          (/^\/systems\/[^/]+$/.test(pathname) &&
+            pathname !== '/systems/relations' &&
+            pathname !== '/systems/diagram'),
       },
       {
         to: '/systems/relations',
