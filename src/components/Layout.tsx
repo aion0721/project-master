@@ -242,7 +242,9 @@ export function Layout() {
       </aside>
 
       <main className={`${styles.content} ${isSidebarExpanded ? '' : styles.contentExpanded}`}>
-        <Outlet />
+        <div className={styles.pageTransition} key={location.pathname}>
+          <Outlet />
+        </div>
       </main>
     </div>
   )

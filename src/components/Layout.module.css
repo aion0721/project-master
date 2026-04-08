@@ -229,6 +229,11 @@
   padding: 28px;
 }
 
+.pageTransition {
+  animation: page-enter 180ms ease-out;
+  transform-origin: top center;
+}
+
 .contentExpanded {
   padding-left: 24px;
 }
@@ -350,6 +355,24 @@
   justify-content: center;
   width: 58px;
   padding: 0;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageTransition {
+    animation: none;
+  }
 }
 
 @media (max-width: 960px) {
