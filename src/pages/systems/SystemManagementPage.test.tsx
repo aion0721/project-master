@@ -4,6 +4,11 @@ import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { SystemManagementPage } from './SystemManagementPage'
 
+async function openFilterPanel() {
+  const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
+  fireEvent.click(toggleButton)
+}
+
 describe('SystemManagementPage', () => {
   it('システム一覧と対象システム列を表示する', async () => {
     mockProjectApi()
@@ -16,7 +21,7 @@ describe('SystemManagementPage', () => {
     expect(screen.getByRole('columnheader', { name: '対象システム' })).toBeInTheDocument()
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('会計基盤')
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('基幹会計刷新')
-    expect(screen.getAllByRole('link', { name: 'システムを追加' })[0]).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '新規システム' })).toHaveAttribute(
       'href',
       '/systems/new',
     )
@@ -30,6 +35,7 @@ describe('SystemManagementPage', () => {
     })
 
     await screen.findByRole('heading', { name: 'システム一覧' })
+    await openFilterPanel()
 
     fireEvent.change(screen.getByLabelText('システムIDで絞り込み'), {
       target: { value: 'sys-accounting' },
@@ -37,6 +43,24 @@ describe('SystemManagementPage', () => {
 
     expect(screen.getByTestId('system-row-sys-accounting')).toBeInTheDocument()
     expect(screen.queryByTestId('system-row-sys-sales-bi')).not.toBeInTheDocument()
+  })
+
+  it('所管部署で絞り込める', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<SystemManagementPage />, {
+      initialEntries: ['/systems'],
+    })
+
+    await screen.findByRole('heading', { name: 'システム一覧' })
+    await openFilterPanel()
+
+    fireEvent.change(screen.getByLabelText('所管部署で絞り込み'), {
+      target: { value: 'インフラ基盤部' },
+    })
+
+    expect(screen.getByTestId('system-row-sys-infra-common')).toBeInTheDocument()
+    expect(screen.queryByTestId('system-row-sys-accounting')).not.toBeInTheDocument()
   })
 
   it('各システムから詳細画面へ移動できる', async () => {

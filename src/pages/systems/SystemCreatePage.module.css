@@ -3,17 +3,41 @@
 }
 
 .hero {
+  --accent: #0f6f88;
+  --accent-strong: #155e75;
+  --page-hero-accent: #0f6f88;
+  --page-hero-icon-bg: rgba(224, 242, 254, 0.94);
+  --page-hero-icon-tint: rgba(6, 182, 212, 0.12);
+  --page-hero-stat-bg: rgba(255, 255, 255, 0.74);
+  --page-hero-stat-border: rgba(34, 211, 238, 0.24);
+  position: relative;
+  overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(14, 116, 144, 0.14), transparent 30%),
-    linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
+    radial-gradient(circle at 88% 14%, rgba(14, 116, 144, 0.18), transparent 30%),
+    radial-gradient(circle at 12% 18%, rgba(6, 182, 212, 0.16), transparent 24%),
+    radial-gradient(circle at 52% 100%, rgba(186, 230, 253, 0.22), transparent 36%),
+    linear-gradient(135deg, rgba(240, 249, 255, 0.97) 0%, rgba(224, 242, 254, 0.96) 46%, rgba(248, 252, 255, 0.99) 100%);
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.12), transparent 44%),
+    radial-gradient(circle at 10% 16%, rgba(34, 211, 238, 0.16), transparent 20%),
+    radial-gradient(circle at 88% 12%, rgba(14, 116, 144, 0.14), transparent 26%),
+    radial-gradient(circle at 52% 100%, rgba(186, 230, 253, 0.16), transparent 32%);
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
 }
 
 .section {
   width: 100%;
-}
-
-.backButton {
-  margin-bottom: 12px;
 }
 
 .title {

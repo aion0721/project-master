@@ -179,9 +179,11 @@ export function MemberManagementPage() {
       <ListPageHero
         action={<Button to="/members/new">新規メンバー</Button>}
         className={styles.hero}
+        collapsible
         description="利用中のメンバーを一覧で管理します。検索、ロール確認、上下関係の整理、担当案件数の確認をこの画面から行えます。"
         eyebrow="Member Directory"
         iconKind="member"
+        storageKey="project-master:hero-collapsed:members"
         stats={[
           { label: '登録メンバー', value: memberSummary.total },
           { label: '担当案件あり', value: memberSummary.assigned },
@@ -222,9 +224,6 @@ export function MemberManagementPage() {
                   ))}
                 </select>
               </label>
-              <Button to="/members/new" variant="secondary">
-                メンバーを追加
-              </Button>
             </div>
           }
           summary={

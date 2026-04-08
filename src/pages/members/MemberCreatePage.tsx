@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
-import pageStyles from '../../styles/page.module.css'
 import type { CreateMemberInput } from '../../types/project'
 import {
   buildInitialMemberForm,
@@ -88,21 +87,23 @@ export function MemberCreatePage() {
 
   return (
     <div className={styles.page}>
-      <Panel className={styles.hero} variant="hero">
-        <Button className={styles.backButton} size="small" to="/members" variant="secondary">
-          メンバー一覧へ戻る
-        </Button>
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="member" />
-          <div className={pageStyles.heroHeadingBody}>
-            <h1 className={styles.title}>メンバー追加</h1>
-            <p className={styles.description}>
-              ID、部署、ロール、上司を登録してメンバーを追加します。上司候補は `ID / 名前`
-              形式で表示するので、ID入力で選びやすくしています。
-            </p>
-          </div>
-        </div>
-      </Panel>
+      <ListPageHero
+        action={
+          <Button size="small" to="/members" variant="secondary">
+            メンバー一覧へ戻る
+          </Button>
+        }
+        className={styles.hero}
+        description="ID、部署、ロール、上司を登録してメンバーを追加します。上司候補は `ID / 名前` 形式で表示するので、ID入力で選びやすくしています。"
+        eyebrow="Member Setup"
+        iconKind="member"
+        stats={[
+          { label: '必須入力', value: '5項目' },
+          { label: '上司設定', value: '任意' },
+          { label: 'ID形式', value: memberIdExample },
+        ]}
+        title="メンバー追加"
+      />
 
       <Panel className={styles.section}>
         <form className={styles.form} onSubmit={handleSubmit}>

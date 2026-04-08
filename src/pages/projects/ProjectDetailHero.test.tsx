@@ -27,7 +27,8 @@ describe('ProjectDetailHero', () => {
     fireEvent.click(screen.getByTestId('project-hero-toggle-button'))
 
     expect(screen.queryByTestId('current-phase-card')).not.toBeInTheDocument()
-    expect(screen.getByTestId('project-hero-toggle-button')).toHaveTextContent('詳細を表示')
+    expect(screen.getByRole('button', { name: 'Heroを開く' })).toBeInTheDocument()
+    expect(window.localStorage.getItem('project-master:hero-collapsed:project-detail')).toBe('true')
 
     fireEvent.click(screen.getByTestId('project-hero-toggle-button'))
 

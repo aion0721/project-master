@@ -5,45 +5,23 @@
 }
 
 .hero {
+  --accent: #0f766e;
+  --accent-strong: #115e59;
+  --page-hero-accent: #0f766e;
+  --page-hero-icon-bg: rgba(204, 251, 241, 0.9);
+  --page-hero-icon-tint: rgba(20, 184, 166, 0.12);
+  --page-hero-stat-bg: rgba(255, 255, 255, 0.78);
+  --page-hero-stat-border: rgba(45, 212, 191, 0.18);
   background:
     radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%),
     radial-gradient(circle at left bottom, rgba(16, 185, 129, 0.12), transparent 24%),
     linear-gradient(180deg, rgba(248, 250, 252, 0.98), #fff);
 }
 
-.backButton {
-  margin-bottom: 18px;
-}
-
-.heroActions {
+.backLinks {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.metaGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.metaCard {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.metaLabel {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-subtle);
-}
-
-.metaValue {
-  font-size: 20px;
-  color: var(--text-strong);
 }
 
 .section {

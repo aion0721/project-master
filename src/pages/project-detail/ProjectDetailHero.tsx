@@ -1,9 +1,6 @@
-import { useState } from 'react'
-import { EntityIcon } from '../../components/EntityIcon'
+import { ListPageHero } from '../../components/ListPageHero'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Button } from '../../components/ui/Button'
-import { Panel } from '../../components/ui/Panel'
-import pageStyles from '../../styles/page.module.css'
 import type {
   ManagedSystem,
   Phase,
@@ -177,43 +174,13 @@ export function ProjectDetailHero({
   onProjectSystemChange,
   onRemoveProjectLink,
 }: ProjectDetailHeroProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
   const currentPhaseToneClassName = currentPhase
     ? styles[`phaseSummaryBadge${getPhaseToneKey(currentPhase.name)}`]
     : styles.phaseSummaryBadgeDefaultTone
 
   return (
-    <Panel className={styles.hero} variant="hero">
-      <div className={styles.heroTop}>
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="project" />
-          <div className={pageStyles.heroHeadingBody}>
-            <div className={styles.backLinks}>
-              <Button size="small" to="/projects" variant="secondary">
-                案件一覧へ戻る
-              </Button>
-              <Button size="small" to="/cross-project" variant="secondary">
-                横断ビューへ戻る
-              </Button>
-            </div>
-            <h1 className={styles.title}>{project.name}</h1>
-            <p className={styles.description}>
-              プロジェクト番号: {project.projectNumber}
-              <br />
-              PM、進捗、体制、主システムをまとめて確認できる案件詳細です。
-            </p>
-            {relatedSystems.length > 0 ? (
-              <div className={styles.systemChipList}>
-                {relatedSystems.map((system) => (
-                  <span className={styles.systemChip} key={system.id}>
-                    主システム: {system.id} / {system.name}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
+    <ListPageHero
+      action={
         <div className={styles.heroActions}>
           {currentUser ? (
             <Button
@@ -224,15 +191,6 @@ export function ProjectDetailHero({
               {isBookmarked ? 'ブックマーク解除' : 'ブックマーク'}
             </Button>
           ) : null}
-          <Button
-            aria-expanded={isExpanded}
-            data-testid="project-hero-toggle-button"
-            onClick={() => setIsExpanded((current) => !current)}
-            size="small"
-            variant="secondary"
-          >
-            {isExpanded ? '詳細を折りたたむ' : '詳細を表示'}
-          </Button>
           <div className={styles.heroBadgeGroup}>
             <StatusBadge status={project.status} />
             <span
@@ -253,9 +211,38 @@ export function ProjectDetailHero({
             </span>
           </div>
         </div>
-      </div>
-
-      {isExpanded ? (
+      }
+      className={styles.hero}
+      collapsible
+      collapseToggleTestId="project-hero-toggle-button"
+      description={`プロジェクト番号: ${project.projectNumber}。PM、進捗、体制、主システムをまとめて確認できる案件詳細です。`}
+      descriptionSupplement={
+        relatedSystems.length > 0 ? (
+          <div className={styles.systemChipList}>
+            {relatedSystems.map((system) => (
+              <span className={styles.systemChip} key={system.id}>
+                主システム: {system.id} / {system.name}
+              </span>
+            ))}
+          </div>
+        ) : null
+      }
+      eyebrow="Project Detail"
+      iconKind="project"
+      leadingContent={
+        <div className={styles.backLinks}>
+          <Button size="small" to="/projects" variant="secondary">
+            案件一覧へ戻る
+          </Button>
+          <Button size="small" to="/cross-project" variant="secondary">
+            横断ビューへ戻る
+          </Button>
+        </div>
+      }
+      stats={[]}
+      storageKey="project-master:hero-collapsed:project-detail"
+      title={project.name}
+    >
         <ProjectDetailMetaGrid
           currentPhase={currentPhase}
           currentPhaseChanged={currentPhaseChanged}
@@ -330,7 +317,6 @@ export function ProjectDetailHero({
           scheduleDraft={scheduleDraft}
           scheduleError={scheduleError}
         />
-      ) : null}
-    </Panel>
+    </ListPageHero>
   )
 }

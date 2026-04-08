@@ -180,9 +180,11 @@ export function ProjectListPage() {
       <ListPageHero
         action={<Button to="/projects/new">案件を追加</Button>}
         className={styles.hero}
+        collapsible
         description="進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。"
         eyebrow="Project Portfolio"
         iconKind="project"
+        storageKey="project-master:hero-collapsed:projects"
         stats={[
           { label: "総案件数", value: summary.total },
           { label: "進行中", value: summary.inProgress },

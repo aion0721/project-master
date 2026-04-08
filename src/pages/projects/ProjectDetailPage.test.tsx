@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { assignments, events, phases, projects } from '../../data/mockData'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
@@ -276,6 +276,7 @@ describe('ProjectDetailPage', () => {
 
   it('案件ごとのフェーズ構成を編集して保存できる', async () => {
     const fetchSpy = mockProjectApi()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderPage()
 
@@ -310,6 +311,19 @@ describe('ProjectDetailPage', () => {
         ]),
       )
     })
+  })
+
+  it('フェーズ削除確認をキャンセルした場合は削除しない', async () => {
+    mockProjectApi()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(await screen.findByTestId('phase-remove-ph-p1-3'))
+
+    expect(screen.getByTestId('phase-row-ph-p1-3')).toBeInTheDocument()
   })
 
   it('フェーズを並び替えて保存できる', async () => {

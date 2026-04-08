@@ -93,7 +93,7 @@ export function PhaseTimeline({
     <div className={styles.wrapper}>
       <div className={styles.grid}>
         <div className={styles.headerRow} style={{ gridTemplateColumns: columns }}>
-          <div className={styles.headerLead}>フェーズ / 進捗 / 期間</div>
+          <div className={styles.headerLead}>フェーズ / 期間</div>
           {weekSlots.map((slot) => {
             const isCurrentWeek = isDateInWeekSlot(slot.startDate)
 

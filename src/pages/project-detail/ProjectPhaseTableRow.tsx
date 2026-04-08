@@ -31,6 +31,14 @@ export function ProjectPhaseTableRow({
   const range = phaseRange ? formatPeriod(phaseRange.startDate, phaseRange.endDate) : '-'
   const phaseLabel = phase.name || '新規フェーズ'
 
+  function handleRemovePhase() {
+    if (!window.confirm(`フェーズ「${phaseLabel}」を削除しますか？`)) {
+      return
+    }
+
+    onRemovePhase(phase.key)
+  }
+
   return (
     <tr data-testid={`phase-row-${phase.key}`}>
       <td>
@@ -116,7 +124,7 @@ export function ProjectPhaseTableRow({
         </Button>
         <Button
           data-testid={`phase-remove-${phase.key}`}
-          onClick={() => onRemovePhase(phase.key)}
+          onClick={handleRemovePhase}
           size="small"
           variant="danger"
         >

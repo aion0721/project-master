@@ -51,7 +51,8 @@ export function PhaseRow({
 }: PhaseRowProps) {
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
   const rowClassName = isSelected ? `${styles.row} ${styles.selectedRow}` : styles.row
-  const phaseToneClassName = styles[getPhaseToneKey(phase.name)]
+  const phaseToneKey = getPhaseToneKey(phase.name)
+  const phaseToneClassName = styles[phaseToneKey]
   const metaClassName = isSelected
     ? `${styles.metaCell} ${styles.selectedMetaCell}`
     : styles.metaCell
@@ -80,7 +81,6 @@ export function PhaseRow({
           <span>
             期間: W{phase.startWeek} - W{phase.endWeek}
           </span>
-          <span>進捗: {phase.progress}%</span>
         </div>
         {editable && isSelected ? (
           <div className={styles.editControls}>
@@ -156,6 +156,7 @@ export function PhaseRow({
         return (
           <div
             className={cellClassName}
+            data-phase-tone={active ? phaseToneKey : undefined}
             data-testid={`timeline-phase-cell-${phase.id}-${slot.index}`}
             key={`${phase.id}-${slot.index}`}
             onClick={() => onSelect?.(phase.id)}
@@ -170,11 +171,6 @@ export function PhaseRow({
                 type="button"
               />
             ) : null}
-
-            {active && slot.index === phase.startWeek ? (
-              <span className={styles.progressLabel}>{phase.progress}%</span>
-            ) : null}
-
             {showEndHandle ? (
               <button
                 aria-label={`${phase.name} 終了週を調整`}

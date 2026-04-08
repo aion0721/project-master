@@ -167,9 +167,11 @@ export function MemberHierarchyPage() {
       <ListPageHero
         action={<Button to="/members">メンバー一覧</Button>}
         className={styles.hero}
+        collapsible
         description="メンバーを起点に上長と配下をツリーで確認できます。選択したメンバーを中心に、指揮系統と周辺メンバーを追いやすく整理しています。"
         eyebrow="Organization View"
         iconKind="member"
+        storageKey="project-master:hero-collapsed:member-hierarchy"
         stats={[
           { label: '登録メンバー', value: members.length },
           { label: '最上位ノード', value: topLevelCount },

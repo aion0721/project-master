@@ -238,9 +238,11 @@ export function SystemLandscapePage() {
       <ListPageHero
         action={<Button to="/systems">システム一覧</Button>}
         className={styles.hero}
+        collapsible
         description="システム同士のつながりを俯瞰で表示します。上流からの受け取りと下流への連携を、選択ビューと全体図の両方で確認できます。"
         eyebrow="System Diagram"
         iconKind="system"
+        storageKey="project-master:hero-collapsed:system-landscape"
         stats={[
           { label: '登録システム', value: summary.systems },
           { label: '関連線', value: summary.relations },

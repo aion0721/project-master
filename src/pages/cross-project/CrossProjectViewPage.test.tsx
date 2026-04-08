@@ -133,6 +133,28 @@ describe('CrossProjectViewPage', () => {
     )
   })
 
+  it('タイムラインのツールバーから表示切替できる', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<CrossProjectViewPage />, {
+      initialEntries: ['/cross-project'],
+    })
+
+    await screen.findByRole('heading', { name: '横断案件ビュー' })
+
+    fireEvent.click(screen.getByRole('button', { name: '体制: OFF' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cross-project-structure-PRJ-001-as-p1-1')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'システムグルーピング: OFF' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cross-project-group-sys-accounting / 会計基盤')).toBeInTheDocument()
+    })
+  })
+
   it('主システムのクエリで案件を絞り込める', async () => {
     mockProjectApi()
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ListPageHero } from '../../components/ListPageHero'
 import { MemberTree } from '../../components/MemberTree'
-import { EntityIcon } from '../../components/EntityIcon'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -514,51 +514,37 @@ export function SystemDetailPage() {
 
   return (
     <div className={styles.page}>
-      <Panel className={styles.hero} variant="hero">
-        <div className={styles.heroActions}>
-          <Button className={styles.backButton} size="small" to="/systems" variant="secondary">
-            システム一覧へ戻る
-          </Button>
-          <Button className={styles.backButton} size="small" to="/systems/diagram" variant="secondary">
-            関連図を開く
-          </Button>
-        </div>
-        <div className={pageStyles.heroHeading}>
-          <EntityIcon className={pageStyles.heroIcon} kind="system" />
-          <div className={pageStyles.heroHeadingBody}>
-            <p className={pageStyles.eyebrow}>System Detail</p>
-            <h1 className={pageStyles.title}>{system.name}</h1>
-            <p className={pageStyles.description}>
-              システムID: {system.id}
-              <br />
-              カテゴリ: {system.category}
-            </p>
+      <ListPageHero
+        className={styles.hero}
+        collapsible
+        description={`システムID: ${system.id}。カテゴリ: ${system.category}。関連案件、所管部署、周辺システムとの接続をまとめて確認できます。`}
+        eyebrow="System Detail"
+        iconKind="system"
+        leadingContent={
+          <div className={styles.backLinks}>
+            <Button size="small" to="/systems" variant="secondary">
+              システム一覧へ戻る
+            </Button>
+            <Button size="small" to="/systems/diagram" variant="secondary">
+              関連図を開く
+            </Button>
           </div>
-        </div>
-      </Panel>
-
-      <div className={styles.metaGrid}>
-        <Panel as="article" className={styles.metaCard}>
-          <span className={styles.metaLabel}>オーナー</span>
-          <strong className={styles.metaValue}>{owner ? `${owner.id} / ${owner.name}` : '未設定'}</strong>
-        </Panel>
-        <Panel as="article" className={styles.metaCard}>
-          <span className={styles.metaLabel}>対象プロジェクト</span>
-          <strong className={styles.metaValue}>{relatedProjects.length} 件</strong>
-        </Panel>
-        <Panel as="article" className={styles.metaCard}>
-          <span className={styles.metaLabel}>関連システム</span>
-          <strong className={styles.metaValue}>{relatedSystems.length} 件</strong>
-        </Panel>
-        <Panel as="article" className={styles.metaCard}>
-          <span className={styles.metaLabel}>所管部署</span>
-          <strong className={styles.metaValue}>
-            {system.departmentNames && system.departmentNames.length > 0
-              ? system.departmentNames.join(' / ')
-              : '未設定'}
-          </strong>
-        </Panel>
-      </div>
+        }
+        stats={[
+          { label: 'オーナー', value: owner ? `${owner.id} / ${owner.name}` : '未設定' },
+          { label: '対象プロジェクト', value: `${relatedProjects.length} 件` },
+          { label: '関連システム', value: `${relatedSystems.length} 件` },
+          {
+            label: '所管部署',
+            value:
+              system.departmentNames && system.departmentNames.length > 0
+                ? system.departmentNames.join(' / ')
+                : '未設定',
+          },
+        ]}
+        storageKey="project-master:hero-collapsed:system-detail"
+        title={system.name}
+      />
 
       <Panel className={styles.section}>
         <div className={pageStyles.sectionHeader}>
