@@ -10,7 +10,7 @@ interface EntityIconProps {
 export function EntityIcon({ kind, className }: EntityIconProps) {
   return (
     <span aria-hidden="true" className={[styles.iconShell, className].filter(Boolean).join(' ')}>
-      <img alt="" className={styles.iconImage} src={`/${kind}.svg`} />
+      <img alt="" className={styles.iconImage} src={`${import.meta.env.BASE_URL}${kind}.svg`} />
     </span>
   )
 }

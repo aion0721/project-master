@@ -78,6 +78,7 @@ const navigationSections: NavigationSection[] = [
 ]
 
 const sidebarPinnedStorageKey = 'project-master:sidebar-pinned'
+const logoPath = `${import.meta.env.BASE_URL}logo.svg`
 
 export function Layout() {
   const location = useLocation()
@@ -158,7 +159,7 @@ export function Layout() {
         </button>
 
         <div className={styles.brand}>
-          <img alt="Project Master" className={styles.brandLogo} src="/logo.svg" />
+          <img alt="Project Master" className={styles.brandLogo} src={logoPath} />
           <div className={styles.brandCopy}>
             <p className={styles.brandTitle}>Project Master</p>
             <p className={styles.brandText}>案件、体制、システムを一画面で比較できる管理アプリ</p>

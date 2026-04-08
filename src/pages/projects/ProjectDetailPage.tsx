@@ -33,6 +33,7 @@ export function ProjectDetailPage() {
     updateProjectCurrentPhase,
     updateProjectEvents,
     updateProjectLinks,
+    updatePhase,
     updateProjectSystems,
     updateProjectPhases,
     updateProjectSchedule,
@@ -79,6 +80,7 @@ export function ProjectDetailPage() {
     project,
     projectPhases,
     workStatusOptions,
+    updatePhase,
     updateProjectPhases,
   )
   const eventEditor = useProjectEventEditor(
@@ -133,8 +135,14 @@ export function ProjectDetailPage() {
     })
   }
 
-  function handleTimelinePhaseConfirm(phaseId: string) {
+  async function handleTimelinePhaseConfirm(phaseId: string) {
     if (selectedTimelinePhaseId !== phaseId) {
+      return
+    }
+
+    const saved = await phaseEditor.savePhaseRange(phaseId)
+
+    if (!saved) {
       return
     }
 
@@ -271,7 +279,9 @@ export function ProjectDetailPage() {
           editable
           events={projectEvents}
           onPhaseCancel={handleTimelinePhaseCancel}
-          onPhaseConfirm={handleTimelinePhaseConfirm}
+          onPhaseConfirm={(phaseId) => {
+            void handleTimelinePhaseConfirm(phaseId)
+          }}
           onPhaseResize={(phaseId, nextRange) => {
             phaseEditor.updatePhaseDraftRange(phaseId, nextRange)
           }}

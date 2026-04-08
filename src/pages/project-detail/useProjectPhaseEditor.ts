@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Phase, Project, WorkStatus } from '../../types/project'
+import type { Phase, Project, UpdatePhaseInput, WorkStatus } from '../../types/project'
 import { buildPhaseFormState, type PhaseFormState } from './projectDetailTypes'
 import { createNewPhaseDraft, normalizePhaseDrafts } from './phaseEditorUtils'
 
@@ -19,10 +19,18 @@ interface UpdateProjectPhases {
   ): Promise<unknown>
 }
 
+interface UpdatePhase {
+  (phaseId: string, input: UpdatePhaseInput): Promise<unknown>
+}
+
+const FALLBACK_SAVE_ERROR = 'フェーズ更新の保存に失敗しました。'
+const MISSING_PHASE_ERROR = '対象のフェーズが見つかりません。'
+
 export function useProjectPhaseEditor(
   project: Project | undefined,
   projectPhases: Phase[],
   workStatusOptions: WorkStatus[],
+  updatePhase: UpdatePhase,
   updateProjectPhases: UpdateProjectPhases,
 ) {
   const [phaseDrafts, setPhaseDrafts] = useState<PhaseFormState[]>([])
@@ -105,14 +113,14 @@ export function useProjectPhaseEditor(
 
   async function savePhaseStructure() {
     if (!project) {
-      return
+      return false
     }
 
     const { phases: normalizedPhases, error } = normalizePhaseDrafts(phaseDrafts)
 
     if (error) {
       setPhaseStructureError(error)
-      return
+      return false
     }
 
     setIsSavingPhaseStructure(true)
@@ -120,10 +128,59 @@ export function useProjectPhaseEditor(
 
     try {
       await updateProjectPhases(project.projectNumber, { phases: normalizedPhases })
+      return true
     } catch (caughtError) {
       setPhaseStructureError(
-        caughtError instanceof Error ? caughtError.message : 'フェーズ構成の保存に失敗しました。',
+        caughtError instanceof Error ? caughtError.message : FALLBACK_SAVE_ERROR,
       )
+      return false
+    } finally {
+      setIsSavingPhaseStructure(false)
+    }
+  }
+
+  async function savePhaseRange(key: string) {
+    const targetPhase = phaseDrafts.find((phase) => phase.key === key)
+
+    if (!targetPhase) {
+      setPhaseStructureError(MISSING_PHASE_ERROR)
+      return false
+    }
+
+    if (!targetPhase.id) {
+      return savePhaseStructure()
+    }
+
+    const startWeek = Number(targetPhase.startWeek)
+    const endWeek = Number(targetPhase.endWeek)
+    const progress = Number(targetPhase.progress)
+
+    if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek) || startWeek < 1 || endWeek < startWeek) {
+      setPhaseStructureError(`「${targetPhase.name || 'フェーズ'}」の開始週・終了週が不正です。`)
+      return false
+    }
+
+    if (!Number.isInteger(progress) || progress < 0 || progress > 100) {
+      setPhaseStructureError(`「${targetPhase.name || 'フェーズ'}」の進捗率は 0 から 100 で入力してください。`)
+      return false
+    }
+
+    setIsSavingPhaseStructure(true)
+    setPhaseStructureError(null)
+
+    try {
+      await updatePhase(targetPhase.id, {
+        startWeek,
+        endWeek,
+        status: targetPhase.status,
+        progress,
+      })
+      return true
+    } catch (caughtError) {
+      setPhaseStructureError(
+        caughtError instanceof Error ? caughtError.message : FALLBACK_SAVE_ERROR,
+      )
+      return false
     } finally {
       setIsSavingPhaseStructure(false)
     }
@@ -136,6 +193,7 @@ export function useProjectPhaseEditor(
     addPhaseDraft,
     movePhaseDraft,
     removePhaseDraft,
+    savePhaseRange,
     savePhaseStructure,
     updatePhaseDraft,
     updatePhaseDraftRange,

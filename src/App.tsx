@@ -15,10 +15,15 @@ import { ProjectDataProvider } from './store/projectData'
 import { UserSessionProvider } from './store/userSession'
 
 function App() {
+  const routerBasename =
+    import.meta.env.BASE_URL === '/'
+      ? '/'
+      : import.meta.env.BASE_URL.replace(/\/$/, '')
+
   return (
     <ProjectDataProvider>
       <UserSessionProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={routerBasename}>
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<Navigate to="/projects" replace />} />

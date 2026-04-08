@@ -335,24 +335,20 @@ describe('ProjectDetailPage', () => {
     fireEvent.mouseEnter(await screen.findByTestId('timeline-phase-cell-ph-p1-2-2'))
     fireEvent.mouseUp(window)
     fireEvent.click(screen.getByTestId('timeline-confirm-ph-p1-2'))
-    fireEvent.click(screen.getByTestId('phase-structure-save-button'))
 
     await waitFor(() => {
       const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
-        return String(url).includes('/api/projects/PRJ-001/phases') && init?.method === 'PATCH'
+        return String(url).includes('/api/phases/ph-p1-2') && init?.method === 'PATCH'
       })
 
       expect(phaseCall).toBeDefined()
       const body = JSON.parse(String(phaseCall?.[1]?.body))
-      expect(body.phases).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'ph-p1-2',
-            startWeek: 2,
-            endWeek: 5,
-          }),
-        ]),
-      )
+      expect(body).toEqual({
+        startWeek: 2,
+        endWeek: 5,
+        status: '進行中',
+        progress: 70,
+      })
     })
   })
 
