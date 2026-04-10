@@ -1,0 +1,203 @@
+.hero {
+  overflow: hidden;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.roleBadge,
+.departmentBadge,
+.lineBadge,
+.roleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.roleBadge {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0f4c81;
+}
+
+.departmentBadge {
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--text-subtle);
+}
+
+.lineBadge {
+  background: rgba(52, 211, 153, 0.12);
+  color: #0f766e;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.infoCard,
+.relationshipCard,
+.itemCard {
+  border: 1px solid color-mix(in srgb, var(--border) 88%, white);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.infoCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+}
+
+.infoLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-subtle);
+}
+
+.infoValue {
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--text-strong);
+}
+
+.inlineLink {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.relationshipGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.relationshipCard {
+  padding: 20px;
+}
+
+.relationshipTitle {
+  margin: 0 0 14px;
+  font-size: 16px;
+  color: var(--text-strong);
+}
+
+.memberList {
+  display: grid;
+  gap: 12px;
+}
+
+.memberLinkCard,
+.itemCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.memberLinkCard {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, white);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.memberLinkName {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.memberLinkMeta,
+.itemSubtle,
+.emptyText {
+  color: var(--text-subtle);
+}
+
+.itemList {
+  display: grid;
+  gap: 14px;
+}
+
+.itemCard {
+  padding: 18px 20px;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.itemTitle {
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roleChip {
+  background: rgba(191, 219, 254, 0.28);
+  color: #1d4ed8;
+}
+
+.notFound {
+  display: grid;
+  gap: 16px;
+}
+
+.notFoundTitle {
+  margin: 0;
+  font-size: 30px;
+  color: var(--text-strong);
+}
+
+.notFoundText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.7;
+}
+
+@media (max-width: 1100px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .relationshipGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .itemHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

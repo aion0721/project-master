@@ -8,6 +8,12 @@
   gap: 18px;
 }
 
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 320px));
+  gap: 16px;
+}
+
 .viewToggle {
   display: inline-flex;
   align-items: center;
@@ -229,6 +235,10 @@
 }
 
 @media (max-width: 960px) {
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
   .viewToggle {
     width: 100%;
   }

@@ -400,6 +400,9 @@ export function MemberManagementPage() {
                           </>
                         ) : (
                           <>
+                            <Button size="small" to={`/members/${member.id}`} variant="secondary">
+                              詳細
+                            </Button>
                             <Button
                               size="small"
                               to={`/members/hierarchy?memberId=${member.id}`}

@@ -45,6 +45,7 @@ function cloneFixtures() {
       ...member,
       departmentCode: member.departmentCode,
       departmentName: member.departmentName,
+      lineLabel: member.lineLabel,
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
@@ -331,6 +332,7 @@ export function mockProjectApi() {
         departmentCode: body.departmentCode.trim(),
         departmentName: body.departmentName.trim(),
         role: body.role.trim(),
+        lineLabel: body.lineLabel?.trim() || undefined,
         managerId: body.managerId ?? null,
         bookmarkedProjectIds: [],
         defaultProjectStatusFilters: [...allWorkStatuses],
@@ -1111,6 +1113,7 @@ export function mockProjectApi() {
       member.departmentCode = body.departmentCode.trim()
       member.departmentName = body.departmentName.trim()
       member.role = body.role.trim()
+      member.lineLabel = body.lineLabel?.trim() || undefined
       member.managerId = body.managerId ?? null
 
       return buildJsonResponse({ member }, 200)

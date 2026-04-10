@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ListPageHero } from '../../components/ListPageHero'
+import { MemberHierarchyFlow } from '../../components/MemberHierarchyFlow'
 import { MemberHierarchyTree } from '../../components/MemberHierarchyTree'
+import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -10,7 +11,7 @@ import formStyles from '../../styles/form.module.css'
 import pageStyles from '../../styles/page.module.css'
 import styles from './MemberHierarchyPage.module.css'
 
-type HierarchyViewMode = 'tree' | 'pyramid'
+type HierarchyViewMode = 'tree' | 'flow' | 'pyramid'
 
 interface MemberLevelCardProps {
   member: Member
@@ -118,37 +119,71 @@ function buildHierarchyLevels(members: Member[], selectedMemberId: string) {
 export function MemberHierarchyPage() {
   const { members, isLoading, error } = useProjectData()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [viewMode, setViewMode] = useState<HierarchyViewMode>('tree')
+  const [viewMode, setViewMode] = useState<HierarchyViewMode>('flow')
 
   const sortedMembers = useMemo(
     () => [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
     [members],
   )
+
+  const departmentOptions = useMemo(
+    () =>
+      [...new Set(sortedMembers.map((member) => member.departmentName.trim()).filter(Boolean))].sort((left, right) =>
+        left.localeCompare(right, 'ja'),
+      ),
+    [sortedMembers],
+  )
+
+  const requestedDepartmentName = searchParams.get('departmentName') ?? ''
   const requestedMemberId = searchParams.get('memberId') ?? ''
+
+  const visibleMembers = useMemo(
+    () =>
+      requestedDepartmentName
+        ? sortedMembers.filter((member) => member.departmentName === requestedDepartmentName)
+        : sortedMembers,
+    [requestedDepartmentName, sortedMembers],
+  )
+
   const activeMemberId =
-    requestedMemberId && sortedMembers.some((member) => member.id === requestedMemberId)
+    requestedMemberId && visibleMembers.some((member) => member.id === requestedMemberId)
       ? requestedMemberId
-      : (sortedMembers[0]?.id ?? '')
+      : (visibleMembers[0]?.id ?? '')
+
   const hierarchyLevels = useMemo(
-    () => buildHierarchyLevels(sortedMembers, activeMemberId),
-    [activeMemberId, sortedMembers],
+    () => buildHierarchyLevels(visibleMembers, activeMemberId),
+    [activeMemberId, visibleMembers],
   )
 
   const topLevelCount = useMemo(
-    () => members.filter((member) => !member.managerId).length,
-    [members],
+    () => visibleMembers.filter((member) => !member.managerId).length,
+    [visibleMembers],
   )
 
   const roleCount = useMemo(
-    () => new Set(members.map((member) => member.role.trim()).filter(Boolean)).size,
-    [members],
+    () => new Set(visibleMembers.map((member) => member.role.trim()).filter(Boolean)).size,
+    [visibleMembers],
   )
+
+  function updateHierarchyParams(next: { departmentName?: string; memberId?: string }) {
+    const params = new URLSearchParams()
+
+    if (next.departmentName) {
+      params.set('departmentName', next.departmentName)
+    }
+
+    if (next.memberId) {
+      params.set('memberId', next.memberId)
+    }
+
+    setSearchParams(params)
+  }
 
   if (isLoading) {
     return (
       <Panel>
         <h1 className={pageStyles.emptyStateTitle}>体制図を読み込み中です</h1>
-        <p className={pageStyles.emptyStateText}>メンバー情報を取得しています。</p>
+        <p className={pageStyles.emptyStateText}>メンバー情報の取得が完了するまで少し待ってください。</p>
       </Panel>
     )
   }
@@ -168,12 +203,12 @@ export function MemberHierarchyPage() {
         action={<Button to="/members">メンバー一覧</Button>}
         className={styles.hero}
         collapsible
-        description="メンバーを起点に上長と配下をツリーで確認できます。選択したメンバーを中心に、指揮系統と周辺メンバーを追いやすく整理しています。"
+        description="メンバーを起点に上下関係を表示できます。部署を絞ってから、関係表示、フロー表示、階層図を切り替えながら確認できます。"
         eyebrow="Organization View"
         iconKind="member"
         storageKey="project-master:hero-collapsed:member-hierarchy"
         stats={[
-          { label: '登録メンバー', value: members.length },
+          { label: requestedDepartmentName ? '表示メンバー' : '登録メンバー', value: visibleMembers.length },
           { label: '最上位ノード', value: topLevelCount },
           { label: 'ロール種別', value: roleCount },
         ]}
@@ -191,23 +226,55 @@ export function MemberHierarchyPage() {
         </div>
 
         <div className={styles.hierarchySection}>
-          <label className={formStyles.field}>
-            <span className={formStyles.label}>対象メンバー</span>
-            <select
-              className={formStyles.control}
-              data-testid="member-hierarchy-select"
-              onChange={(event) => {
-                setSearchParams(event.target.value ? { memberId: event.target.value } : {})
-              }}
-              value={activeMemberId}
-            >
-              {sortedMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name} ({member.role})
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className={styles.filterGrid}>
+            <label className={formStyles.field}>
+              <span className={formStyles.label}>部署名</span>
+              <select
+                className={formStyles.control}
+                data-testid="member-hierarchy-department-select"
+                onChange={(event) => {
+                  const departmentName = event.target.value
+                  const nextVisibleMembers = departmentName
+                    ? sortedMembers.filter((member) => member.departmentName === departmentName)
+                    : sortedMembers
+                  const nextMemberId = nextVisibleMembers.some((member) => member.id === activeMemberId)
+                    ? activeMemberId
+                    : (nextVisibleMembers[0]?.id ?? '')
+
+                  updateHierarchyParams({ departmentName, memberId: nextMemberId })
+                }}
+                value={requestedDepartmentName}
+              >
+                <option value="">全部署</option>
+                {departmentOptions.map((departmentName) => (
+                  <option key={departmentName} value={departmentName}>
+                    {departmentName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={formStyles.field}>
+              <span className={formStyles.label}>対象メンバー</span>
+              <select
+                className={formStyles.control}
+                data-testid="member-hierarchy-select"
+                onChange={(event) => {
+                  updateHierarchyParams({
+                    departmentName: requestedDepartmentName,
+                    memberId: event.target.value,
+                  })
+                }}
+                value={activeMemberId}
+              >
+                {visibleMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name} ({member.role})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <div aria-label="体制図の表示切替" className={styles.viewToggle} role="group">
             <button
@@ -222,6 +289,17 @@ export function MemberHierarchyPage() {
               ツリー
             </button>
             <button
+              aria-pressed={viewMode === 'flow'}
+              className={[styles.viewToggleButton, viewMode === 'flow' ? styles.viewToggleButtonActive : '']
+                .filter(Boolean)
+                .join(' ')}
+              data-testid="member-hierarchy-view-flow"
+              onClick={() => setViewMode('flow')}
+              type="button"
+            >
+              フロー
+            </button>
+            <button
               aria-pressed={viewMode === 'pyramid'}
               className={[styles.viewToggleButton, viewMode === 'pyramid' ? styles.viewToggleButtonActive : '']
                 .filter(Boolean)
@@ -234,12 +312,16 @@ export function MemberHierarchyPage() {
             </button>
           </div>
 
-          {viewMode === 'tree' ? (
-            <MemberHierarchyTree members={sortedMembers} selectedMemberId={activeMemberId} />
+          {visibleMembers.length === 0 ? (
+            <p className={styles.emptyText}>指定した部署に表示対象のメンバーがいません。</p>
+          ) : viewMode === 'tree' ? (
+            <MemberHierarchyTree members={visibleMembers} selectedMemberId={activeMemberId} />
+          ) : viewMode === 'flow' ? (
+            <MemberHierarchyFlow members={visibleMembers} selectedMemberId={activeMemberId} />
           ) : hierarchyLevels ? (
             <div className={styles.pyramidWrap} data-testid="member-hierarchy-pyramid">
               <div className={styles.pyramidLegend}>
-                <span>上位の系統から対象メンバー、その下の配下まで順に表示します。</span>
+                <span>上位から対象メンバー、その配下メンバーまで段階的に表示します。</span>
               </div>
 
               <div className={styles.pyramidLevels}>

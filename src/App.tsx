@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { CrossProjectViewPage } from './pages/cross-project/CrossProjectViewPage'
 import { MemberCreatePage } from './pages/members/MemberCreatePage'
+import { MemberDetailPage } from './pages/members/MemberDetailPage'
 import { MemberHierarchyPage } from './pages/members/MemberHierarchyPage'
 import { MemberManagementPage } from './pages/members/MemberManagementPage'
 import { ProjectCreatePage } from './pages/projects/ProjectCreatePage'
@@ -32,6 +33,7 @@ function App() {
               <Route path="/projects/:projectNumber" element={<ProjectDetailPage />} />
               <Route path="/members" element={<MemberManagementPage />} />
               <Route path="/members/new" element={<MemberCreatePage />} />
+              <Route path="/members/:memberId" element={<MemberDetailPage />} />
               <Route path="/members/hierarchy" element={<MemberHierarchyPage />} />
               <Route path="/systems" element={<SystemManagementPage />} />
               <Route path="/systems/new" element={<SystemCreatePage />} />

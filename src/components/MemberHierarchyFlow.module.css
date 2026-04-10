@@ -1,0 +1,242 @@
+.flowWrap {
+  height: 780px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.72), transparent 18%),
+    linear-gradient(180deg, #f8fafc, #f1f5f9);
+}
+
+.flowWrap :global(.react-flow__renderer),
+.flowWrap :global(.react-flow__pane) {
+  cursor: grab;
+}
+
+.flowWrap :global(.react-flow__controls) {
+  box-shadow: var(--shadow-soft);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.flowWrap :global(.react-flow__controls-button) {
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+
+.flowWrap :global(.react-flow__controls-button svg) {
+  fill: var(--text-strong);
+}
+
+.flowWrap :global(.react-flow__edge-path) {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flowWrap :global(.react-flow__handle) {
+  pointer-events: none;
+}
+
+.flowWrap :global(.react-flow__node-branchBand) {
+  pointer-events: none;
+  z-index: -1 !important;
+}
+
+.nodeCard {
+  --tone-border: rgba(148, 163, 184, 0.22);
+  --tone-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);
+  position: relative;
+  width: 288px;
+  min-height: 136px;
+  border-radius: 24px;
+  border: 2px solid var(--tone-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--tone-shadow);
+}
+
+.nodeInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 136px;
+  padding: 20px 20px 18px;
+  text-align: center;
+}
+
+.toneExecutive {
+  --tone-border: rgba(59, 130, 246, 0.28);
+}
+
+.toneLead {
+  --tone-border: rgba(15, 118, 110, 0.28);
+}
+
+.toneQuality {
+  --tone-border: rgba(249, 115, 22, 0.28);
+}
+
+.tonePlatform {
+  --tone-border: rgba(124, 58, 237, 0.28);
+}
+
+.toneDefault {
+  --tone-border: rgba(148, 163, 184, 0.26);
+}
+
+.pathCard {
+  box-shadow:
+    0 0 0 4px rgba(191, 219, 254, 0.5),
+    var(--tone-shadow);
+}
+
+.selectedCard {
+  box-shadow:
+    0 0 0 5px rgba(209, 250, 229, 0.92),
+    0 18px 36px rgba(15, 118, 110, 0.12);
+}
+
+.handleTop,
+.handleBottom {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #aeb8c6;
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.94);
+}
+
+.handleTop {
+  top: -28px;
+}
+
+.handleBottom {
+  bottom: -28px;
+}
+
+.nodeHeader {
+  display: flex;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.stateBadge,
+.pathBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.stateBadge {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+}
+
+.pathBadge {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.nodeMain {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.memberName {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.memberRole {
+  font-size: 16px;
+  color: var(--text-subtle);
+  font-weight: 700;
+}
+
+.branchBand {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 32px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.branchBand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.18));
+}
+
+.branchLabel {
+  position: absolute;
+  top: 10px;
+  left: 18px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.branchTone0 {
+  border-color: rgba(56, 189, 248, 0.26);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.branchTone0 .branchLabel {
+  color: #0369a1;
+}
+
+.branchTone1 {
+  border-color: rgba(52, 211, 153, 0.26);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.branchTone1 .branchLabel {
+  color: #047857;
+}
+
+.branchTone2 {
+  border-color: rgba(245, 158, 11, 0.26);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.branchTone2 .branchLabel {
+  color: #b45309;
+}
+
+.branchTone3 {
+  border-color: rgba(167, 139, 250, 0.26);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.branchTone3 .branchLabel {
+  color: #6d28d9;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}

@@ -121,6 +121,7 @@ function normalizeMember(member: ApiMember | null | undefined): Member | null {
     departmentCode: member.departmentCode,
     departmentName: member.departmentName,
     role: member.role,
+    lineLabel: member.lineLabel?.trim() || undefined,
     managerId: member.managerId,
     bookmarkedProjectIds: [...(member.bookmarkedProjectIds ?? [])],
     defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? ['未着手', '進行中', '遅延', '完了'])],
