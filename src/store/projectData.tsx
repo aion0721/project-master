@@ -23,6 +23,7 @@ import {
   updateProjectStructureRequest,
   updateSystemRequest,
   updateSystemStructureRequest,
+  type ProjectDataPayload,
 } from '../api/projectApi'
 import type {
   CreateMemberInput,
@@ -77,6 +78,18 @@ function replaceEventsForProject(current: ProjectEvent[], projectId: string, inc
   return current.filter((event) => event.projectId !== projectId).concat(incoming)
 }
 
+function getFirstProjectOrThrow(projects: Project[], message: string) {
+  const project = projects[0]
+
+  if (!project) {
+    throw new Error(message)
+  }
+
+  return project
+}
+
+type CollectionMergeMode = 'merge' | 'replaceByProject'
+
 export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
@@ -89,6 +102,58 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const applyProjectPayload = (
+    projectId: string,
+    payload: ProjectDataPayload,
+    options?: {
+      phaseMode?: CollectionMergeMode
+      eventMode?: CollectionMergeMode
+      assignmentMode?: CollectionMergeMode
+    },
+  ) => {
+    const phaseMode = options?.phaseMode ?? 'merge'
+    const eventMode = options?.eventMode ?? 'replaceByProject'
+    const assignmentMode = options?.assignmentMode ?? 'replaceByProject'
+
+    setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+
+    if (phaseMode === 'replaceByProject') {
+      setPhases((current) => current.filter((phase) => phase.projectId !== projectId).concat(payload.phases))
+    } else {
+      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+    }
+
+    if (eventMode === 'replaceByProject') {
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
+    } else {
+      setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
+    }
+
+    setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+    setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+    setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
+
+    if (assignmentMode === 'replaceByProject') {
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+    } else {
+      setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
+    }
+  }
+
+  const applyAndGetUpdatedProject = (
+    projectId: string,
+    payload: ProjectDataPayload,
+    options?: {
+      phaseMode?: CollectionMergeMode
+      eventMode?: CollectionMergeMode
+      assignmentMode?: CollectionMergeMode
+    },
+  ) => {
+    const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
+    applyProjectPayload(projectId, payload, options)
+    return updatedProject
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -147,19 +212,12 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     createProject: async (input: CreateProjectInput) => {
       const payload = await createProjectRequest(input)
-      const createdProject = payload.projects[0]
+      const createdProject = getFirstProjectOrThrow(payload.projects, 'Created project payload is empty')
 
-      if (!createdProject) {
-        throw new Error('Created project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
+      applyProjectPayload(createdProject.projectNumber, payload, {
+        eventMode: 'merge',
+        assignmentMode: 'merge',
+      })
 
       return createdProject
     },
@@ -227,209 +285,53 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectSchedule: async (projectId: string, input: UpdateProjectScheduleInput) => {
       const payload = await updateProjectScheduleRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectLinks: async (projectId: string, input: UpdateProjectLinksInput) => {
       const payload = await updateProjectLinksRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectNote: async (projectId: string, input: UpdateProjectNoteInput) => {
       const payload = await updateProjectNoteRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectStatusEntries: async (
       projectId: string,
       input: UpdateProjectStatusEntriesInput,
     ) => {
       const payload = await updateProjectStatusEntriesRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectReportStatus: async (projectId: string, input: UpdateProjectReportStatusInput) => {
       const payload = await updateProjectReportStatusRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectStatusOverride: async (
       projectId: string,
       input: UpdateProjectStatusOverrideInput,
     ) => {
       const payload = await updateProjectStatusOverrideRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectSystems: async (projectId: string, input: UpdateProjectSystemsInput) => {
       const payload = await updateProjectSystemsRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectEvents: async (projectId: string, input: UpdateProjectEventsInput) => {
       const payload = await updateProjectEventsRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectPhases: async (projectId: string, input: UpdateProjectPhasesInput) => {
       const payload = await updateProjectPhasesRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) =>
-        current.filter((phase) => phase.projectId !== projectId).concat(payload.phases),
-      )
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload, { phaseMode: 'replaceByProject' })
     },
     updateProjectCurrentPhase: async (projectId: string, phaseId: string) => {
       const payload = await updateProjectCurrentPhaseRequest(projectId, phaseId)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     updateProjectStructure: async (projectId: string, input: UpdateProjectStructureInput) => {
       const payload = await updateProjectStructureRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
-
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-
-      return updatedProject
+      return applyAndGetUpdatedProject(projectId, payload)
     },
     getProjectById: (projectId) => projects.find((project) => project.projectNumber === projectId),
     getProjectPhases: (projectId) => phases.filter((phase) => phase.projectId === projectId),
