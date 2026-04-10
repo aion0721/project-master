@@ -25,6 +25,7 @@ import type {
   UpdateProjectSystemsInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
+  UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
   UpdateSystemStructureInput,
 } from '../types/project'
@@ -207,6 +208,30 @@ function updateProjectStatus(fixtureData: FixtureData, projectNumber: string) {
   project.status = (project.statusOverride ??
     deriveProjectStatus(getOrderedProjectPhases(fixtureData, projectNumber))) as Project['status']
   return project
+}
+
+function renameProjectReferences(
+  fixtureData: FixtureData,
+  previousProjectNumber: string,
+  nextProjectNumber: string,
+) {
+  fixtureData.phases.forEach((phase) => {
+    if (phase.projectId === previousProjectNumber) {
+      phase.projectId = nextProjectNumber
+    }
+  })
+
+  fixtureData.events.forEach((event) => {
+    if (event.projectId === previousProjectNumber) {
+      event.projectId = nextProjectNumber
+    }
+  })
+
+  fixtureData.assignments.forEach((assignment) => {
+    if (assignment.projectId === previousProjectNumber) {
+      assignment.projectId = nextProjectNumber
+    }
+  })
 }
 
 function updateCurrentPhaseState(fixtureData: FixtureData, projectNumber: string, phaseId: string) {
@@ -610,6 +635,45 @@ export function mockProjectApi() {
           'Content-Type': 'application/json',
         },
       })
+    }
+
+    const projectMatch = requestUrl.match(/\/api\/projects\/([^/]+)$/)
+    if (projectMatch && method === 'PATCH') {
+      const projectNumber = projectMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectSummaryInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return buildJsonResponse({ message: 'Project not found' }, 404)
+      }
+
+      const nextProjectNumber = body.projectNumber.trim()
+      const nextProjectName = body.name.trim()
+
+      if (!nextProjectNumber || !nextProjectName) {
+        return buildJsonResponse({ message: 'Project number and name are required' }, 400)
+      }
+
+      if (
+        nextProjectNumber !== projectNumber &&
+        fixtureData.projects.some((item) => item.projectNumber === nextProjectNumber)
+      ) {
+        return buildJsonResponse({ message: 'Project number already exists' }, 400)
+      }
+
+      project.name = nextProjectName
+
+      if (nextProjectNumber !== projectNumber) {
+        project.projectNumber = nextProjectNumber
+        renameProjectReferences(fixtureData, projectNumber, nextProjectNumber)
+      }
+
+      const detail = buildProjectDetailResponse(
+        fixtureData,
+        nextProjectNumber !== projectNumber ? nextProjectNumber : projectNumber,
+      )
+
+      return buildJsonResponse(detail, 200)
     }
 
     const currentPhaseMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/current-phase$/)

@@ -89,6 +89,48 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('プロジェクト名とプロジェクト番号を更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-summary-edit-button'))
+    fireEvent.change(screen.getByTestId('project-summary-number'), {
+      target: { value: 'PRJ-101' },
+    })
+    fireEvent.change(screen.getByTestId('project-summary-name'), {
+      target: { value: '基幹会計刷新 本番' },
+    })
+    fireEvent.click(screen.getByTestId('project-summary-save-button'))
+
+    await waitFor(() => {
+      const summaryCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001') && init?.method === 'PATCH'
+      })
+
+      expect(summaryCall).toBeDefined()
+      const body = JSON.parse(String(summaryCall?.[1]?.body))
+      expect(body).toEqual({
+        projectNumber: 'PRJ-101',
+        name: '基幹会計刷新 本番',
+      })
+    })
+
+    expect(await screen.findByRole('heading', { name: '基幹会計刷新 本番' })).toBeInTheDocument()
+    expect(screen.getByTestId('project-summary-number-value')).toHaveTextContent('PRJ-101')
+    expect(screen.getByTestId('project-summary-pm-value')).toHaveTextContent('PM: 田中')
+    expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
+    expect(
+      screen.getByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText(projectEvent.name).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(editableAssignment.responsibility).length).toBeGreaterThan(0)
+    expect(screen.queryByText('案件が見つかりません')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: project.name })).not.toBeInTheDocument()
+  })
+
   it('案件リンクを複数更新できる', async () => {
     const fetchSpy = mockProjectApi()
 

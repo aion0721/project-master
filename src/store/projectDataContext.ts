@@ -23,6 +23,7 @@ import type {
   UpdateProjectSystemsInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
+  UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
   UpdateSystemStructureInput,
   UpdateSystemInput,
@@ -54,6 +55,7 @@ export interface ProjectDataContextValue {
   deleteSystem: (systemId: string) => Promise<void>
   deleteSystemRelation: (relationId: string) => Promise<void>
   updatePhase: (phaseId: string, input: UpdatePhaseInput) => Promise<Phase>
+  updateProjectSummary: (projectId: string, input: UpdateProjectSummaryInput) => Promise<Project>
   updateProjectSchedule: (projectId: string, input: UpdateProjectScheduleInput) => Promise<Project>
   updateProjectLinks: (projectId: string, input: UpdateProjectLinksInput) => Promise<Project>
   updateProjectNote: (projectId: string, input: UpdateProjectNoteInput) => Promise<Project>

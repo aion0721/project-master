@@ -23,6 +23,7 @@ import type {
   UpdateProjectSystemsInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
+  UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
   UpdateSystemStructureInput,
   UpdateSystemInput,
@@ -602,6 +603,21 @@ export async function updateProjectScheduleRequest(
 ): Promise<ProjectDataPayload> {
   const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectScheduleInput>(
     `/api/projects/${projectId}/schedule`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeProjectDetail(detail)
+}
+
+export async function updateProjectSummaryRequest(
+  projectId: string,
+  input: UpdateProjectSummaryInput,
+  signal?: AbortSignal,
+): Promise<ProjectDataPayload> {
+  const detail = await sendJson<ApiProjectDetailResponse, UpdateProjectSummaryInput>(
+    `/api/projects/${projectId}`,
     'PATCH',
     input,
     signal,

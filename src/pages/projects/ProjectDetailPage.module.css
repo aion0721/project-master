@@ -168,7 +168,7 @@
 
 .metaGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
   margin-top: 24px;
 }
@@ -181,6 +181,10 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--border-subtle);
+}
+
+.metaCardStandard {
+  grid-column: span 4;
 }
 
 .metaCardPhaseNotStarted {
@@ -275,17 +279,17 @@
   order: 5;
 }
 
-.metaCardSystem {
-  order: 3;
-}
-
-.metaCardProjectLinks {
+.metaCardSupport {
   order: 7;
 }
 
 .metaCardWide {
   order: 8;
   grid-column: 1 / -1;
+}
+
+.metaCardTwoColumn {
+  grid-column: span 6;
 }
 
 .metaLabel {
@@ -299,6 +303,19 @@
 .metaValue {
   font-size: 18px;
   color: var(--text-strong);
+}
+
+.metaSubtle {
+  font-size: 13px;
+  color: var(--text-subtle);
+  font-weight: 600;
+}
+
+.metaSubLabel {
+  font-size: 12px;
+  color: var(--text-subtle);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .externalLink {
@@ -354,6 +371,33 @@
 .metaHelperText {
   font-size: 12px;
   color: var(--text-subtle);
+}
+
+@media (max-width: 1100px) {
+  .metaGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metaCardStandard,
+  .metaCardTwoColumn {
+    grid-column: span 1;
+  }
+
+  .metaCardWide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .metaGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .metaCardStandard,
+  .metaCardTwoColumn,
+  .metaCardWide {
+    grid-column: 1;
+  }
 }
 
 .statusSyncOption {

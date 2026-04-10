@@ -13,6 +13,10 @@ interface UpdateProjectCurrentPhase {
   (projectId: string, phaseId: string): Promise<unknown>
 }
 
+interface UpdateProjectSummary {
+  (projectId: string, input: { projectNumber: string; name: string }): Promise<Project>
+}
+
 interface UpdateProjectSchedule {
   (projectId: string, input: { startDate: string; endDate: string }): Promise<unknown>
 }
@@ -45,6 +49,7 @@ export function useProjectSummaryEditor(
   project: Project | undefined,
   currentPhase: Phase | undefined,
   availableSystems: ManagedSystem[],
+  updateProjectSummary: UpdateProjectSummary,
   updateProjectCurrentPhase: UpdateProjectCurrentPhase,
   updateProjectSchedule: UpdateProjectSchedule,
   updateProjectLinks: UpdateProjectLinks,
@@ -55,6 +60,14 @@ export function useProjectSummaryEditor(
   updateProjectSystems: UpdateProjectSystems,
 ) {
   const createEmptyStatusEntry = (): ProjectStatusEntry => ({ date: '', content: '' })
+
+  const [isProjectSummaryEditing, setIsProjectSummaryEditing] = useState(false)
+  const [projectSummaryDraft, setProjectSummaryDraft] = useState({
+    projectNumber: '',
+    name: '',
+  })
+  const [projectSummaryError, setProjectSummaryError] = useState<string | null>(null)
+  const [isSavingProjectSummary, setIsSavingProjectSummary] = useState(false)
 
   const [isCurrentPhaseEditing, setIsCurrentPhaseEditing] = useState(false)
   const [currentPhaseDraftId, setCurrentPhaseDraftId] = useState('')
@@ -104,6 +117,11 @@ export function useProjectSummaryEditor(
       return
     }
 
+    setProjectSummaryDraft({
+      projectNumber: project.projectNumber,
+      name: project.name,
+    })
+    setProjectSummaryError(null)
     setScheduleDraft({ startDate: project.startDate, endDate: project.endDate })
     setScheduleError(null)
     setProjectLinksDraft(
@@ -135,6 +153,10 @@ export function useProjectSummaryEditor(
 
   const scheduleChanged = project
     ? scheduleDraft.startDate !== project.startDate || scheduleDraft.endDate !== project.endDate
+    : false
+  const projectSummaryChanged = project
+    ? projectSummaryDraft.projectNumber !== project.projectNumber ||
+      projectSummaryDraft.name !== project.name
     : false
   const projectLinksChanged = project
     ? JSON.stringify(validateProjectLinks(projectLinksDraft).links) !==
@@ -174,6 +196,65 @@ export function useProjectSummaryEditor(
     setScheduleDraft({ startDate: project.startDate, endDate: project.endDate })
     setScheduleError(null)
     setIsScheduleEditing(false)
+  }
+
+  function openProjectSummaryEditor() {
+    if (!project) {
+      return
+    }
+
+    setProjectSummaryDraft({
+      projectNumber: project.projectNumber,
+      name: project.name,
+    })
+    setProjectSummaryError(null)
+    setIsProjectSummaryEditing(true)
+  }
+
+  function closeProjectSummaryEditor() {
+    if (!project) {
+      return
+    }
+
+    setProjectSummaryDraft({
+      projectNumber: project.projectNumber,
+      name: project.name,
+    })
+    setProjectSummaryError(null)
+    setIsProjectSummaryEditing(false)
+  }
+
+  async function saveProjectSummary() {
+    if (!project) {
+      return null
+    }
+
+    const nextProjectNumber = projectSummaryDraft.projectNumber.trim()
+    const nextProjectName = projectSummaryDraft.name.trim()
+
+    if (!nextProjectNumber || !nextProjectName) {
+      setProjectSummaryError('プロジェクト番号とプロジェクト名を入力してください。')
+      return null
+    }
+
+    setIsSavingProjectSummary(true)
+    setProjectSummaryError(null)
+
+    try {
+      const updatedProject = await updateProjectSummary(project.projectNumber, {
+        projectNumber: nextProjectNumber,
+        name: nextProjectName,
+      })
+      setIsProjectSummaryEditing(false)
+      return updatedProject
+    } catch (caughtError) {
+      setProjectSummaryError(
+        caughtError instanceof Error ? caughtError.message : '基本情報の更新に失敗しました。',
+      )
+      return null
+    } finally {
+      setIsSavingProjectSummary(false)
+    }
   }
 
   async function saveSchedule() {
@@ -535,6 +616,7 @@ export function useProjectSummaryEditor(
   }
 
   return {
+    isProjectSummaryEditing,
     currentPhaseDraftId,
     currentPhaseChanged,
     currentPhaseError,
@@ -546,6 +628,7 @@ export function useProjectSummaryEditor(
     isProjectStatusEditing,
     isProjectSystemsEditing,
     isSavingCurrentPhase,
+    isSavingProjectSummary,
     isSavingProjectLinks,
     isSavingProjectNote,
     isSavingProjectStatusEntries,
@@ -554,6 +637,9 @@ export function useProjectSummaryEditor(
     isSavingProjectSystems,
     isSavingSchedule,
     isScheduleEditing,
+    projectSummaryChanged,
+    projectSummaryDraft,
+    projectSummaryError,
     projectLinksChanged,
     projectLinksDraft,
     projectLinksError,
@@ -576,6 +662,7 @@ export function useProjectSummaryEditor(
     scheduleDraft,
     scheduleError,
     addProjectLinkDraft,
+    closeProjectSummaryEditor,
     closeCurrentPhaseEditor,
     closeProjectLinksEditor,
     closeProjectNoteEditor,
@@ -584,6 +671,7 @@ export function useProjectSummaryEditor(
     closeProjectStatusEditor,
     closeProjectSystemsEditor,
     closeScheduleEditor,
+    openProjectSummaryEditor,
     openCurrentPhaseEditor,
     openProjectLinksEditor,
     openProjectNoteEditor,
@@ -593,6 +681,7 @@ export function useProjectSummaryEditor(
     openProjectSystemsEditor,
     openScheduleEditor,
     removeProjectLinkDraft,
+    saveProjectSummary,
     saveCurrentPhase,
     saveProjectLinks,
     saveProjectNote,
@@ -601,6 +690,7 @@ export function useProjectSummaryEditor(
     saveProjectStatusOverride,
     saveProjectSystems,
     saveSchedule,
+    setProjectSummaryDraft,
     setCurrentPhaseDraftId,
     setScheduleDraft,
     setProjectNoteDraft,

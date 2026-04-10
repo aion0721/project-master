@@ -20,6 +20,7 @@ import {
   updateProjectSystemsRequest,
   updateProjectPhasesRequest,
   updateProjectScheduleRequest,
+  updateProjectSummaryRequest,
   updateProjectStructureRequest,
   updateSystemRequest,
   updateSystemStructureRequest,
@@ -49,6 +50,7 @@ import type {
   UpdateProjectSystemsInput,
   UpdateProjectPhasesInput,
   UpdateProjectScheduleInput,
+  UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
   UpdateSystemStructureInput,
   UpdateSystemInput,
@@ -64,6 +66,14 @@ function mergeByKey<T>(current: T[], incoming: T[], getKey: (item: T) => string)
   })
 
   return [...map.values()]
+}
+
+function replaceProjectsForRename(current: Project[], previousProjectId: string, incoming: Project[]) {
+  const incomingIds = new Set(incoming.map((project) => project.projectNumber))
+
+  return current
+    .filter((project) => project.projectNumber !== previousProjectId && !incomingIds.has(project.projectNumber))
+    .concat(incoming)
 }
 
 function replaceAssignmentsForProject(
@@ -115,8 +125,16 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     const phaseMode = options?.phaseMode ?? 'merge'
     const eventMode = options?.eventMode ?? 'replaceByProject'
     const assignmentMode = options?.assignmentMode ?? 'replaceByProject'
+    const payloadProject = payload.projects[0]
+    const nextProjectId = payloadProject?.projectNumber ?? projectId
 
-    setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+    setProjects((current) => {
+      if (projectId !== nextProjectId) {
+        return replaceProjectsForRename(current, projectId, payload.projects)
+      }
+
+      return mergeByKey(current, payload.projects, (item) => item.projectNumber)
+    })
 
     if (phaseMode === 'replaceByProject') {
       setPhases((current) => current.filter((phase) => phase.projectId !== projectId).concat(payload.phases))
@@ -282,6 +300,14 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setPhases((current) => mergeByKey(current, [payload.phase], (item) => item.id))
       setProjects((current) => mergeByKey(current, [payload.project], (item) => item.projectNumber))
       return payload.phase
+    },
+    updateProjectSummary: async (projectId: string, input: UpdateProjectSummaryInput) => {
+      const payload = await updateProjectSummaryRequest(projectId, input)
+      return applyAndGetUpdatedProject(projectId, payload, {
+        phaseMode: 'replaceByProject',
+        eventMode: 'replaceByProject',
+        assignmentMode: 'replaceByProject',
+      })
     },
     updateProjectSchedule: async (projectId: string, input: UpdateProjectScheduleInput) => {
       const payload = await updateProjectScheduleRequest(projectId, input)

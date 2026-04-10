@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { PhaseTimeline } from '../../components/PhaseTimeline'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -19,6 +19,7 @@ import styles from './ProjectDetailPage.module.css'
 
 export function ProjectDetailPage() {
   const { projectNumber } = useParams()
+  const navigate = useNavigate()
   const {
     assignments,
     members,
@@ -29,6 +30,7 @@ export function ProjectDetailPage() {
     getProjectEvents,
     isLoading,
     error,
+    updateProjectSummary,
     updateProjectCurrentPhase,
     updateProjectEvents,
     updateProjectLinks,
@@ -74,6 +76,7 @@ export function ProjectDetailPage() {
     project,
     currentPhase,
     systems,
+    updateProjectSummary,
     updateProjectCurrentPhase,
     updateProjectSchedule,
     updateProjectLinks,
@@ -200,6 +203,14 @@ export function ProjectDetailPage() {
     }
   }
 
+  async function handleProjectSummarySave() {
+    const updatedProject = await summaryEditor.saveProjectSummary()
+
+    if (updatedProject && updatedProject.projectNumber !== project?.projectNumber) {
+      navigate(`/projects/${updatedProject.projectNumber}`, { replace: true })
+    }
+  }
+
   if (isLoading) {
     return (
       <Panel className={styles.notFound}>
@@ -247,8 +258,10 @@ export function ProjectDetailPage() {
         currentUser={currentUser}
         isBookmarked={isBookmarked(project.projectNumber)}
         isCurrentPhaseEditing={summaryEditor.isCurrentPhaseEditing}
+        isProjectSummaryEditing={summaryEditor.isProjectSummaryEditing}
         isProjectLinksEditing={summaryEditor.isProjectLinksEditing}
         isSavingCurrentPhase={summaryEditor.isSavingCurrentPhase}
+        isSavingProjectSummary={summaryEditor.isSavingProjectSummary}
         isSavingProjectLinks={summaryEditor.isSavingProjectLinks}
         isSavingSchedule={summaryEditor.isSavingSchedule}
         isScheduleEditing={summaryEditor.isScheduleEditing}
@@ -290,6 +303,14 @@ export function ProjectDetailPage() {
         onProjectStatusSave={() => {
           void handleProjectStatusSave()
         }}
+        onProjectSummaryDraftChange={(patch) => {
+          summaryEditor.setProjectSummaryDraft((current) => ({ ...current, ...patch }))
+        }}
+        onProjectSummaryEdit={summaryEditor.openProjectSummaryEditor}
+        onProjectSummaryCancel={summaryEditor.closeProjectSummaryEditor}
+        onProjectSummarySave={() => {
+          void handleProjectSummarySave()
+        }}
         onProjectStatusEntriesCancel={summaryEditor.closeProjectStatusEntriesEditor}
         onProjectStatusEntryDraftChange={summaryEditor.updateProjectStatusEntryDraft}
         onProjectStatusEntriesEdit={summaryEditor.openProjectStatusEntriesEditor}
@@ -319,6 +340,9 @@ export function ProjectDetailPage() {
         }}
         pmName={pm?.name}
         project={project}
+        projectSummaryChanged={summaryEditor.projectSummaryChanged}
+        projectSummaryDraft={summaryEditor.projectSummaryDraft}
+        projectSummaryError={summaryEditor.projectSummaryError}
         projectLinksChanged={summaryEditor.projectLinksChanged}
         projectLinksDraft={summaryEditor.projectLinksDraft}
         projectLinksError={summaryEditor.projectLinksError}
@@ -340,6 +364,7 @@ export function ProjectDetailPage() {
         projectSystemsChanged={summaryEditor.projectSystemsChanged}
         projectSystemsError={summaryEditor.projectSystemsError}
         availableSystems={systems}
+        members={members}
         isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
         isProjectNoteEditing={summaryEditor.isProjectNoteEditing}
         isProjectStatusEntriesEditing={summaryEditor.isProjectStatusEntriesEditing}

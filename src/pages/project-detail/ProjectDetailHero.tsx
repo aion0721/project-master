@@ -18,6 +18,11 @@ interface ScheduleDraft {
   endDate: string
 }
 
+interface ProjectSummaryDraft {
+  projectNumber: string
+  name: string
+}
+
 interface ProjectDetailHeroProps {
   project: Project
   pmName?: string
@@ -25,10 +30,19 @@ interface ProjectDetailHeroProps {
   isBookmarked: boolean
   onToggleBookmark: () => void
   isScheduleEditing: boolean
+  isProjectSummaryEditing: boolean
   scheduleDraft: ScheduleDraft
+  projectSummaryDraft: ProjectSummaryDraft
   scheduleChanged: boolean
+  projectSummaryChanged: boolean
   scheduleError: string | null
+  projectSummaryError: string | null
   isSavingSchedule: boolean
+  isSavingProjectSummary: boolean
+  onProjectSummaryDraftChange: (patch: Partial<ProjectSummaryDraft>) => void
+  onProjectSummaryEdit: () => void
+  onProjectSummaryCancel: () => void
+  onProjectSummarySave: () => void
   onScheduleDraftChange: (patch: Partial<ScheduleDraft>) => void
   onScheduleEdit: () => void
   onScheduleCancel: () => void
@@ -116,10 +130,19 @@ export function ProjectDetailHero({
   isBookmarked,
   onToggleBookmark,
   isScheduleEditing,
+  isProjectSummaryEditing,
   scheduleDraft,
+  projectSummaryDraft,
   scheduleChanged,
+  projectSummaryChanged,
   scheduleError,
+  projectSummaryError,
   isSavingSchedule,
+  isSavingProjectSummary,
+  onProjectSummaryDraftChange,
+  onProjectSummaryEdit,
+  onProjectSummaryCancel,
+  onProjectSummarySave,
   onScheduleDraftChange,
   onScheduleEdit,
   onScheduleCancel,
@@ -240,7 +263,7 @@ export function ProjectDetailHero({
       className={styles.hero}
       collapsible
       collapseToggleTestId="project-hero-toggle-button"
-      description={`プロジェクト番号: ${project.projectNumber}。PM、進捗、体制、主システムをまとめて確認できる案件詳細です。`}
+      description={`プロジェクト番号: ${project.projectNumber}。基本情報、PM、進捗、体制、主システムをまとめて確認できる案件詳細です。`}
       descriptionSupplement={
         relatedSystems.length > 0 ? (
           <div className={styles.systemChipList}>
@@ -274,12 +297,14 @@ export function ProjectDetailHero({
           currentPhaseDraftId={currentPhaseDraftId}
           currentPhaseError={currentPhaseError}
           isCurrentPhaseEditing={isCurrentPhaseEditing}
+          isProjectSummaryEditing={isProjectSummaryEditing}
           isProjectLinksEditing={isProjectLinksEditing}
           isProjectNoteEditing={isProjectNoteEditing}
           isProjectStatusEntriesEditing={isProjectStatusEntriesEditing}
           isProjectReportStatusEditing={isProjectReportStatusEditing}
           isProjectStatusEditing={isProjectStatusEditing}
           isSavingCurrentPhase={isSavingCurrentPhase}
+          isSavingProjectSummary={isSavingProjectSummary}
           isSavingProjectLinks={isSavingProjectLinks}
           isSavingProjectNote={isSavingProjectNote}
           isSavingProjectStatusEntries={isSavingProjectStatusEntries}
@@ -287,6 +312,10 @@ export function ProjectDetailHero({
           isSavingProjectStatusOverride={isSavingProjectStatusOverride}
           isSavingSchedule={isSavingSchedule}
           isScheduleEditing={isScheduleEditing}
+          onProjectSummaryDraftChange={onProjectSummaryDraftChange}
+          onProjectSummaryEdit={onProjectSummaryEdit}
+          onProjectSummaryCancel={onProjectSummaryCancel}
+          onProjectSummarySave={onProjectSummarySave}
           onAddProjectLink={onAddProjectLink}
           onCurrentPhaseCancel={onCurrentPhaseCancel}
           onCurrentPhaseDraftChange={onCurrentPhaseDraftChange}
@@ -327,6 +356,9 @@ export function ProjectDetailHero({
           onScheduleSave={onScheduleSave}
           pmName={pmName}
           project={project}
+          projectSummaryChanged={projectSummaryChanged}
+          projectSummaryDraft={projectSummaryDraft}
+          projectSummaryError={projectSummaryError}
           projectLinksChanged={projectLinksChanged}
           projectLinksDraft={projectLinksDraft}
           projectLinksError={projectLinksError}
