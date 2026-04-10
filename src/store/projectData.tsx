@@ -23,6 +23,7 @@ import {
   updateProjectStructureRequest,
   updateSystemRequest,
   updateSystemStructureRequest,
+  type ProjectDataPayload,
 } from '../api/projectApi'
 import type {
   CreateMemberInput,
@@ -89,6 +90,25 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const applyProjectPayload = (
+    projectId: string,
+    payload: ProjectDataPayload,
+    options?: { replacePhasesForProject?: boolean },
+  ) => {
+    setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
+    if (options?.replacePhasesForProject) {
+      setPhases((current) => current.filter((phase) => phase.projectId !== projectId).concat(payload.phases))
+    } else {
+      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
+    }
+    setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
+    setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
+    setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
+    setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
+    setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+  }
+
 
   useEffect(() => {
     const controller = new AbortController()
@@ -233,13 +253,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -251,13 +265,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -269,13 +277,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -290,13 +292,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -308,13 +304,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -329,13 +319,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -347,13 +331,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -365,13 +343,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -383,15 +355,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) =>
-        current.filter((phase) => phase.projectId !== projectId).concat(payload.phases),
-      )
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload, { replacePhasesForProject: true })
 
       return updatedProject
     },
@@ -403,13 +367,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
@@ -421,13 +379,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         throw new Error('Updated project payload is empty')
       }
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+      applyProjectPayload(projectId, payload)
 
       return updatedProject
     },
