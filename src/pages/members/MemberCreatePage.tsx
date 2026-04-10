@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
 import type { CreateMemberInput } from '../../types/project'
 import {
@@ -94,13 +95,13 @@ export function MemberCreatePage() {
           </Button>
         }
         className={styles.hero}
-        description="ID、部署、ロール、上司を登録してメンバーを追加します。上司候補は `ID / 名前` 形式で表示するので、ID入力で選びやすくしています。"
+        description="ID、部署、ロール、上司を登録してメンバーを追加します。上司候補は `ID / 名前` 形式で検索できます。"
         eyebrow="Member Setup"
         iconKind="member"
         stats={[
-          { label: '必須入力', value: '5項目' },
+          { label: '必須項目', value: '5項目' },
           { label: '上司設定', value: '任意' },
-          { label: 'ID形式', value: memberIdExample },
+          { label: 'ID例', value: memberIdExample },
         ]}
         title="メンバー追加"
       />
@@ -146,7 +147,7 @@ export function MemberCreatePage() {
               aria-label="部署名"
               className={styles.input}
               onChange={(event) => updateField('departmentName', event.target.value)}
-              placeholder="例: 品質保証部"
+              placeholder="例: 品質管理部"
               value={formData.departmentName}
             />
           </label>
@@ -164,25 +165,24 @@ export function MemberCreatePage() {
 
           <label className={styles.field}>
             <span className={styles.label}>上司</span>
-            <select
-              aria-label="上司"
+            <SearchSelect
+              ariaLabel="上司"
               className={styles.input}
-              onChange={(event) => updateField('managerId', event.target.value)}
+              onChange={(managerId) => updateField('managerId', managerId)}
+              options={sortedMembers.map((member) => ({
+                value: member.id,
+                label: formatMemberOptionLabel(member),
+                keywords: [member.name, member.departmentName, member.role],
+              }))}
+              placeholder="上司を検索"
               value={formData.managerId}
-            >
-              <option value="">未設定</option>
-              {sortedMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {formatMemberOptionLabel(member)}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <div className={styles.noteCard}>
             <p className={styles.noteTitle}>入力ルール</p>
             <p className={styles.noteText}>
-              部署コードは将来の部署名変更に備えるために保持します。メンバーIDは一意になる値を入力してください。
+              部署コードは既存の部署名表記に合わせると後続画面で扱いやすくなります。メンバーIDは一意の値を入力してください。
             </p>
           </div>
 

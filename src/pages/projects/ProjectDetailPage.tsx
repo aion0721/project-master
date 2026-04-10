@@ -364,7 +364,6 @@ export function ProjectDetailPage() {
         projectSystemsChanged={summaryEditor.projectSystemsChanged}
         projectSystemsError={summaryEditor.projectSystemsError}
         availableSystems={systems}
-        members={members}
         isProjectSystemsEditing={summaryEditor.isProjectSystemsEditing}
         isProjectNoteEditing={summaryEditor.isProjectNoteEditing}
         isProjectStatusEntriesEditing={summaryEditor.isProjectStatusEntriesEditing}

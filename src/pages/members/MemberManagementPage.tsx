@@ -4,6 +4,7 @@ import { ListPageFilterSection } from '../../components/ListPageFilterSection'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
 import formStyles from '../../styles/form.module.css'
 import pageStyles from '../../styles/page.module.css'
@@ -62,6 +63,32 @@ export function MemberManagementPage() {
         left.localeCompare(right, 'ja'),
       ),
     [members],
+  )
+
+  const keywordOptions = useMemo(() => {
+    const values = new Map<string, { value: string; label: string }>()
+
+    sortedMembers.forEach((member) => {
+      values.set(`member:${member.id}`, {
+        value: member.id,
+        label: `${member.id} / ${member.name}`,
+      })
+      values.set(`department:${member.departmentName}`, {
+        value: member.departmentName,
+        label: member.departmentName,
+      })
+    })
+
+    return [...values.values()]
+  }, [sortedMembers])
+
+  const roleSearchOptions = useMemo(
+    () =>
+      roleOptions.map((role) => ({
+        value: role,
+        label: role,
+      })),
+    [roleOptions],
   )
 
   const filteredMembers = useMemo(() => {
@@ -198,36 +225,32 @@ export function MemberManagementPage() {
           <div className={styles.headerActions}>
             <label className={`${formStyles.field} ${styles.filterField}`}>
               <span className={formStyles.label}>絞り込み</span>
-              <input
-                aria-label="メンバーIDまたは部署名で絞り込み"
+              <SearchSelect
+                allowFreeText
+                ariaLabel="メンバーIDまたは部署名で絞り込み"
                 className={formStyles.control}
-                onChange={(event) => setFilterKeyword(event.target.value)}
+                onChange={setFilterKeyword}
+                options={keywordOptions}
                 placeholder="例: m1 / 営業本部"
-                type="search"
                 value={filterKeyword}
               />
             </label>
             <label className={`${formStyles.field} ${styles.filterField}`}>
               <span className={formStyles.label}>ロール</span>
-              <select
-                aria-label="ロールで絞り込み"
+              <SearchSelect
+                ariaLabel="ロールで絞り込み"
                 className={formStyles.control}
-                onChange={(event) => setFilterRole(event.target.value)}
+                onChange={setFilterRole}
+                options={roleSearchOptions}
+                placeholder="ロールを検索"
                 value={filterRole}
-              >
-                <option value="">すべて</option>
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           </div>
         }
         summary={
           <div className={styles.filterSummary}>
-            <span className={styles.filterSummaryLabel}>表示条件</span>
+            <span className={styles.filterSummaryLabel}>表示件数</span>
             <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
           </div>
         }
@@ -332,19 +355,18 @@ export function MemberManagementPage() {
                     </td>
                     <td>
                       {isEditing ? (
-                        <select
-                          aria-label="上司"
+                        <SearchSelect
+                          ariaLabel="上司"
                           className={styles.inlineInput}
-                          onChange={(event) => updateEditField('managerId', event.target.value)}
+                          onChange={(managerId) => updateEditField('managerId', managerId)}
+                          options={managerOptions.map((option) => ({
+                            value: option.id,
+                            label: formatMemberOptionLabel(option),
+                            keywords: [option.name, option.departmentName, option.role],
+                          }))}
+                          placeholder="上司を検索"
                           value={editForm.managerId}
-                        >
-                          <option value="">未設定</option>
-                          {managerOptions.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {formatMemberOptionLabel(option)}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       ) : manager ? (
                         formatMemberShortLabel(manager)
                       ) : (

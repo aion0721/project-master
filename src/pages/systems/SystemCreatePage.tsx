@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
 import type { CreateSystemInput } from '../../types/project'
 import { buildInitialSystemForm, toNullableValue, validateSystemInput } from './systemFormUtils'
@@ -74,7 +75,7 @@ export function SystemCreatePage() {
   if (isLoading) {
     return (
       <Panel className={styles.section}>
-        <h1 className={styles.title}>システム追加画面を準備中です</h1>
+        <h1 className={styles.title}>システム追加画面を読み込み中です</h1>
         <p className={styles.description}>システム情報を読み込んでいます。</p>
       </Panel>
     )
@@ -98,13 +99,13 @@ export function SystemCreatePage() {
           </Button>
         }
         className={styles.hero}
-        description="システムID、名称、カテゴリ、オーナー、所管部署、メモを登録します。登録後は案件との紐づけにも利用できます。"
+        description="システムID、名称、カテゴリ、オーナー、所管部署、メモを登録します。作成後は案件との紐づけにも使えます。"
         eyebrow="System Setup"
         iconKind="system"
         stats={[
-          { label: '必須入力', value: '3項目' },
+          { label: '必須項目', value: '3項目' },
           { label: '所管部署', value: '複数選択可' },
-          { label: '案件連携', value: '登録後に利用' },
+          { label: '案件連携', value: '作成後に利用' },
         ]}
         title="システム追加"
       />
@@ -146,19 +147,18 @@ export function SystemCreatePage() {
 
           <label className={styles.field}>
             <span className={styles.label}>オーナー</span>
-            <select
-              aria-label="オーナー"
+            <SearchSelect
+              ariaLabel="オーナー"
               className={styles.input}
-              onChange={(event) => updateField('ownerMemberId', event.target.value)}
+              onChange={(ownerMemberId) => updateField('ownerMemberId', ownerMemberId)}
+              options={members.map((member) => ({
+                value: member.id,
+                label: `${member.id} / ${member.name}`,
+                keywords: [member.name, member.departmentName, member.role],
+              }))}
+              placeholder="オーナーを検索"
               value={formData.ownerMemberId}
-            >
-              <option value="">未設定</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.id} / {member.name}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <div className={`${styles.field} ${styles.departmentField}`}>
@@ -183,7 +183,7 @@ export function SystemCreatePage() {
               aria-label="メモ"
               className={styles.textarea}
               onChange={(event) => updateField('note', event.target.value)}
-              placeholder="運用背景や補足情報を入力"
+              placeholder="運用範囲や補足情報を入力"
               value={formData.note}
             />
           </label>

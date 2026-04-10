@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
 import type { CreateProjectInput, ProjectLink, WorkStatus } from '../../types/project'
 import {
@@ -11,8 +12,8 @@ import {
   standardProjectPhasePresets,
   type StandardProjectPhaseName,
 } from '../../utils/projectPhasePresets'
-import { formatMemberShortLabel } from '../members/memberFormUtils'
 import { createEmptyProjectLink, validateProjectLinks } from '../../utils/projectLinkUtils'
+import { formatMemberShortLabel } from '../members/memberFormUtils'
 import styles from './ProjectCreatePage.module.css'
 
 const statusOptions: WorkStatus[] = ['未着手', '進行中', '完了', '遅延']
@@ -112,7 +113,7 @@ export function ProjectCreatePage() {
     }
 
     if (formData.startDate > formData.endDate) {
-      setSubmitError('終了日は開始日以降を指定してください。')
+      setSubmitError('開始日は終了日より前にしてください。')
       return
     }
 
@@ -174,13 +175,13 @@ export function ProjectCreatePage() {
           </Button>
         }
         className={styles.hero}
-        description="プロジェクト番号、案件名、PM を設定して案件を追加します。主システムと案件リンクも同時に登録できます。"
+        description="プロジェクト番号、案件名、PM を設定して案件を追加します。主システムと案件リンクも必要に応じて登録できます。"
         eyebrow="Project Setup"
         iconKind="project"
         stats={[
-          { label: '必須入力', value: '5項目' },
+          { label: '必須項目', value: '5項目' },
           { label: '初期フェーズ', value: `${defaultStandardProjectPhaseNames.length}件` },
-          { label: '同時登録', value: '主システム・案件リンク' },
+          { label: '関連情報', value: '主システム・案件リンク' },
         ]}
         title="案件追加"
       />
@@ -202,25 +203,25 @@ export function ProjectCreatePage() {
             <input
               className={styles.input}
               onChange={(event) => updateField('name', event.target.value)}
-              placeholder="例: 新基幹刷新"
+              placeholder="例: 新会計刷新"
               value={formData.name}
             />
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>PM</span>
-            <select
+            <SearchSelect
+              ariaLabel="PM"
               className={styles.input}
-              onChange={(event) => updateField('pmMemberId', event.target.value)}
+              onChange={(pmMemberId) => updateField('pmMemberId', pmMemberId)}
+              options={members.map((member) => ({
+                value: member.id,
+                label: formatMemberShortLabel(member),
+                keywords: [member.name, member.departmentName, member.role],
+              }))}
+              placeholder="メンバーを検索"
               value={formData.pmMemberId}
-            >
-              <option value="">選択してください</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {formatMemberShortLabel(member)}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <label className={styles.field}>
@@ -261,34 +262,34 @@ export function ProjectCreatePage() {
           <div className={styles.systemSection}>
             <div>
               <p className={styles.noteTitle}>主システム</p>
-              <p className={styles.noteText}>案件の主システムを 1 件選択してください。</p>
+              <p className={styles.noteText}>案件の主システムを 1 件選択できます。</p>
             </div>
             {systems.length > 0 ? (
               <label className={styles.field}>
                 <span className={styles.label}>主システム</span>
-                <select
+                <SearchSelect
+                  ariaLabel="主システム"
                   className={styles.input}
-                  data-testid="create-project-system-select"
-                  onChange={(event) => updateRelatedSystem(event.target.value)}
+                  dataTestId="create-project-system-select"
+                  onChange={updateRelatedSystem}
+                  options={systems.map((system) => ({
+                    value: system.id,
+                    label: `${system.id} / ${system.name}`,
+                    keywords: [system.name, system.category],
+                  }))}
+                  placeholder="システムを検索"
                   value={formData.relatedSystemIds?.[0] ?? ''}
-                >
-                  <option value="">選択してください</option>
-                  {systems.map((system) => (
-                    <option key={system.id} value={system.id}>
-                      {system.id} / {system.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
             ) : (
-              <p className={styles.noteText}>登録済みシステムがありません。</p>
+              <p className={styles.noteText}>選択可能なシステムがありません。</p>
             )}
           </div>
 
           <div className={styles.phasePresetSection}>
             <div>
-              <p className={styles.noteTitle}>標準フェーズ</p>
-              <p className={styles.noteText}>初期作成するフェーズを選択してください。</p>
+              <p className={styles.noteTitle}>初期フェーズ</p>
+              <p className={styles.noteText}>開始時に用意するフェーズを選択してください。</p>
             </div>
             <div className={styles.phasePresetList}>
               {standardProjectPhasePresets.map((phase) => {
@@ -364,9 +365,9 @@ export function ProjectCreatePage() {
           </div>
 
           <div className={styles.noteCard}>
-            <p className={styles.noteTitle}>補足</p>
+            <p className={styles.noteTitle}>メモ</p>
             <p className={styles.noteText}>
-              登録時に標準フェーズ、PM アサイン、初期体制を自動で作成します。詳細画面から後で編集できます。
+              追加時には初期フェーズ、PM、主システムをまとめて登録します。詳細画面から後で調整できます。
             </p>
           </div>
 

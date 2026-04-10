@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
+import { defaultStandardProjectPhaseNames } from '../../utils/projectPhasePresets'
 import { ProjectCreatePage } from './ProjectCreatePage'
 
 describe('ProjectCreatePage', () => {
@@ -15,8 +16,8 @@ describe('ProjectCreatePage', () => {
 
     await screen.findByRole('heading', { name: '案件追加' })
 
-    expect(screen.getByRole('option', { name: 'm8 / 木村' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'sys-accounting / 会計基盤' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'PM' })).toBeInTheDocument()
+    expect(screen.getByTestId('create-project-system-select')).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('プロジェクト番号'), {
       target: { value: 'PRJ-006' },
@@ -61,15 +62,9 @@ describe('ProjectCreatePage', () => {
         status: 'not_started',
         pmMemberId: 'm8',
         hasReportItems: false,
-        initialPhaseNames: [
-          '予備検討',
-          '基礎検討',
-          '基本設計',
-          '詳細設計',
-          'ITb',
-          'UAT',
-          '移行',
-        ],
+        initialPhaseNames: defaultStandardProjectPhaseNames.filter(
+          (name) => name !== 'CT' && name !== 'ITa',
+        ),
         relatedSystemIds: ['sys-accounting'],
         projectLinks: [
           {

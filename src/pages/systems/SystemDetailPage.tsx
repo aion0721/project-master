@@ -4,6 +4,7 @@ import { ListPageHero } from '../../components/ListPageHero'
 import { MemberTree } from '../../components/MemberTree'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
 import type {
@@ -667,19 +668,19 @@ export function SystemDetailPage() {
               </label>
               <label className={styles.formField}>
                 <span className={styles.formLabel}>オーナー</span>
-                <select
+                <SearchSelect
+                  ariaLabel="システムオーナー"
                   className={styles.input}
-                  data-testid="system-detail-owner-select"
-                  onChange={(event) => updateSystemField('ownerMemberId', event.target.value)}
+                  dataTestId="system-detail-owner-select"
+                  onChange={(ownerMemberId) => updateSystemField('ownerMemberId', ownerMemberId)}
+                  options={members.map((member) => ({
+                    value: member.id,
+                    label: `${member.id} / ${member.name}`,
+                    keywords: [member.name, member.departmentName, member.role],
+                  }))}
+                  placeholder="メンバーを検索"
                   value={systemForm.ownerMemberId}
-                >
-                  <option value="">未設定</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.id} / {member.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
             </div>
             <label className={styles.formField}>
@@ -901,18 +902,20 @@ export function SystemDetailPage() {
                 <span className={styles.formLabel}>
                   {relationDirection === 'outgoing' ? '接続先システム' : '接続元システム'}
                 </span>
-                <select
+                <SearchSelect
+                  ariaLabel={
+                    relationDirection === 'outgoing' ? '連携先システム' : '連携元システム'
+                  }
                   className={styles.input}
-                  onChange={(event) => updateRelationField('targetSystemId', event.target.value)}
+                  onChange={(targetSystemId) => updateRelationField('targetSystemId', targetSystemId)}
+                  options={relationTargetOptions.map((option) => ({
+                    value: option.id,
+                    label: formatSystemOptionLabel(option),
+                    keywords: [option.name, option.category],
+                  }))}
+                  placeholder="システムを検索"
                   value={relationForm.targetSystemId}
-                >
-                  <option value="">選択してください</option>
-                  {relationTargetOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {formatSystemOptionLabel(option)}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
 
               <label className={styles.formField}>

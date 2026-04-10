@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "../../components/ui/Button";
+import { SearchSelect } from "../../components/ui/SearchSelect";
 import type {
   ManagedSystem,
   Phase,
@@ -474,22 +475,19 @@ export function ProjectDetailMetaGrid({
               {availableSystems.length > 0 ? (
                 <label className={styles.formField}>
                   <span className={styles.visuallyHidden}>主システム</span>
-                  <select
-                    aria-label="主システム"
+                  <SearchSelect
+                    ariaLabel="主システム"
                     className={styles.selectInput}
-                    data-testid="project-system-select"
-                    onChange={(event) =>
-                      onProjectSystemChange(event.target.value)
-                    }
+                    dataTestId="project-system-select"
+                    onChange={onProjectSystemChange}
+                    options={availableSystems.map((system) => ({
+                      value: system.id,
+                      label: `${system.id} / ${system.name}`,
+                      keywords: [system.name, system.category],
+                    }))}
+                    placeholder="システムを検索"
                     value={projectSystemIdsDraft[0] ?? ""}
-                  >
-                    <option value="">選択してください</option>
-                    {availableSystems.map((system) => (
-                      <option key={system.id} value={system.id}>
-                        {system.id} / {system.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
               ) : (
                 <p className={styles.emptyText}>

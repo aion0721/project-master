@@ -1,4 +1,5 @@
 import { Button } from '../../components/ui/Button'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import type { Member } from '../../types/project'
 import { formatMemberShortLabel } from '../members/memberFormUtils'
 import type { StructureAssignmentDraft } from './projectDetailTypes'
@@ -42,102 +43,99 @@ export function ProjectStructureEditor({
     structureAssignments,
   )
   const responsibilityListId = 'project-structure-responsibilities'
+  const memberOptions = members.map((member) => ({
+    value: member.id,
+    label: formatMemberShortLabel(member),
+    keywords: [member.name, member.departmentName, member.role],
+  }))
 
   return (
     <div className={styles.structureEditor} data-testid="structure-editor">
       <label className={styles.formField}>
         <span className={styles.formLabel}>PM</span>
-        <select
-          aria-label="PMを選択"
+        <SearchSelect
+          ariaLabel="PM"
           className={styles.selectInput}
-          data-testid="structure-pm-select"
-          onChange={(event) => onStructurePmChange(event.target.value)}
+          dataTestId="structure-pm-select"
+          onChange={onStructurePmChange}
+          options={memberOptions}
+          placeholder="メンバーを検索"
           value={structurePmMemberId}
-        >
-          <option value="">選択してください</option>
-          {members.map((member) => (
-            <option key={member.id} value={member.id}>
-              {formatMemberShortLabel(member)}
-            </option>
-          ))}
-        </select>
+        />
       </label>
 
       <div className={styles.assignmentEditor}>
         <div className={styles.assignmentHeader}>
-          <h3 className={styles.assignmentTitle}>役割一覧</h3>
+          <h3 className={styles.assignmentTitle}>プロジェクト体制</h3>
           <Button onClick={onAddAssignment} size="small" variant="secondary">
-            役割を追加
+            追加
           </Button>
         </div>
 
         <div className={styles.assignmentList}>
           {structureAssignments.length === 0 ? (
-            <p className={styles.emptyText}>役割情報はまだ登録されていません。</p>
+            <p className={styles.emptyText}>担当はまだ登録されていません。</p>
           ) : null}
 
-          {structureAssignments.map((assignment, index) => (
-            <div key={assignment.id ?? `new-${index}`} className={styles.assignmentRow}>
-              <label className={styles.formField}>
-                <span className={styles.formLabel}>責務</span>
-                <input
-                  aria-label={`役割${index + 1} の責務`}
-                  className={styles.selectInput}
-                  data-testid={`structure-responsibility-${index}`}
-                  list={responsibilityListId}
-                  onChange={(event) => {
-                    onUpdateAssignment(index, { responsibility: event.target.value })
-                  }}
-                  value={assignment.responsibility}
-                />
-              </label>
+          {structureAssignments.map((assignment, index) => {
+            const assignableReportingOptions = reportingOptions
+              .filter((member) => member.id !== assignment.memberId)
+              .map((member) => ({
+                value: member.id,
+                label: formatMemberShortLabel(member),
+              }))
 
-              <label className={styles.formField}>
-                <span className={styles.formLabel}>担当者</span>
-                <select
-                  aria-label={`役割${index + 1} の担当者`}
-                  className={styles.selectInput}
-                  onChange={(event) => {
-                    onUpdateAssignment(index, { memberId: event.target.value })
-                  }}
-                  value={assignment.memberId}
-                >
-                  <option value="">選択してください</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {formatMemberShortLabel(member)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            return (
+              <div key={assignment.id ?? `new-${index}`} className={styles.assignmentRow}>
+                <label className={styles.formField}>
+                  <span className={styles.formLabel}>役割</span>
+                  <input
+                    aria-label={`体制 ${index + 1} の役割`}
+                    className={styles.selectInput}
+                    data-testid={`structure-responsibility-${index}`}
+                    list={responsibilityListId}
+                    onChange={(event) => {
+                      onUpdateAssignment(index, { responsibility: event.target.value })
+                    }}
+                    value={assignment.responsibility}
+                  />
+                </label>
 
-              <label className={styles.formField}>
-                <span className={styles.formLabel}>報告先メンバー</span>
-                <select
-                  aria-label={`役割${index + 1} の報告先メンバー`}
-                  className={styles.selectInput}
-                  data-testid={`structure-reports-to-${index}`}
-                  onChange={(event) => {
-                    onUpdateAssignment(index, { reportsToMemberId: event.target.value })
-                  }}
-                  value={assignment.reportsToMemberId}
-                >
-                  <option value="">未設定</option>
-                  {reportingOptions
-                    .filter((member) => member.id !== assignment.memberId)
-                    .map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {formatMemberShortLabel(member)}
-                      </option>
-                    ))}
-                </select>
-              </label>
+                <label className={styles.formField}>
+                  <span className={styles.formLabel}>担当者</span>
+                  <SearchSelect
+                    ariaLabel={`体制 ${index + 1} の担当者`}
+                    className={styles.selectInput}
+                    onChange={(memberId) => {
+                      onUpdateAssignment(index, { memberId })
+                    }}
+                    options={memberOptions}
+                    placeholder="メンバーを検索"
+                    value={assignment.memberId}
+                  />
+                </label>
 
-              <Button onClick={() => onRemoveAssignment(index)} size="small" variant="danger">
-                削除
-              </Button>
-            </div>
-          ))}
+                <label className={styles.formField}>
+                  <span className={styles.formLabel}>報告先</span>
+                  <SearchSelect
+                    ariaLabel={`体制 ${index + 1} の報告先`}
+                    className={styles.selectInput}
+                    dataTestId={`structure-reports-to-${index}`}
+                    onChange={(reportsToMemberId) => {
+                      onUpdateAssignment(index, { reportsToMemberId })
+                    }}
+                    options={assignableReportingOptions}
+                    placeholder="メンバーを検索"
+                    value={assignment.reportsToMemberId}
+                  />
+                </label>
+
+                <Button onClick={() => onRemoveAssignment(index)} size="small" variant="danger">
+                  削除
+                </Button>
+              </div>
+            )
+          })}
         </div>
       </div>
 

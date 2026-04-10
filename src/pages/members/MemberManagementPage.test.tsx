@@ -7,6 +7,7 @@ import { MemberManagementPage } from './MemberManagementPage'
 async function openFilterPanel() {
   const toggleButton = await screen.findByRole('button', { name: '絞り込みを表示' })
   fireEvent.click(toggleButton)
+  await screen.findByRole('combobox', { name: 'メンバーIDまたは部署名で絞り込み' })
 }
 
 describe('MemberManagementPage', () => {
@@ -44,15 +45,13 @@ describe('MemberManagementPage', () => {
 
     fireEvent.click(within(editableRow).getByTestId('edit-member-m10'))
 
-    expect(
-      within(screen.getByLabelText('上司')).getByRole('option', { name: 'm1 / 田中 (PM)' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '上司' })).toBeInTheDocument()
 
     fireEvent.change(within(editableRow).getByDisplayValue('DEP-QA'), {
       target: { value: 'DEP-TEST' },
     })
     fireEvent.change(within(editableRow).getByDisplayValue('品質保証部'), {
-      target: { value: 'テスト品質部' },
+      target: { value: 'テスト推進部' },
     })
     fireEvent.change(screen.getByLabelText('上司'), {
       target: { value: 'm2' },
@@ -61,7 +60,7 @@ describe('MemberManagementPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('member-row-m10')).toHaveTextContent('DEP-TEST')
-      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('テスト品質部')
+      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('テスト推進部')
       expect(screen.getByTestId('member-row-m10')).toHaveTextContent('m2 / 山本')
     })
   })
@@ -77,7 +76,7 @@ describe('MemberManagementPage', () => {
       },
       body: JSON.stringify({
         id: 'm11',
-        name: '新田 智也',
+        name: '新田 次郎',
         departmentCode: 'DEP-APP',
         departmentName: 'アプリ開発部',
         role: 'アプリエンジニア',
@@ -98,7 +97,7 @@ describe('MemberManagementPage', () => {
     })
   })
 
-  it('削除確認をキャンセルした場合はメンバーを削除しない', async () => {
+  it('削除確認をキャンセルした場合は削除しない', async () => {
     mockProjectApi()
     vi.spyOn(window, 'confirm').mockReturnValue(false)
 
@@ -109,7 +108,7 @@ describe('MemberManagementPage', () => {
       },
       body: JSON.stringify({
         id: 'm11',
-        name: '新田 智也',
+        name: '新田 次郎',
         departmentCode: 'DEP-APP',
         departmentName: 'アプリ開発部',
         role: 'アプリエンジニア',
@@ -138,14 +137,18 @@ describe('MemberManagementPage', () => {
     await screen.findByRole('heading', { name: 'メンバー一覧' })
     await openFilterPanel()
 
-    fireEvent.change(screen.getByLabelText('メンバーIDまたは部署名で絞り込み'), {
+    const keywordFilter = screen.getByRole('combobox', {
+      name: 'メンバーIDまたは部署名で絞り込み',
+    })
+
+    fireEvent.change(keywordFilter, {
       target: { value: 'm10' },
     })
 
     expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
     expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('メンバーIDまたは部署名で絞り込み'), {
+    fireEvent.change(keywordFilter, {
       target: { value: '品質保証部' },
     })
 
@@ -164,14 +167,16 @@ describe('MemberManagementPage', () => {
     await screen.findByTestId('member-row-m1')
     await openFilterPanel()
 
-    fireEvent.change(screen.getByLabelText('ロールで絞り込み'), {
+    const roleFilter = screen.getByRole('combobox', { name: 'ロールで絞り込み' })
+
+    fireEvent.change(roleFilter, {
       target: { value: 'PM' },
     })
 
     expect(screen.getByTestId('member-row-m1')).toBeInTheDocument()
     expect(screen.queryByTestId('member-row-m10')).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('ロールで絞り込み'), {
+    fireEvent.change(roleFilter, {
       target: { value: 'QAエンジニア' },
     })
 

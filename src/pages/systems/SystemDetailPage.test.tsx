@@ -214,7 +214,7 @@ describe('SystemDetailPage', () => {
     fireEvent.change(screen.getByRole('combobox', { name: '向き' }), {
       target: { value: 'outgoing' },
     })
-    fireEvent.change(screen.getByRole('combobox', { name: '接続先システム' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: '連携先システム' }), {
       target: { value: 'sys-sales-bi' },
     })
     fireEvent.change(screen.getByPlaceholderText('例: SSH / HTTPS / SFTP'), {

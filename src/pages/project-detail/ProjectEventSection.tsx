@@ -1,5 +1,6 @@
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import type { Member, Phase, WorkStatus } from '../../types/project'
 import { formatMemberShortLabel } from '../members/memberFormUtils'
 import type { EventFormState } from './projectDetailTypes'
@@ -30,16 +31,25 @@ export function ProjectEventSection({
   onUpdateEvent,
   onSave,
 }: ProjectEventSectionProps) {
-  const maxWeek = Math.max(...projectPhases.map((phase) => phase.endWeek), ...eventDrafts.map((event) => Number(event.week) || 1), 1)
+  const maxWeek = Math.max(
+    ...projectPhases.map((phase) => phase.endWeek),
+    ...eventDrafts.map((event) => Number(event.week) || 1),
+    1,
+  )
   const summaryEvents = [...eventDrafts].sort((left, right) => Number(left.week) - Number(right.week))
+  const memberOptions = members.map((member) => ({
+    value: member.id,
+    label: formatMemberShortLabel(member),
+    keywords: [member.name, member.departmentName, member.role],
+  }))
 
   return (
     <Panel className={styles.section}>
       <div className={styles.sectionHeader}>
         <div>
-          <h2 className={styles.sectionTitle}>週次イベント</h2>
+          <h2 className={styles.sectionTitle}>関連イベント</h2>
           <p className={styles.sectionDescription}>
-            環境提供やレビュー会のような単発イベントを、対象週ベースで登録します。
+            週番号、状態、担当者とあわせてイベントを一覧で管理します。
           </p>
         </div>
         <div className={styles.phaseHeaderActions}>
@@ -66,7 +76,7 @@ export function ProjectEventSection({
               <th>イベント名</th>
               <th>対象週</th>
               <th>状態</th>
-              <th>担当</th>
+              <th>担当者</th>
               <th>メモ</th>
               <th>操作</th>
             </tr>
@@ -88,7 +98,7 @@ export function ProjectEventSection({
                       onChange={(targetEvent) =>
                         onUpdateEvent(event.key, { name: targetEvent.target.value })
                       }
-                      placeholder="例: 環境提供"
+                      placeholder="例: レビュー"
                       value={event.name}
                     />
                   </td>
@@ -124,21 +134,15 @@ export function ProjectEventSection({
                     </select>
                   </td>
                   <td>
-                    <select
+                    <SearchSelect
+                      ariaLabel={`イベント ${index + 1} の担当者`}
                       className={styles.selectInput}
-                      data-testid={`event-owner-${index}`}
-                      onChange={(targetEvent) =>
-                        onUpdateEvent(event.key, { ownerMemberId: targetEvent.target.value })
-                      }
+                      dataTestId={`event-owner-${index}`}
+                      onChange={(ownerMemberId) => onUpdateEvent(event.key, { ownerMemberId })}
+                      options={memberOptions}
+                      placeholder="担当者を検索"
                       value={event.ownerMemberId}
-                    >
-                      <option value="">未設定</option>
-                      {members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {formatMemberShortLabel(member)}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </td>
                   <td>
                     <input
