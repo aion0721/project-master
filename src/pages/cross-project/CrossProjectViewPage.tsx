@@ -50,6 +50,7 @@ export function CrossProjectViewPage() {
   const [isCompactMode, setIsCompactMode] = useState(true);
   const [isGroupedByPrimarySystem, setIsGroupedByPrimarySystem] =
     useState(false);
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setSelectedStatuses(
@@ -147,6 +148,41 @@ export function CrossProjectViewPage() {
         ),
       }));
   }, [scopedProjects, systemNameById]);
+
+  useEffect(() => {
+    const tableWrap = tableWrapRef.current;
+
+    if (!tableWrap || globalWeekSlots.length === 0) {
+      return;
+    }
+
+    const currentWeekHeader = tableWrap.querySelector<HTMLTableCellElement>(
+      "[data-testid^='cross-project-current-week-']",
+    );
+
+    if (!currentWeekHeader) {
+      return;
+    }
+
+    const stickyColumn = tableWrap.querySelector<HTMLElement>(
+      `.${styles.stickyColumn}`,
+    );
+    const stickyWidth = stickyColumn?.offsetWidth ?? 0;
+    const targetLeft = Math.max(
+      0,
+      currentWeekHeader.offsetLeft - stickyWidth - 24,
+    );
+
+    if (typeof tableWrap.scrollTo !== "function") {
+      tableWrap.scrollLeft = targetLeft;
+      return;
+    }
+
+    tableWrap.scrollTo({
+      left: targetLeft,
+      behavior: "smooth",
+    });
+  }, [globalWeekSlots]);
 
   if (isLoading) {
     return (
@@ -383,7 +419,11 @@ export function CrossProjectViewPage() {
         <p className={styles.timelineToolbarHint}>
           表示切替はタイムライン単位で反映されます。情報量と並び順を見ながら比較しやすい形に調整できます。
         </p>
-        <div className={styles.tableWrap}>
+        <div
+          className={styles.tableWrap}
+          data-testid="cross-project-table-wrap"
+          ref={tableWrapRef}
+        >
           <table className={styles.table}>
             <thead>
               <tr>

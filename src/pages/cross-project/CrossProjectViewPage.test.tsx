@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
 import { CrossProjectViewPage } from './CrossProjectViewPage'
@@ -168,5 +168,56 @@ describe('CrossProjectViewPage', () => {
     expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
     expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '解除' })).toHaveAttribute('href', '/cross-project')
+  })
+  it('初回表示時に今週列の位置まで自動スクロールする', async () => {
+    mockProjectApi()
+
+    const scrollTo = vi.fn()
+    const originalOffsetLeft = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft')
+    const originalOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')
+    const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo')
+
+    Object.defineProperty(HTMLElement.prototype, 'offsetLeft', {
+      configurable: true,
+      get() {
+        const testId = this.getAttribute?.('data-testid') ?? ''
+        return testId.startsWith('cross-project-current-week-') ? 520 : 0
+      },
+    })
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get() {
+        return this.classList?.contains(styles.stickyColumn) ? 280 : 0
+      },
+    })
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+      configurable: true,
+      value: scrollTo,
+    })
+
+    try {
+      renderWithProviders(<CrossProjectViewPage />, {
+        initialEntries: ['/cross-project'],
+      })
+
+      await screen.findByTestId('cross-project-table-wrap')
+
+      await waitFor(() => {
+        expect(scrollTo).toHaveBeenCalledWith({
+          behavior: 'smooth',
+          left: 216,
+        })
+      })
+    } finally {
+      if (originalOffsetLeft) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetLeft', originalOffsetLeft)
+      }
+      if (originalOffsetWidth) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetWidth', originalOffsetWidth)
+      }
+      if (originalScrollTo) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollTo', originalScrollTo)
+      }
+    }
   })
 })

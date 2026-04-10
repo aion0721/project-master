@@ -22,7 +22,9 @@ describe('SystemManagementPage', () => {
     expect(screen.getByRole('columnheader', { name: '対象案件' })).toBeInTheDocument()
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('会計基盤')
     expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('1 件')
-    expect(screen.getByTestId('system-row-sys-accounting')).toHaveTextContent('操作列から案件を表示できます')
+    expect(
+      screen.getByText('オーナーと関連プロジェクトを比較できます。操作列から横断ビューにも移動できます。'),
+    ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '新規システム' })).toHaveAttribute(
       'href',
       '/systems/new',
@@ -65,7 +67,7 @@ describe('SystemManagementPage', () => {
     expect(screen.queryByTestId('system-row-sys-accounting')).not.toBeInTheDocument()
   })
 
-  it('各システムから詳細画面へ移動できる', async () => {
+  it('各システムから詳細画面へ遷移できる', async () => {
     mockProjectApi()
 
     renderWithProviders(<SystemManagementPage />, {
@@ -86,7 +88,7 @@ describe('SystemManagementPage', () => {
     expect(within(row).queryByRole('button', { name: '削除' })).not.toBeInTheDocument()
   })
 
-  it('案件の表示をONにすると対象案件列に案件リンクを表示できる', async () => {
+  it('案件の表示を ON にすると対象案件列に案件リンクを表示できる', async () => {
     mockProjectApi()
 
     renderWithProviders(<SystemManagementPage />, {
