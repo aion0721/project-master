@@ -3,6 +3,7 @@ import type { Member, Phase, Project, ProjectAssignment, ProjectEvent } from '..
 export interface WeekSlot {
   index: number
   startDate: string
+  endDate: string
   label: string
   subLabel: string
 }
@@ -16,6 +17,11 @@ const fullDateFormatter = new Intl.DateTimeFormat('ja-JP', {
 const shortDateFormatter = new Intl.DateTimeFormat('ja-JP', {
   month: 'numeric',
   day: 'numeric',
+})
+
+const monthFormatter = new Intl.DateTimeFormat('ja-JP', {
+  year: 'numeric',
+  month: 'numeric',
 })
 
 export function parseDate(value: string) {
@@ -39,12 +45,22 @@ export function addWeeks(value: string, weeks: number) {
   return addDays(value, weeks * 7)
 }
 
+export function addMonths(value: string, months: number) {
+  const next = parseDate(value)
+  next.setMonth(next.getMonth() + months)
+  return formatDateInputValue(next)
+}
+
 export function formatDate(value: string) {
   return fullDateFormatter.format(parseDate(value))
 }
 
 export function formatShortDate(value: string) {
   return shortDateFormatter.format(parseDate(value))
+}
+
+export function formatMonth(value: string) {
+  return monthFormatter.format(parseDate(value))
 }
 
 export function formatPeriod(startDate: string, endDate: string) {
@@ -84,6 +100,7 @@ export function getProjectWeekSlots(
     return {
       index: index + 1,
       startDate,
+      endDate: addDays(startDate, 6),
       label: `W${index + 1}`,
       subLabel: formatShortDate(startDate),
     }
@@ -111,6 +128,7 @@ export function getGlobalWeekSlots(projects: Project[]): WeekSlot[] {
     return {
       index: index + 1,
       startDate,
+      endDate: addDays(startDate, 6),
       label: `GW${index + 1}`,
       subLabel: formatShortDate(startDate),
     }
@@ -118,11 +136,55 @@ export function getGlobalWeekSlots(projects: Project[]): WeekSlot[] {
 }
 
 export function isDateInWeekSlot(slotStartDate: string, targetDate = formatDateInputValue(new Date())) {
+  return isDateInRange(slotStartDate, addDays(slotStartDate, 6), targetDate)
+}
+
+export function isDateInRange(
+  startDate: string,
+  endDate: string,
+  targetDate = formatDateInputValue(new Date()),
+) {
   const targetTime = parseDate(targetDate).getTime()
-  const startTime = parseDate(slotStartDate).getTime()
-  const endTime = parseDate(addDays(slotStartDate, 6)).getTime()
+  const startTime = parseDate(startDate).getTime()
+  const endTime = parseDate(endDate).getTime()
 
   return targetTime >= startTime && targetTime <= endTime
+}
+
+export function getGlobalMonthSlots(projects: Project[]): WeekSlot[] {
+  const orderedProjects = [...projects].sort(
+    (left, right) => parseDate(left.startDate).getTime() - parseDate(right.startDate).getTime(),
+  )
+  const firstProject = orderedProjects[0]
+  const lastProject = orderedProjects[orderedProjects.length - 1]
+
+  if (!firstProject || !lastProject) {
+    return []
+  }
+
+  const firstStart = parseDate(firstProject.startDate)
+  const start = new Date(firstStart.getFullYear(), firstStart.getMonth(), 1)
+  const lastEnd = parseDate(lastProject.endDate)
+  const end = new Date(lastEnd.getFullYear(), lastEnd.getMonth(), 1)
+  const totalMonths =
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    end.getMonth() -
+    start.getMonth() +
+    1
+
+  return Array.from({ length: totalMonths }, (_, index) => {
+    const monthStart = new Date(start.getFullYear(), start.getMonth() + index, 1)
+    const startDate = formatDateInputValue(monthStart)
+    const monthEnd = new Date(start.getFullYear(), start.getMonth() + index + 1, 0)
+
+    return {
+      index: index + 1,
+      startDate,
+      endDate: formatDateInputValue(monthEnd),
+      label: formatMonth(startDate),
+      subLabel: `${monthStart.getMonth() + 1}月`,
+    }
+  })
 }
 
 export function getPhaseActualRange(project: Project, phase: Phase) {
@@ -136,15 +198,48 @@ export function getPhaseActualRange(project: Project, phase: Phase) {
 }
 
 export function getActivePhasesForWeek(project: Project, projectPhases: Phase[], slotDate: string) {
-  const slotTime = parseDate(slotDate).getTime()
+  return getActivePhasesForRange(project, projectPhases, slotDate, slotDate)
+}
+
+export function getActivePhasesForRange(
+  project: Project,
+  projectPhases: Phase[],
+  rangeStartDate: string,
+  rangeEndDate: string,
+) {
+  const rangeStartTime = parseDate(rangeStartDate).getTime()
+  const rangeEndTime = parseDate(rangeEndDate).getTime()
 
   return projectPhases.filter((phase) => {
     const range = getPhaseActualRange(project, phase)
     const startTime = parseDate(range.startDate).getTime()
     const endTime = parseDate(range.endDate).getTime()
 
-    return slotTime >= startTime && slotTime <= endTime
+    return startTime <= rangeEndTime && endTime >= rangeStartTime
   })
+}
+
+export function getEventDate(project: Project, event: ProjectEvent) {
+  return addWeeks(project.startDate, event.week - 1)
+}
+
+export function getActiveEventsForRange(
+  project: Project,
+  projectEvents: ProjectEvent[],
+  rangeStartDate: string,
+  rangeEndDate: string,
+) {
+  return projectEvents.filter((event) =>
+    isDateInRange(rangeStartDate, rangeEndDate, getEventDate(project, event)),
+  )
+}
+
+export function isCurrentMonthSlot(
+  slotStartDate: string,
+  slotEndDate: string,
+  targetDate = formatDateInputValue(new Date()),
+) {
+  return isDateInRange(slotStartDate, slotEndDate, targetDate)
 }
 
 export function getActiveEventsForWeek(projectEvents: ProjectEvent[], weekIndex: number) {

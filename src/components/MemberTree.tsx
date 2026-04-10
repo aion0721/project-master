@@ -93,30 +93,104 @@ function buildTree(
   return sortMembers(childrenByManager.get(null) ?? []).map(makeNode)
 }
 
-function MemberTreeNodeView({ node }: { node: MemberNode }) {
+function getMemberInitials(name: string) {
+  const normalized = name.replace(/\s+/g, '')
+
+  if (normalized.length <= 2) {
+    return normalized
+  }
+
+  return normalized.slice(0, 2)
+}
+
+function getResponsibilityToneClass(responsibilities: string[]) {
+  const joined = responsibilities.join(' ')
+
+  if (responsibilities.includes('PM')) {
+    return styles.toneLead
+  }
+
+  if (joined.includes('設計') || joined.includes('統括')) {
+    return styles.toneDesign
+  }
+
+  if (joined.includes('テスト') || joined.includes('移行')) {
+    return styles.toneDelivery
+  }
+
+  if (responsibilities.includes('OS')) {
+    return styles.toneOps
+  }
+
+  return styles.toneDefault
+}
+
+function MemberTreeNodeView({
+  node,
+  depth = 0,
+  isRoot = false,
+}: {
+  node: MemberNode
+  depth?: number
+  isRoot?: boolean
+}) {
+  const cardClassName = [
+    styles.nodeCard,
+    isRoot ? styles.rootCard : '',
+    getResponsibilityToneClass(node.responsibilities),
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const responsibilitySummary =
+    node.responsibilities.length > 0 ? `担当: ${node.responsibilities.join(' / ')}` : '担当: 未設定'
+
   return (
     <li className={styles.nodeItem}>
-      <div className={styles.nodeCard}>
-        <div className={styles.nodeHeader}>
-          <span className={styles.memberName}>{node.member.name}</span>
-          <span className={styles.memberRole}>
-            {node.member.departmentName} / {node.member.role}
-          </span>
+      <div className={cardClassName} data-depth={depth}>
+        <div className={styles.cardGlow} />
+
+        <div className={styles.identityRow}>
+          <div className={styles.avatar}>{getMemberInitials(node.member.name)}</div>
+
+          <div className={styles.identityMain}>
+            <div className={styles.memberNameRow}>
+              <span className={styles.memberName}>{node.member.name}</span>
+              {isRoot ? <span className={styles.rootBadge}>ROOT</span> : null}
+            </div>
+
+            <div className={styles.memberMeta}>
+              <span>{node.member.departmentName}</span>
+              <span>{node.member.role}</span>
+              <span>ID: {node.member.id}</span>
+            </div>
+          </div>
+
+          <div className={styles.reportStat} aria-label={`直属メンバー ${node.children.length} 名`}>
+            <span className={styles.reportStatValue}>{node.children.length}</span>
+            <span className={styles.reportStatLabel}>Direct</span>
+          </div>
         </div>
 
+        <div className={styles.responsibilitySummary}>{responsibilitySummary}</div>
+
         <div className={styles.tagList}>
-          {node.responsibilities.map((responsibility) => (
-            <span key={`${node.member.id}-${responsibility}`} className={styles.tag}>
-              {responsibility}
-            </span>
-          ))}
+          {node.responsibilities.length > 0 ? (
+            node.responsibilities.map((responsibility) => (
+              <span key={`${node.member.id}-${responsibility}`} className={styles.tag}>
+                {responsibility}
+              </span>
+            ))
+          ) : (
+            <span className={styles.emptyTag}>責務未設定</span>
+          )}
         </div>
       </div>
 
       {node.children.length > 0 ? (
         <ul className={styles.childList}>
           {node.children.map((child) => (
-            <MemberTreeNodeView key={child.member.id} node={child} />
+            <MemberTreeNodeView key={child.member.id} depth={depth + 1} node={child} />
           ))}
         </ul>
       ) : null}
@@ -140,11 +214,17 @@ export function MemberTree({ members, assignments, rootMemberId }: MemberTreePro
   const relevantMembers = members.filter((member) => memberIds.has(member.id))
   const tree = buildTree(relevantMembers, assignments, rootMemberId)
 
+  if (tree.length === 0) {
+    return <p className={styles.emptyText}>体制メンバーが設定されていません。</p>
+  }
+
   return (
-    <ul className={styles.rootList}>
-      {tree.map((node) => (
-        <MemberTreeNodeView key={node.member.id} node={node} />
-      ))}
-    </ul>
+    <div className={styles.treeWrap} data-testid="member-tree">
+      <ul className={styles.rootList}>
+        {tree.map((node) => (
+          <MemberTreeNodeView key={node.member.id} isRoot={node.member.id === rootMemberId} node={node} />
+        ))}
+      </ul>
+    </div>
   )
 }

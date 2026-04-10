@@ -10,8 +10,12 @@ import { useProjectData } from "../../store/useProjectData";
 import { useUserSession } from "../../store/useUserSession";
 import type { Member, Project, ProjectAssignment } from "../../types/project";
 import {
+  getActiveEventsForRange,
+  getActivePhasesForRange,
   getActivePhasesForWeek,
   getProjectPm,
+  isCurrentMonthSlot,
+  isDateInRange,
   isDateInWeekSlot,
 } from "../../utils/projectUtils";
 import {
@@ -40,6 +44,8 @@ export function CrossProjectViewPage() {
   const currentUserId = currentUser?.id ?? null;
   const currentUserRef = useRef(currentUser);
   currentUserRef.current = currentUser;
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
+
   const [selectedStatuses, setSelectedStatuses] = useState<Project["status"][]>(
     () => getMemberDefaultProjectStatusFilters(currentUser),
   );
@@ -50,7 +56,6 @@ export function CrossProjectViewPage() {
   const [isCompactMode, setIsCompactMode] = useState(true);
   const [isGroupedByPrimarySystem, setIsGroupedByPrimarySystem] =
     useState(false);
-  const tableWrapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setSelectedStatuses(
@@ -61,7 +66,6 @@ export function CrossProjectViewPage() {
 
   const {
     filteredProjects,
-    globalWeekSlots,
     hasNoProjectsInMode,
     hasNoSearchResults,
     hasNoStatusMatches,
@@ -70,7 +74,10 @@ export function CrossProjectViewPage() {
     keyword,
     peakBusy,
     setKeyword,
+    setTimeScale,
     setViewMode,
+    timeScale,
+    timelineSlots,
     viewMode,
   } = useCrossProjectView({
     currentUser,
@@ -152,15 +159,15 @@ export function CrossProjectViewPage() {
   useEffect(() => {
     const tableWrap = tableWrapRef.current;
 
-    if (!tableWrap || globalWeekSlots.length === 0) {
+    if (!tableWrap || timelineSlots.length === 0) {
       return;
     }
 
-    const currentWeekHeader = tableWrap.querySelector<HTMLTableCellElement>(
-      "[data-testid^='cross-project-current-week-']",
+    const currentHeader = tableWrap.querySelector<HTMLTableCellElement>(
+      `[data-testid^='cross-project-current-${timeScale}-']`,
     );
 
-    if (!currentWeekHeader) {
+    if (!currentHeader) {
       return;
     }
 
@@ -170,7 +177,7 @@ export function CrossProjectViewPage() {
     const stickyWidth = stickyColumn?.offsetWidth ?? 0;
     const targetLeft = Math.max(
       0,
-      currentWeekHeader.offsetLeft - stickyWidth - 24,
+      currentHeader.offsetLeft - stickyWidth - 24,
     );
 
     if (typeof tableWrap.scrollTo !== "function") {
@@ -182,14 +189,14 @@ export function CrossProjectViewPage() {
       left: targetLeft,
       behavior: "smooth",
     });
-  }, [globalWeekSlots]);
+  }, [timeScale, timelineSlots]);
 
   if (isLoading) {
     return (
       <Panel className={styles.section}>
         <h1 className={styles.title}>横断ビューを読み込み中です</h1>
         <p className={styles.description}>
-          横断表示に必要な案件データを準備しています。
+          横断表示に必要な案件データを取得しています。
         </p>
       </Panel>
     );
@@ -209,24 +216,25 @@ export function CrossProjectViewPage() {
       ? {
           title: "ブックマーク案件はまだありません",
           description:
-            "案件一覧または案件詳細から案件をブックマークすると、ここで横断表示できます。",
+            "案件一覧または案件詳細から案件をブックマークすると、この横断ビューで確認できます。",
         }
       : hasNoStatusesSelected
         ? {
-            title: "状態フィルターが空になっています",
+            title: "状態フィルターが未選択です",
             description:
-              "表示したい状態にチェックを入れると、対象の案件が表示されます。",
+              "表示したい状態を選ぶと、対象の案件だけを横断ビューに表示できます。",
           }
         : hasNoStatusMatches
           ? {
               title: "条件に一致する案件はありません",
-              description: "状態フィルターや表示モードを調整してみてください。",
+              description:
+                "状態フィルターや表示モードの条件を見直してください。",
             }
           : hasNoSearchResults
             ? {
                 title: "検索条件に一致する案件はありません",
                 description:
-                  "プロジェクト番号または案件名で検索条件を見直してください。",
+                  "案件番号または案件名を変更して再度検索してください。",
               }
             : null;
 
@@ -243,13 +251,16 @@ export function CrossProjectViewPage() {
       <ListPageHero
         className={styles.hero}
         collapsible
-        description="複数案件がどの週にどのフェーズへ入っているかを横断で確認できます。表示モードを切り替えると、利用中メンバーのブックマーク案件だけも見られます。"
+        description="複数案件の進捗や重なりを、週または月の粒度で比較できます。表示モードや絞り込みを切り替えながら、今どこが混んでいるかを横断で確認します。"
         eyebrow="Cross Project Timeline"
         iconKind="project"
         storageKey="project-master:hero-collapsed:cross-project"
         stats={[
           { label: "表示案件数", value: scopedProjects.length },
-          { label: "最大混雑度", value: `${peakBusy} Phase / Week` },
+          {
+            label: "最大稼働密度",
+            value: `${peakBusy} Phase / ${timeScale === "month" ? "Month" : "Week"}`,
+          },
         ]}
         title="横断案件ビュー"
       />
@@ -308,7 +319,7 @@ export function CrossProjectViewPage() {
             <div className={styles.filterSummaryHeading}>
               <p className={styles.statusFilterTitle}>状態フィルター</p>
               <p className={styles.statusFilterHint}>
-                横断表示では複数選択できます。完了だけ外す使い方を想定しています。
+                横断表示では複数案件を同じ条件で比較します。不要な状態を外すと見やすくなります。
               </p>
             </div>
             <div className={styles.statusFilterActions}>
@@ -363,10 +374,36 @@ export function CrossProjectViewPage() {
                 size="small"
                 variant="secondary"
               >
-                {isFilterVisible ? "絞り込みを非表示" : "絞り込みを表示"}
+                {isFilterVisible ? "絞り込みを隠す" : "絞り込みを表示"}
               </Button>
             </div>
             <div className={styles.timelineToolbarGroup}>
+              <Button
+                aria-pressed={timeScale === "week"}
+                className={
+                  timeScale === "week"
+                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
+                    : styles.toggleStateButton
+                }
+                onClick={() => setTimeScale("week")}
+                size="small"
+                variant="secondary"
+              >
+                週表示
+              </Button>
+              <Button
+                aria-pressed={timeScale === "month"}
+                className={
+                  timeScale === "month"
+                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
+                    : styles.toggleStateButton
+                }
+                onClick={() => setTimeScale("month")}
+                size="small"
+                variant="secondary"
+              >
+                月表示
+              </Button>
               <Button
                 aria-pressed={isStructureVisible}
                 className={
@@ -412,7 +449,7 @@ export function CrossProjectViewPage() {
           </div>
         }
         className={styles.section}
-        description="案件ごとの週次フェーズとイベントを横並びで比較できます。必要に応じて絞り込み条件を開いて表示対象を調整してください。"
+        description="案件ごとの進行フェーズとイベントを横断で比較できます。週表示では密度を、月表示では全体感を掴みやすくしています。"
         emptyState={scopedEmptyState}
         title="横断案件タイムライン"
       >
@@ -427,26 +464,31 @@ export function CrossProjectViewPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.stickyColumn}>案件名</th>
-                {globalWeekSlots.map((slot) => {
-                  const isCurrentWeek = isDateInWeekSlot(slot.startDate);
+                <th className={styles.stickyColumn}>案件</th>
+                {timelineSlots.map((slot) => {
+                  const isCurrentSlot =
+                    timeScale === "month"
+                      ? isCurrentMonthSlot(slot.startDate, slot.endDate)
+                      : isDateInWeekSlot(slot.startDate);
 
                   return (
                     <th
                       key={slot.index}
                       className={
-                        isCurrentWeek ? styles.currentWeekHeader : undefined
+                        isCurrentSlot ? styles.currentWeekHeader : undefined
                       }
                       data-testid={
-                        isCurrentWeek
-                          ? `cross-project-current-week-${slot.index}`
+                        isCurrentSlot
+                          ? `cross-project-current-${timeScale}-${slot.index}`
                           : undefined
                       }
                     >
                       <span className={styles.weekLabel}>{slot.label}</span>
                       <span className={styles.weekDate}>{slot.subLabel}</span>
-                      {isCurrentWeek ? (
-                        <span className={styles.currentWeekBadge}>今週</span>
+                      {isCurrentSlot ? (
+                        <span className={styles.currentWeekBadge}>
+                          {timeScale === "month" ? "今月" : "今週"}
+                        </span>
                       ) : null}
                     </th>
                   );
@@ -481,7 +523,7 @@ export function CrossProjectViewPage() {
                     >
                       <td
                         className={`${styles.stickyColumn} ${styles.groupCell} ${styles[`groupCellTone${row.toneIndex}`]}`}
-                        colSpan={globalWeekSlots.length + 1}
+                        colSpan={timelineSlots.length + 1}
                         data-testid={`cross-project-group-${row.label}`}
                       >
                         主システム: {row.label}
@@ -584,26 +626,43 @@ export function CrossProjectViewPage() {
                       </div>
                     </td>
 
-                    {globalWeekSlots.map((slot) => {
-                      const activePhases = getActivePhasesForWeek(
-                        project,
-                        projectPhases,
-                        slot.startDate,
-                      );
-                      const activeEvents = projectEvents.filter(
-                        (event) => event.week === slot.index,
-                      );
+                    {timelineSlots.map((slot) => {
+                      const activePhases =
+                        timeScale === "month"
+                          ? getActivePhasesForRange(
+                              project,
+                              projectPhases,
+                              slot.startDate,
+                              slot.endDate,
+                            )
+                          : getActivePhasesForWeek(
+                              project,
+                              projectPhases,
+                              slot.startDate,
+                            );
+                      const activeEvents =
+                        timeScale === "month"
+                          ? getActiveEventsForRange(
+                              project,
+                              projectEvents,
+                              slot.startDate,
+                              slot.endDate,
+                            )
+                          : projectEvents.filter((event) => event.week === slot.index);
                       const busy =
                         activePhases.length + activeEvents.length > 1;
-                      const isCurrentWeek = isDateInWeekSlot(slot.startDate);
+                      const isCurrentSlot =
+                        timeScale === "month"
+                          ? isDateInRange(slot.startDate, slot.endDate)
+                          : isDateInWeekSlot(slot.startDate);
 
                       return (
                         <td
                           key={`${project.projectNumber}-${slot.index}`}
                           className={
                             busy
-                              ? `${styles.cell} ${styles.busy} ${isCurrentWeek ? styles.currentWeekCell : ""}`
-                              : `${styles.cell} ${isCurrentWeek ? styles.currentWeekCell : ""}`
+                              ? `${styles.cell} ${styles.busy} ${isCurrentSlot ? styles.currentWeekCell : ""}`
+                              : `${styles.cell} ${isCurrentSlot ? styles.currentWeekCell : ""}`
                           }
                         >
                           {activePhases.length > 0 ||

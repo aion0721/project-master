@@ -1,9 +1,18 @@
 import { useMemo, useState } from 'react'
 import type { Member, Phase, Project, ProjectEvent } from '../../types/project'
-import { getActiveEventsForWeek, getActivePhasesForWeek, getGlobalWeekSlots } from '../../utils/projectUtils'
+import {
+  getActiveEventsForRange,
+  getActiveEventsForWeek,
+  getActivePhasesForRange,
+  getActivePhasesForWeek,
+  getGlobalMonthSlots,
+  getGlobalWeekSlots,
+  type WeekSlot,
+} from '../../utils/projectUtils'
 export { getPhaseToneKey } from '../../utils/projectPhasePresets'
 
 export type CrossProjectViewMode = 'all' | 'bookmarks'
+export type CrossProjectTimeScale = 'week' | 'month'
 
 interface UseCrossProjectViewParams {
   currentUser: Member | null
@@ -21,6 +30,7 @@ export function useCrossProjectView({
   selectedStatuses,
 }: UseCrossProjectViewParams) {
   const [viewMode, setViewMode] = useState<CrossProjectViewMode>('all')
+  const [timeScale, setTimeScale] = useState<CrossProjectTimeScale>('week')
   const [keyword, setKeyword] = useState('')
 
   const modeFilteredProjects = useMemo(() => {
@@ -51,25 +61,49 @@ export function useCrossProjectView({
   }, [normalizedKeyword, statusFilteredProjects])
 
   const globalWeekSlots = useMemo(() => getGlobalWeekSlots(filteredProjects), [filteredProjects])
+  const globalMonthSlots = useMemo(() => getGlobalMonthSlots(filteredProjects), [filteredProjects])
+  const timelineSlots = useMemo<WeekSlot[]>(
+    () => (timeScale === 'month' ? globalMonthSlots : globalWeekSlots),
+    [globalMonthSlots, globalWeekSlots, timeScale],
+  )
 
   const peakBusy = useMemo(
     () =>
       Math.max(
         ...filteredProjects.flatMap((project) =>
-          globalWeekSlots.map(
-            (slot) =>
+          timelineSlots.map((slot) => {
+            if (timeScale === 'month') {
+              return (
+                getActivePhasesForRange(
+                  project,
+                  getProjectPhases(project.projectNumber),
+                  slot.startDate,
+                  slot.endDate,
+                ).length +
+                getActiveEventsForRange(
+                  project,
+                  getProjectEvents(project.projectNumber),
+                  slot.startDate,
+                  slot.endDate,
+                ).length
+              )
+            }
+
+            return (
               getActivePhasesForWeek(project, getProjectPhases(project.projectNumber), slot.startDate)
                 .length +
-              getActiveEventsForWeek(getProjectEvents(project.projectNumber), slot.index).length,
-          ),
+              getActiveEventsForWeek(getProjectEvents(project.projectNumber), slot.index).length
+            )
+          }),
         ),
         0,
       ),
-    [filteredProjects, getProjectEvents, getProjectPhases, globalWeekSlots],
+    [filteredProjects, getProjectEvents, getProjectPhases, timeScale, timelineSlots],
   )
 
   return {
     filteredProjects,
+    globalMonthSlots,
     globalWeekSlots,
     hasNoProjectsInMode: modeFilteredProjects.length === 0,
     hasNoSearchResults: statusFilteredProjects.length > 0 && filteredProjects.length === 0,
@@ -79,7 +113,10 @@ export function useCrossProjectView({
     keyword,
     peakBusy,
     setKeyword,
+    setTimeScale,
     setViewMode,
+    timeScale,
+    timelineSlots,
     viewMode,
   }
 }
