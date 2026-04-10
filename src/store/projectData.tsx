@@ -88,6 +88,8 @@ function getFirstProjectOrThrow(projects: Project[], message: string) {
   return project
 }
 
+type CollectionMergeMode = 'merge' | 'replaceByProject'
+
 export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
@@ -104,21 +106,40 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const applyProjectPayload = (
     projectId: string,
     payload: ProjectDataPayload,
-    options?: { replacePhasesForProject?: boolean },
+    options?: {
+      phaseMode?: CollectionMergeMode
+      eventMode?: CollectionMergeMode
+      assignmentMode?: CollectionMergeMode
+    },
   ) => {
+    const phaseMode = options?.phaseMode ?? 'merge'
+    const eventMode = options?.eventMode ?? 'replaceByProject'
+    const assignmentMode = options?.assignmentMode ?? 'replaceByProject'
+
     setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-    if (options?.replacePhasesForProject) {
+
+    if (phaseMode === 'replaceByProject') {
       setPhases((current) => current.filter((phase) => phase.projectId !== projectId).concat(payload.phases))
     } else {
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
     }
-    setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
+
+    if (eventMode === 'replaceByProject') {
+      setEvents((current) => replaceEventsForProject(current, projectId, payload.events))
+    } else {
+      setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
+    }
+
     setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
     setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
     setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-    setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
-  }
 
+    if (assignmentMode === 'replaceByProject') {
+      setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
+    } else {
+      setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -179,13 +200,10 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       const payload = await createProjectRequest(input)
       const createdProject = getFirstProjectOrThrow(payload.projects, 'Created project payload is empty')
 
-      setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
-      setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
-      setEvents((current) => mergeByKey(current, payload.events, (item) => item.id))
-      setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
-      setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
-      setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
-      setAssignments((current) => mergeByKey(current, payload.assignments, (item) => item.id))
+      applyProjectPayload(createdProject.projectNumber, payload, {
+        eventMode: 'merge',
+        assignmentMode: 'merge',
+      })
 
       return createdProject
     },
@@ -325,7 +343,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       const payload = await updateProjectPhasesRequest(projectId, input)
       const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
-      applyProjectPayload(projectId, payload, { replacePhasesForProject: true })
+      applyProjectPayload(projectId, payload, { phaseMode: 'replaceByProject' })
 
       return updatedProject
     },
