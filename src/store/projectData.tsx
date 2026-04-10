@@ -78,6 +78,16 @@ function replaceEventsForProject(current: ProjectEvent[], projectId: string, inc
   return current.filter((event) => event.projectId !== projectId).concat(incoming)
 }
 
+function getFirstProjectOrThrow(projects: Project[], message: string) {
+  const project = projects[0]
+
+  if (!project) {
+    throw new Error(message)
+  }
+
+  return project
+}
+
 export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
@@ -167,11 +177,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     createProject: async (input: CreateProjectInput) => {
       const payload = await createProjectRequest(input)
-      const createdProject = payload.projects[0]
-
-      if (!createdProject) {
-        throw new Error('Created project payload is empty')
-      }
+      const createdProject = getFirstProjectOrThrow(payload.projects, 'Created project payload is empty')
 
       setProjects((current) => mergeByKey(current, payload.projects, (item) => item.projectNumber))
       setPhases((current) => mergeByKey(current, payload.phases, (item) => item.id))
@@ -247,11 +253,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectSchedule: async (projectId: string, input: UpdateProjectScheduleInput) => {
       const payload = await updateProjectScheduleRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -259,11 +261,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectLinks: async (projectId: string, input: UpdateProjectLinksInput) => {
       const payload = await updateProjectLinksRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -271,11 +269,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectNote: async (projectId: string, input: UpdateProjectNoteInput) => {
       const payload = await updateProjectNoteRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -286,11 +280,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       input: UpdateProjectStatusEntriesInput,
     ) => {
       const payload = await updateProjectStatusEntriesRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -298,11 +288,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectReportStatus: async (projectId: string, input: UpdateProjectReportStatusInput) => {
       const payload = await updateProjectReportStatusRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -313,11 +299,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       input: UpdateProjectStatusOverrideInput,
     ) => {
       const payload = await updateProjectStatusOverrideRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -325,11 +307,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectSystems: async (projectId: string, input: UpdateProjectSystemsInput) => {
       const payload = await updateProjectSystemsRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -337,11 +315,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectEvents: async (projectId: string, input: UpdateProjectEventsInput) => {
       const payload = await updateProjectEventsRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -349,11 +323,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectPhases: async (projectId: string, input: UpdateProjectPhasesInput) => {
       const payload = await updateProjectPhasesRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload, { replacePhasesForProject: true })
 
@@ -361,11 +331,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectCurrentPhase: async (projectId: string, phaseId: string) => {
       const payload = await updateProjectCurrentPhaseRequest(projectId, phaseId)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
@@ -373,11 +339,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     },
     updateProjectStructure: async (projectId: string, input: UpdateProjectStructureInput) => {
       const payload = await updateProjectStructureRequest(projectId, input)
-      const updatedProject = payload.projects[0]
-
-      if (!updatedProject) {
-        throw new Error('Updated project payload is empty')
-      }
+      const updatedProject = getFirstProjectOrThrow(payload.projects, 'Updated project payload is empty')
 
       applyProjectPayload(projectId, payload)
 
