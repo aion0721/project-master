@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import pageStyles from '../../styles/page.module.css'
@@ -13,15 +13,22 @@ interface SystemLinksSectionProps {
 
 export function SystemLinksSection({ onSave, system }: SystemLinksSectionProps) {
   const [isLinksEditing, setIsLinksEditing] = useState(false)
-  const [linkDrafts, setLinkDrafts] = useState<ProjectLink[]>([])
+  const [linkDrafts, setLinkDrafts] = useState<ProjectLink[]>(() => buildLinkDrafts(system.systemLinks))
   const [linkError, setLinkError] = useState<string | null>(null)
   const [isSavingLinks, setIsSavingLinks] = useState(false)
+  const previousSystemIdRef = useRef(system.id)
 
   useEffect(() => {
     setLinkDrafts(buildLinkDrafts(system.systemLinks))
-    setIsLinksEditing(false)
     setLinkError(null)
-  }, [system])
+  }, [system.id, system.systemLinks])
+
+  useEffect(() => {
+    if (previousSystemIdRef.current !== system.id) {
+      setIsLinksEditing(false)
+      previousSystemIdRef.current = system.id
+    }
+  }, [system.id])
 
   function updateLinkDraft(index: number, patch: Partial<ProjectLink>) {
     setLinkDrafts((current) =>
