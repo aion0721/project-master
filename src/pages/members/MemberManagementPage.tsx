@@ -6,17 +6,9 @@ import { Button } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { SearchSelect } from "../../components/ui/SearchSelect";
 import { useProjectData } from "../../store/useProjectData";
-import formStyles from "../../styles/form.module.css";
 import pageStyles from "../../styles/page.module.css";
-import type { UpdateMemberInput } from "../../types/project";
-import {
-  buildEditForm,
-  formatMemberOptionLabel,
-  formatMemberShortLabel,
-  toNullableManagerId,
-  validateMemberInput,
-  type MemberFormState,
-} from "./memberFormUtils";
+import formStyles from "../../styles/form.module.css";
+import { formatMemberShortLabel } from "./memberFormUtils";
 import styles from "./MemberManagementPage.module.css";
 
 export function MemberManagementPage() {
@@ -26,12 +18,9 @@ export function MemberManagementPage() {
     assignments,
     isLoading,
     error,
-    updateMember,
     deleteMember,
   } = useProjectData();
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<MemberFormState | null>(null);
   const [filterKeyword, setFilterKeyword] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -134,52 +123,6 @@ export function MemberManagementPage() {
     [members, projectCountByMemberId, roleOptions.length],
   );
 
-  function updateEditField<Key extends keyof MemberFormState>(
-    key: Key,
-    value: MemberFormState[Key],
-  ) {
-    setEditForm((current) =>
-      current ? { ...current, [key]: value } : current,
-    );
-  }
-
-  async function handleUpdateSubmit(memberId: string) {
-    if (!editForm) {
-      return;
-    }
-
-    setSubmitError(null);
-
-    const validationMessage = validateMemberInput(editForm);
-    if (validationMessage) {
-      setSubmitError(validationMessage);
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const input: UpdateMemberInput = {
-        name: editForm.name.trim(),
-        departmentCode: editForm.departmentCode.trim(),
-        departmentName: editForm.departmentName.trim(),
-        role: editForm.role.trim(),
-        managerId: toNullableManagerId(editForm.managerId),
-      };
-      await updateMember(memberId, input);
-      setEditingMemberId(null);
-      setEditForm(null);
-    } catch (caughtError) {
-      setSubmitError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "メンバーの更新に失敗しました。",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   async function handleDelete(memberId: string) {
     const member = memberById.get(memberId);
 
@@ -196,11 +139,6 @@ export function MemberManagementPage() {
 
     try {
       await deleteMember(memberId);
-
-      if (editingMemberId === memberId) {
-        setEditingMemberId(null);
-        setEditForm(null);
-      }
     } catch (caughtError) {
       setSubmitError(
         caughtError instanceof Error
@@ -311,7 +249,7 @@ export function MemberManagementPage() {
             {isFilterVisible ? "絞り込みを非表示" : "絞り込みを表示"}
           </Button>
         }
-        description="部署コード、ロール、上長、関連案件数を比較しながら確認できます。利用中のメンバーはこの一覧から直接編集できます。"
+        description="部署コード、ロール、上長、関連案件数を比較しながら確認できます。詳細画面から個別編集し、一覧では比較と導線確認に集中できます。"
         emptyState={
           filteredMembers.length === 0
             ? {
@@ -341,10 +279,6 @@ export function MemberManagementPage() {
             </thead>
             <tbody>
               {filteredMembers.map((member) => {
-                const isEditing = editingMemberId === member.id && editForm;
-                const managerOptions = sortedMembers.filter(
-                  (option) => option.id !== member.id,
-                );
                 const manager = member.managerId
                   ? memberById.get(member.managerId)
                   : null;
@@ -352,159 +286,30 @@ export function MemberManagementPage() {
                 return (
                   <tr data-testid={`member-row-${member.id}`} key={member.id}>
                     <td className={styles.idCell}>{member.id}</td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          aria-label="氏名"
-                          className={styles.inlineInput}
-                          onChange={(event) =>
-                            updateEditField("name", event.target.value)
-                          }
-                          value={editForm.name}
-                        />
-                      ) : (
-                        member.name
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          aria-label="部署コード"
-                          className={styles.inlineInput}
-                          onChange={(event) =>
-                            updateEditField(
-                              "departmentCode",
-                              event.target.value,
-                            )
-                          }
-                          value={editForm.departmentCode}
-                        />
-                      ) : (
-                        member.departmentCode
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          aria-label="部署名"
-                          className={styles.inlineInput}
-                          onChange={(event) =>
-                            updateEditField(
-                              "departmentName",
-                              event.target.value,
-                            )
-                          }
-                          value={editForm.departmentName}
-                        />
-                      ) : (
-                        member.departmentName
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          aria-label="ロール"
-                          className={styles.inlineInput}
-                          onChange={(event) =>
-                            updateEditField("role", event.target.value)
-                          }
-                          value={editForm.role}
-                        />
-                      ) : (
-                        member.role
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <SearchSelect
-                          ariaLabel="上司"
-                          className={styles.inlineInput}
-                          onChange={(managerId) =>
-                            updateEditField("managerId", managerId)
-                          }
-                          options={managerOptions.map((option) => ({
-                            value: option.id,
-                            label: formatMemberOptionLabel(option),
-                            keywords: [
-                              option.name,
-                              option.departmentName,
-                              option.role,
-                            ],
-                          }))}
-                          placeholder="上司を検索"
-                          value={editForm.managerId}
-                        />
-                      ) : manager ? (
-                        formatMemberShortLabel(manager)
-                      ) : (
-                        "未設定"
-                      )}
-                    </td>
+                    <td>{member.name}</td>
+                    <td>{member.departmentCode}</td>
+                    <td>{member.departmentName}</td>
+                    <td>{member.role}</td>
+                    <td>{manager ? formatMemberShortLabel(manager) : "未設定"}</td>
                     <td>{projectCountByMemberId.get(member.id) ?? 0}</td>
                     <td>
                       <div className={styles.rowActions}>
-                        {isEditing ? (
-                          <>
-                            <Button
-                              disabled={isSubmitting}
-                              onClick={() => void handleUpdateSubmit(member.id)}
-                              size="small"
-                            >
-                              保存
-                            </Button>
-                            <Button
-                              disabled={isSubmitting}
-                              onClick={() => {
-                                setEditingMemberId(null);
-                                setEditForm(null);
-                                setSubmitError(null);
-                              }}
-                              size="small"
-                              variant="secondary"
-                            >
-                              キャンセル
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="small"
-                              to={`/members/${member.id}`}
-                              variant="secondary"
-                            >
-                              詳細
-                            </Button>
-                            <Button
-                              size="small"
-                              to={`/members/hierarchy?departmentName=${encodeURIComponent(member.departmentName)}&memberId=${member.id}`}
-                              variant="secondary"
-                            >
-                              体制図
-                            </Button>
-                            <Button
-                              data-testid={`edit-member-${member.id}`}
-                              disabled={isSubmitting}
-                              onClick={() => {
-                                setEditingMemberId(member.id);
-                                setEditForm(buildEditForm(member));
-                                setSubmitError(null);
-                              }}
-                              size="small"
-                              variant="secondary"
-                            >
-                              編集
-                            </Button>
-                            <Button
-                              data-testid={`delete-member-${member.id}`}
-                              disabled={isSubmitting}
-                              onClick={() => void handleDelete(member.id)}
-                              size="small"
-                              variant="danger"
-                            >
-                              削除
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          size="small"
+                          to={`/members/${member.id}`}
+                          variant="secondary"
+                        >
+                          詳細
+                        </Button>
+                        <Button
+                          data-testid={`delete-member-${member.id}`}
+                          disabled={isSubmitting}
+                          onClick={() => void handleDelete(member.id)}
+                          size="small"
+                          variant="danger"
+                        >
+                          削除
+                        </Button>
                       </div>
                     </td>
                   </tr>

@@ -14,6 +14,12 @@
   gap: 10px;
 }
 
+.sectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .roleBadge,
 .departmentBadge,
 .lineBadge,
@@ -78,10 +84,31 @@
   color: var(--text-strong);
 }
 
+.infoInput,
+.infoSelect {
+  width: 100%;
+}
+
+.infoInput {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, white);
+  border-radius: 12px;
+  font-size: 15px;
+  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.92);
+}
+
 .inlineLink {
   font-size: 18px;
   font-weight: 700;
   color: var(--accent);
+}
+
+.errorText {
+  margin: 0 0 16px;
+  color: #b91c1c;
+  font-weight: 700;
 }
 
 .relationshipGrid {

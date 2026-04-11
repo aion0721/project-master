@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { mockProjectApi } from '../../test/mockProjectApi'
 import { renderWithProviders } from '../../test/renderWithProviders'
@@ -55,6 +55,46 @@ describe('MemberDetailPage', () => {
     expect(within(hierarchyCanvas).getByText('高橋')).toBeInTheDocument()
     expect(within(hierarchyCanvas).getByText('小林')).toBeInTheDocument()
     expect(within(hierarchyCanvas).queryByText('伊藤')).not.toBeInTheDocument()
+  })
+
+  it('詳細画面でメンバーを編集できる', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<MemberDetailPage />, {
+      initialEntries: ['/members/m10'],
+      routePath: '/members/:memberId',
+    })
+
+    expect(await screen.findByRole('heading', { name: '伊藤' })).toBeInTheDocument()
+
+    const basicSection = screen.getByRole('heading', { name: '基本情報' }).closest('section')
+    expect(basicSection).not.toBeNull()
+
+    fireEvent.click(within(basicSection as HTMLElement).getByRole('button', { name: '編集' }))
+
+    fireEvent.change(within(basicSection as HTMLElement).getByLabelText('部署コード'), {
+      target: { value: 'DEP-TEST' },
+    })
+    fireEvent.change(within(basicSection as HTMLElement).getByLabelText('部署名'), {
+      target: { value: 'テスト推進部' },
+    })
+    fireEvent.change(within(basicSection as HTMLElement).getByLabelText('ライン名'), {
+      target: { value: 'テスト統括ライン' },
+    })
+    fireEvent.change(within(basicSection as HTMLElement).getByLabelText('上司'), {
+      target: { value: 'm2' },
+    })
+    fireEvent.click(within(basicSection as HTMLElement).getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      expect(within(basicSection as HTMLElement).getByText('DEP-TEST')).toBeInTheDocument()
+      expect(within(basicSection as HTMLElement).getByText('テスト推進部')).toBeInTheDocument()
+      expect(within(basicSection as HTMLElement).getByText('テスト統括ライン')).toBeInTheDocument()
+      expect(within(basicSection as HTMLElement).getByRole('link', { name: '山本' })).toHaveAttribute(
+        'href',
+        '/members/m2',
+      )
+    })
   })
 
   it('shows not found state for unknown member', async () => {

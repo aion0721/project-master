@@ -23,49 +23,14 @@ describe('MemberManagementPage', () => {
     expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
     expect(within(screen.getByTestId('member-row-m1')).getByText('DEP-BIZ')).toBeInTheDocument()
     expect(within(screen.getByTestId('member-row-m4')).getByText('m1 / 田中')).toBeInTheDocument()
-    expect(
-      within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '体制図' }),
-    ).toHaveAttribute(
+    expect(within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '詳細' })).toHaveAttribute(
       'href',
-      '/members/hierarchy?departmentName=%E4%BA%8B%E6%A5%AD%E6%8E%A8%E9%80%B2%E9%83%A8&memberId=m1',
+      '/members/m1',
     )
     expect(screen.getByRole('link', { name: '新規メンバー' })).toHaveAttribute(
       'href',
       '/members/new',
     )
-  })
-
-  it('メンバーを編集できる', async () => {
-    mockProjectApi()
-
-    renderWithProviders(<MemberManagementPage />, {
-      initialEntries: ['/members'],
-    })
-
-    await screen.findByRole('heading', { name: 'メンバー一覧' })
-
-    const editableRow = screen.getByTestId('member-row-m10')
-
-    fireEvent.click(within(editableRow).getByTestId('edit-member-m10'))
-
-    expect(screen.getByRole('combobox', { name: '上司' })).toBeInTheDocument()
-
-    fireEvent.change(within(editableRow).getByDisplayValue('DEP-QA'), {
-      target: { value: 'DEP-TEST' },
-    })
-    fireEvent.change(within(editableRow).getByDisplayValue('品質保証部'), {
-      target: { value: 'テスト推進部' },
-    })
-    fireEvent.change(screen.getByLabelText('上司'), {
-      target: { value: 'm2' },
-    })
-    fireEvent.click(within(editableRow).getByRole('button', { name: '保存' }))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('DEP-TEST')
-      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('テスト推進部')
-      expect(screen.getByTestId('member-row-m10')).toHaveTextContent('m2 / 山本')
-    })
   })
 
   it('未使用メンバーを削除できる', async () => {

@@ -1,12 +1,22 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { MemberHierarchyFlow } from '../../components/MemberHierarchyFlow'
 import { ListPageContentSection } from '../../components/ListPageContentSection'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
+import formStyles from '../../styles/form.module.css'
 import pageStyles from '../../styles/page.module.css'
+import type { UpdateMemberInput } from '../../types/project'
+import {
+  buildEditForm,
+  formatMemberOptionLabel,
+  toNullableManagerId,
+  validateMemberInput,
+  type MemberFormState,
+} from './memberFormUtils'
 import styles from './MemberDetailPage.module.css'
 
 interface RelatedProjectItem {
@@ -28,8 +38,12 @@ function formatManagerLabel(name: string | undefined) {
 
 export function MemberDetailPage() {
   const { memberId } = useParams()
-  const { members, projects, assignments, systems, systemAssignments, isLoading, error, getMemberById } =
+  const { members, projects, assignments, systems, systemAssignments, isLoading, error, getMemberById, updateMember } =
     useProjectData()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState<MemberFormState | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const member = memberId ? getMemberById(memberId) : undefined
 
@@ -51,6 +65,16 @@ export function MemberDetailPage() {
       member
         ? members
             .filter((item) => item.departmentName === member.departmentName)
+            .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
+        : [],
+    [member, members],
+  )
+
+  const managerOptions = useMemo(
+    () =>
+      member
+        ? members
+            .filter((option) => option.id !== member.id)
             .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
         : [],
     [member, members],
@@ -143,6 +167,63 @@ export function MemberDetailPage() {
       .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
   }, [member, systemAssignments, systems])
 
+  function updateEditField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
+    setEditForm((current) => (current ? { ...current, [key]: value } : current))
+  }
+
+  function startEditing() {
+    if (!member) {
+      return
+    }
+
+    setEditForm(buildEditForm(member))
+    setSubmitError(null)
+    setIsEditing(true)
+  }
+
+  function cancelEditing() {
+    setIsEditing(false)
+    setEditForm(null)
+    setSubmitError(null)
+  }
+
+  async function handleUpdateSubmit() {
+    if (!member || !editForm) {
+      return
+    }
+
+    setSubmitError(null)
+
+    const validationMessage = validateMemberInput(editForm)
+    if (validationMessage) {
+      setSubmitError(validationMessage)
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const input: UpdateMemberInput = {
+        name: editForm.name.trim(),
+        departmentCode: editForm.departmentCode.trim(),
+        departmentName: editForm.departmentName.trim(),
+        role: editForm.role.trim(),
+        lineLabel: editForm.lineLabel.trim() || undefined,
+        managerId: toNullableManagerId(editForm.managerId),
+      }
+
+      await updateMember(member.id, input)
+      setIsEditing(false)
+      setEditForm(null)
+    } catch (caughtError) {
+      setSubmitError(
+        caughtError instanceof Error ? caughtError.message : 'メンバーの更新に失敗しました。',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <Panel>
@@ -215,33 +296,108 @@ export function MemberDetailPage() {
       </ListPageHero>
 
       <ListPageContentSection
+        actions={
+          isEditing ? (
+            <div className={styles.sectionActions}>
+              <Button disabled={isSubmitting} onClick={() => void handleUpdateSubmit()} size="small">
+                保存
+              </Button>
+              <Button disabled={isSubmitting} onClick={cancelEditing} size="small" variant="secondary">
+                キャンセル
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={startEditing} size="small" variant="secondary">
+              編集
+            </Button>
+          )
+        }
         description="個人情報、所属、ライン情報、上司を確認できます。"
         title="基本情報"
       >
+        {submitError ? <p className={styles.errorText}>{submitError}</p> : null}
         <div className={styles.infoGrid}>
           <div className={styles.infoCard}>
             <span className={styles.infoLabel}>氏名</span>
-            <strong className={styles.infoValue}>{member.name}</strong>
+            {isEditing && editForm ? (
+              <input
+                aria-label="氏名"
+                className={styles.infoInput}
+                onChange={(event) => updateEditField('name', event.target.value)}
+                value={editForm.name}
+              />
+            ) : (
+              <strong className={styles.infoValue}>{member.name}</strong>
+            )}
           </div>
           <div className={styles.infoCard}>
             <span className={styles.infoLabel}>ロール</span>
-            <strong className={styles.infoValue}>{member.role}</strong>
+            {isEditing && editForm ? (
+              <input
+                aria-label="ロール"
+                className={styles.infoInput}
+                onChange={(event) => updateEditField('role', event.target.value)}
+                value={editForm.role}
+              />
+            ) : (
+              <strong className={styles.infoValue}>{member.role}</strong>
+            )}
           </div>
           <div className={styles.infoCard}>
             <span className={styles.infoLabel}>部署コード</span>
-            <strong className={styles.infoValue}>{member.departmentCode}</strong>
+            {isEditing && editForm ? (
+              <input
+                aria-label="部署コード"
+                className={styles.infoInput}
+                onChange={(event) => updateEditField('departmentCode', event.target.value)}
+                value={editForm.departmentCode}
+              />
+            ) : (
+              <strong className={styles.infoValue}>{member.departmentCode}</strong>
+            )}
           </div>
           <div className={styles.infoCard}>
             <span className={styles.infoLabel}>部署名</span>
-            <strong className={styles.infoValue}>{member.departmentName}</strong>
+            {isEditing && editForm ? (
+              <input
+                aria-label="部署名"
+                className={styles.infoInput}
+                onChange={(event) => updateEditField('departmentName', event.target.value)}
+                value={editForm.departmentName}
+              />
+            ) : (
+              <strong className={styles.infoValue}>{member.departmentName}</strong>
+            )}
           </div>
           <div className={styles.infoCard}>
             <span className={styles.infoLabel}>ライン名</span>
-            <strong className={styles.infoValue}>{member.lineLabel || '未設定'}</strong>
+            {isEditing && editForm ? (
+              <input
+                aria-label="ライン名"
+                className={styles.infoInput}
+                onChange={(event) => updateEditField('lineLabel', event.target.value)}
+                value={editForm.lineLabel}
+              />
+            ) : (
+              <strong className={styles.infoValue}>{member.lineLabel || '未設定'}</strong>
+            )}
           </div>
           <div className={styles.infoCard}>
             <span className={styles.infoLabel}>上司</span>
-            {manager ? (
+            {isEditing && editForm ? (
+              <SearchSelect
+                ariaLabel="上司"
+                className={`${formStyles.control} ${styles.infoSelect}`}
+                onChange={(managerId) => updateEditField('managerId', managerId)}
+                options={managerOptions.map((option) => ({
+                  value: option.id,
+                  label: formatMemberOptionLabel(option),
+                  keywords: [option.name, option.departmentName, option.role],
+                }))}
+                placeholder="上司を検索"
+                value={editForm.managerId}
+              />
+            ) : manager ? (
               <Link className={styles.inlineLink} to={`/members/${manager.id}`}>
                 {manager.name}
               </Link>

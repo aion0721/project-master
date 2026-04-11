@@ -6,6 +6,7 @@ export interface MemberFormState {
   departmentCode: string
   departmentName: string
   role: string
+  lineLabel: string
   managerId: string
 }
 
@@ -16,6 +17,7 @@ export function buildInitialMemberForm(): MemberFormState {
     departmentCode: '',
     departmentName: '',
     role: '',
+    lineLabel: '',
     managerId: '',
   }
 }
@@ -39,6 +41,7 @@ export function buildEditForm(member: Member): MemberFormState {
     departmentCode: member.departmentCode,
     departmentName: member.departmentName,
     role: member.role,
+    lineLabel: member.lineLabel ?? '',
     managerId: member.managerId ?? '',
   }
 }
