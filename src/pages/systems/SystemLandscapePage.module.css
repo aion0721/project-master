@@ -16,8 +16,25 @@
 
 .diagramWrap {
   position: relative;
-  overflow: auto;
-  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.edgeAssistList {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.edgeAssistButton {
+  display: block;
 }
 
 .selectorField {
@@ -43,6 +60,18 @@
 .focusGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr) 88px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.focusSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.focusHeadingRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -80,6 +109,41 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.focusListText {
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+.focusNameList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.focusNameChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.08);
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.focusConnectorAssist {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .focusConnector {
@@ -230,57 +294,9 @@
   line-height: 1.6;
 }
 
-.diagram {
-  min-width: 100%;
-}
-
-.edgePath {
-  fill: none;
-  stroke: rgba(15, 76, 92, 0.32);
-  stroke-width: 2.5;
-}
-
-.edgePathActive {
-  stroke: rgba(15, 76, 92, 0.5);
-}
-
-.edgeFlow {
-  fill: none;
-  stroke: #0f4c5c;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 8 16;
-  animation: edgeFlow 1.4s linear infinite;
-}
-
-.edgeFlowActive {
-  stroke-width: 3.5;
-}
-
-.edgeHitArea {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 22;
-  cursor: pointer;
-  pointer-events: stroke;
-}
-
-.edgeLabel {
-  fill: #0f4c5c;
-  font-size: 12px;
-  font-weight: 700;
-  text-anchor: middle;
-}
-
-.edgeLabelActive {
-  fill: #0a3642;
-}
-
 .edgeTooltip {
-  position: absolute;
-  z-index: 2;
   min-width: 220px;
-  max-width: 280px;
+  max-width: 360px;
   padding: 12px 14px;
   border: 1px solid rgba(15, 76, 92, 0.18);
   border-radius: 14px;
@@ -288,8 +304,6 @@
     radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 36%),
     rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-  transform: translate(-50%, -100%);
-  pointer-events: none;
 }
 
 .edgeTooltipTitle {
@@ -304,30 +318,6 @@
   color: var(--text-subtle);
   font-size: 13px;
   line-height: 1.5;
-}
-
-.nodeCard {
-  fill: rgba(255, 255, 255, 0.95);
-  stroke: rgba(14, 116, 144, 0.2);
-  stroke-width: 1.5;
-}
-
-.nodeTitle {
-  fill: var(--text-strong);
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.nodeSubtitle {
-  fill: var(--text-subtle);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.nodeMeta {
-  fill: #0f4c5c;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .legendRow {
@@ -359,12 +349,6 @@
   line-height: 1.6;
 }
 
-@keyframes edgeFlow {
-  to {
-    stroke-dashoffset: -48;
-  }
-}
-
 @keyframes focusConnectorFlow {
   to {
     background-position: 56px 0;
@@ -372,16 +356,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .edgeFlow {
-    animation: none;
-  }
-
   .focusConnectorFlow {
     animation: none;
   }
 }
 
 @media (max-width: 1100px) {
+  .focusHeadingRow,
   .focusGrid {
     grid-template-columns: 1fr;
   }

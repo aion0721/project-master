@@ -1,0 +1,109 @@
+.flowWrap {
+  width: 100%;
+  height: 540px;
+  border: 1px solid rgba(14, 116, 144, 0.14);
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+}
+
+.nodeCard {
+  position: relative;
+  width: 240px;
+  min-height: 120px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.handleLeft,
+.handleRight {
+  width: 10px;
+  height: 10px;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nodeCardCenter {
+  border-color: rgba(14, 116, 144, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.98);
+}
+
+.nodeRole {
+  color: var(--text-subtle);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.nodeTitle {
+  margin-top: 8px;
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.nodeMeta,
+.nodeProtocol {
+  margin-top: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nodeProtocol {
+  color: #0f4c5c;
+}
+
+.nodeNote {
+  margin: 8px 0 0;
+  color: var(--text-subtle);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.edgePath {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.edgeLabelWrap {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.edgeArrow,
+.edgeLabel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  font-weight: 800;
+}
+
+.edgeArrow {
+  min-width: 28px;
+  justify-content: center;
+  color: #0f4c5c;
+  font-size: 14px;
+}
+
+.edgeLabel {
+  padding: 0 12px;
+  color: var(--text-strong);
+  font-size: 12px;
+}

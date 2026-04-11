@@ -271,6 +271,39 @@
 
 .treeSection {
   margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.structureFlowAssist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.structureFlowAssistText,
+.structureFlowPending,
+.structureFlowSuccess,
+.structureFlowError {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.structureFlowAssistText {
+  color: var(--text-subtle);
+}
+
+.structureFlowPending {
+  color: var(--text-subtle);
+}
+
+.structureFlowSuccess {
+  color: var(--success);
+}
+
+.structureFlowError {
+  color: var(--danger);
 }
 
 @media (max-width: 1100px) {

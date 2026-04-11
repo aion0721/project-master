@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { Connection } from '@xyflow/react'
 import { Link, useParams } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
-import { MemberTree } from '../../components/MemberTree'
+import { SystemStructureFlow } from '../../components/SystemStructureFlow'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -21,7 +22,9 @@ import {
 } from './systemFormUtils'
 import {
   buildStructureDrafts,
+  createsStructureCycle,
   buildUpdateSystemInput,
+  buildStructureAssignmentsForFlow,
   sanitizeStructureDrafts,
 } from './systemDetailUtils'
 
@@ -46,6 +49,7 @@ export function SystemDetailPage() {
   const [structureOwnerMemberId, setStructureOwnerMemberId] = useState('')
   const [structureDrafts, setStructureDrafts] = useState<SystemStructureDraft[]>([])
   const [structureError, setStructureError] = useState<string | null>(null)
+  const [structureMessage, setStructureMessage] = useState<string | null>(null)
   const [isSavingStructure, setIsSavingStructure] = useState(false)
 
   const system = systemId ? getSystemById(systemId) : undefined
@@ -63,6 +67,7 @@ export function SystemDetailPage() {
     setStructureDrafts(buildStructureDrafts(structureAssignments))
     setIsStructureEditing(false)
     setStructureError(null)
+    setStructureMessage(null)
   }, [structureAssignments, system?.id, system?.ownerMemberId])
 
   const owner = useMemo(
@@ -120,6 +125,16 @@ export function SystemDetailPage() {
     system?.ownerMemberId ??
     structureAssignments.find((assignment) => !assignment.reportsToMemberId)?.memberId ??
     ''
+
+  const visibleStructureAssignments = useMemo(
+    () =>
+      buildStructureAssignmentsForFlow(
+        isStructureEditing ? structureDrafts : structureAssignments,
+        isStructureEditing ? structureOwnerMemberId : structureRootId,
+        system?.id ?? '',
+      ),
+    [isStructureEditing, structureAssignments, structureDrafts, structureOwnerMemberId, structureRootId, system?.id],
+  )
 
   const structureChanged = useMemo(() => {
     if (!system) {
@@ -211,6 +226,8 @@ export function SystemDetailPage() {
   }
 
   function updateStructureDraft(index: number, patch: Partial<SystemStructureDraft>) {
+    setStructureError(null)
+    setStructureMessage(null)
     setStructureDrafts((current) =>
       current.map((assignment, currentIndex) =>
         currentIndex === index ? { ...assignment, ...patch } : assignment,
@@ -219,13 +236,89 @@ export function SystemDetailPage() {
   }
 
   function addStructureDraft() {
+    setStructureError(null)
+    setStructureMessage(null)
     setStructureDrafts((current) =>
       current.concat({ memberId: '', responsibility: '', reportsToMemberId: '' }),
     )
   }
 
   function removeStructureDraft(index: number) {
+    setStructureError(null)
+    setStructureMessage(null)
     setStructureDrafts((current) => current.filter((_, currentIndex) => currentIndex !== index))
+  }
+
+  function handleStructureConnect(connection: Connection) {
+    const nextManagerId = connection.source
+    const memberId = connection.target
+
+    setStructureError(null)
+    setStructureMessage(null)
+
+    if (!nextManagerId || !memberId) {
+      setStructureError('接続元と接続先を正しく指定してください。')
+      return
+    }
+
+    if (!system) {
+      setStructureError('システム情報を取得できませんでした。')
+      return
+    }
+
+    if (memberId === structureOwnerMemberId) {
+      setStructureError('オーナーの報告先は変更できません。')
+      return
+    }
+
+    if (nextManagerId === memberId) {
+      setStructureError('自分自身を報告先には設定できません。')
+      return
+    }
+
+    const currentDraft = structureDrafts.find((assignment) => assignment.memberId === memberId)
+    if (!currentDraft) {
+      setStructureError('接続対象のメンバーが見つかりません。')
+      return
+    }
+
+    if (currentDraft.reportsToMemberId === nextManagerId) {
+      const member = members.find((item) => item.id === memberId)
+      const manager = members.find((item) => item.id === nextManagerId)
+      setStructureMessage(
+        `${member?.name ?? memberId} はすでに ${manager?.name ?? nextManagerId} 配下です。`,
+      )
+      return
+    }
+
+    const availableIds = new Set([
+      structureOwnerMemberId,
+      ...structureDrafts.map((assignment) => assignment.memberId),
+    ])
+
+    if (!availableIds.has(nextManagerId) || !availableIds.has(memberId)) {
+      setStructureError('システム体制に含まれるメンバー同士だけ接続できます。')
+      return
+    }
+
+    if (createsStructureCycle(structureDrafts, memberId, nextManagerId, structureOwnerMemberId)) {
+      setStructureError('循環する報告ラインになるため、この接続はできません。')
+      return
+    }
+
+    setStructureDrafts((current) =>
+      current.map((assignment) =>
+        assignment.memberId === memberId
+          ? { ...assignment, reportsToMemberId: nextManagerId }
+          : assignment,
+      ),
+    )
+
+    const member = members.find((item) => item.id === memberId)
+    const manager = members.find((item) => item.id === nextManagerId)
+    setStructureMessage(
+      `${member?.name ?? memberId} の報告先を ${manager?.name ?? nextManagerId} に変更しました。`,
+    )
   }
 
   async function handleSaveStructure() {
@@ -246,6 +339,7 @@ export function SystemDetailPage() {
     }
 
     setStructureError(null)
+    setStructureMessage(null)
     setIsSavingStructure(true)
 
     try {
@@ -259,6 +353,7 @@ export function SystemDetailPage() {
         })),
       })
       setIsStructureEditing(false)
+      setStructureMessage('システム体制を更新しました。')
     } catch (caughtError) {
       setStructureError(caughtError instanceof Error ? caughtError.message : 'システム体制の保存に失敗しました。')
     } finally {
@@ -389,6 +484,7 @@ export function SystemDetailPage() {
                 setStructureDrafts(buildStructureDrafts(structureAssignments))
                 setIsStructureEditing(false)
                 setStructureError(null)
+                setStructureMessage(null)
               }}
               size="small"
               variant="secondary"
@@ -408,7 +504,7 @@ export function SystemDetailPage() {
         </div>
 
         {isStructureEditing ? (
-          <SystemStructureEditor
+            <SystemStructureEditor
             assignments={structureDrafts}
             changed={structureChanged}
             error={structureError}
@@ -426,12 +522,34 @@ export function SystemDetailPage() {
             onSave={() => void handleSaveStructure()}
             onUpdateAssignment={updateStructureDraft}
             ownerMemberId={structureOwnerMemberId}
-          />
-        ) : null}
+            />
+          ) : null}
 
         {structureRootId ? (
           <div className={styles.treeSection}>
-            <MemberTree assignments={structureAssignments} members={members} rootMemberId={structureRootId} />
+            <div className={styles.structureFlowAssist}>
+              <p className={styles.structureFlowAssistText}>
+                {isStructureEditing
+                  ? 'ノード下部から別ノード上部へドラッグすると、体制メンバーの報告先を変更できます。保存するまでは下書き状態です。'
+                  : 'システムのオーナー配下の報告ラインをフローで表示しています。編集モードではドラッグ接続で報告先も変更できます。'}
+              </p>
+              {isSavingStructure ? (
+                <p className={styles.structureFlowPending}>システム体制を保存中です...</p>
+              ) : null}
+              {structureMessage ? (
+                <p className={styles.structureFlowSuccess}>{structureMessage}</p>
+              ) : null}
+              {structureError ? (
+                <p className={styles.structureFlowError}>{structureError}</p>
+              ) : null}
+            </div>
+            <SystemStructureFlow
+              assignments={visibleStructureAssignments}
+              isEditable={isStructureEditing && !isSavingStructure}
+              members={members}
+              onConnect={handleStructureConnect}
+              rootMemberId={isStructureEditing ? structureOwnerMemberId || structureRootId : structureRootId}
+            />
           </div>
         ) : (
           <p className={styles.emptyText}>システム体制は未設定です。</p>

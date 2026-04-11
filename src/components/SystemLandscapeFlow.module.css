@@ -1,0 +1,153 @@
+.flowWrap {
+  position: relative;
+  width: 100%;
+  height: 680px;
+  border: 1px solid rgba(14, 116, 144, 0.14);
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 28%),
+    radial-gradient(circle at left bottom, rgba(251, 191, 36, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 251, 235, 0.76), rgba(248, 250, 252, 0.98));
+}
+
+.flowA11y {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.nodeCard {
+  position: relative;
+  position: relative;
+  width: 252px;
+  min-height: 112px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(14, 116, 144, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.1);
+}
+
+.handleLeft,
+.handleRight {
+  width: 10px;
+  height: 10px;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nodeGlow {
+  position: absolute;
+  inset: 1px;
+  border-radius: 19px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.54), transparent 48%);
+  pointer-events: none;
+}
+
+.nodeTitle {
+  position: relative;
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.nodeSubtitle {
+  position: relative;
+  margin-top: 8px;
+  color: var(--text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nodeMeta {
+  position: relative;
+  margin-top: 10px;
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nodeNote {
+  position: relative;
+  margin: 10px 0 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.edgePath {
+  fill: none;
+  stroke: rgba(15, 76, 92, 0.3);
+  stroke-width: 2.5;
+}
+
+.edgePathActive {
+  stroke: rgba(15, 76, 92, 0.5);
+}
+
+.edgeFlow {
+  fill: none;
+  stroke: #0f4c5c;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 8 16;
+  animation: edgeFlow 1.4s linear infinite;
+}
+
+.edgeFlowActive {
+  stroke-width: 3.5;
+}
+
+.edgeHitArea {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+  cursor: pointer;
+  pointer-events: stroke;
+}
+
+.edgeLabelWrap {
+  position: absolute;
+  pointer-events: none;
+}
+
+.edgeLabel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  white-space: nowrap;
+}
+
+.edgeLabelActive {
+  color: #0a3642;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+}
+
+@keyframes edgeFlow {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edgeFlow {
+    animation: none;
+  }
+}

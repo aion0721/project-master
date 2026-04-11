@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { SystemFocusFlow } from '../../components/SystemFocusFlow'
+import { SystemLandscapeFlow } from '../../components/SystemLandscapeFlow'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -7,70 +9,12 @@ import pageStyles from '../../styles/page.module.css'
 import { formatSystemOptionLabel } from './systemFormUtils'
 import styles from './SystemLandscapePage.module.css'
 
-const nodeWidth = 220
-const nodeHeight = 92
-const columnGap = 120
-const rowGap = 68
-const canvasPadding = 40
-
-interface PositionedNode {
-  id: string
-  name: string
-  category: string
-  x: number
-  y: number
-  projectCount: number
-}
-
 interface HoveredEdgeTooltip {
   id: string
-  x: number
-  y: number
   sourceName: string
   targetName: string
   protocol: string | null
   note: string | null
-}
-
-function buildLevels(systemIds: string[], edges: Array<{ sourceSystemId: string; targetSystemId: string }>) {
-  const outgoing = new Map<string, string[]>()
-  const indegree = new Map<string, number>()
-  const level = new Map<string, number>()
-
-  systemIds.forEach((id) => {
-    outgoing.set(id, [])
-    indegree.set(id, 0)
-    level.set(id, 0)
-  })
-
-  edges.forEach((edge) => {
-    outgoing.set(edge.sourceSystemId, [...(outgoing.get(edge.sourceSystemId) ?? []), edge.targetSystemId])
-    indegree.set(edge.targetSystemId, (indegree.get(edge.targetSystemId) ?? 0) + 1)
-  })
-
-  const queue = systemIds.filter((id) => (indegree.get(id) ?? 0) === 0).sort()
-  const visited = new Set<string>()
-
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    visited.add(current)
-
-    for (const next of outgoing.get(current) ?? []) {
-      level.set(next, Math.max(level.get(next) ?? 0, (level.get(current) ?? 0) + 1))
-      indegree.set(next, (indegree.get(next) ?? 1) - 1)
-
-      if ((indegree.get(next) ?? 0) === 0) {
-        queue.push(next)
-      }
-    }
-  }
-
-  const remaining = systemIds.filter((id) => !visited.has(id)).sort()
-  remaining.forEach((id) => {
-    level.set(id, Math.max(level.get(id) ?? 0, 0))
-  })
-
-  return level
 }
 
 export function SystemLandscapePage() {
@@ -147,65 +91,6 @@ export function SystemLandscapePage() {
     }
   }, [selectedSystem, systemById, systemRelations])
 
-  const diagram = useMemo(() => {
-    if (sortedSystems.length === 0) {
-      return null
-    }
-
-    const levels = buildLevels(
-      sortedSystems.map((system) => system.id),
-      systemRelations,
-    )
-    const columns = new Map<number, typeof sortedSystems>()
-
-    sortedSystems.forEach((system) => {
-      const columnIndex = levels.get(system.id) ?? 0
-      const columnSystems = columns.get(columnIndex) ?? []
-      columnSystems.push(system)
-      columns.set(columnIndex, columnSystems)
-    })
-
-    const positionedNodes = new Map<string, PositionedNode>()
-    const maxColumn = Math.max(...columns.keys(), 0)
-    let maxRows = 0
-
-    for (const [columnIndex, columnSystems] of [...columns.entries()].sort((a, b) => a[0] - b[0])) {
-      maxRows = Math.max(maxRows, columnSystems.length)
-
-      columnSystems.forEach((system, rowIndex) => {
-        positionedNodes.set(system.id, {
-          id: system.id,
-          name: system.name,
-          category: system.category,
-          x: canvasPadding + columnIndex * (nodeWidth + columnGap),
-          y: canvasPadding + rowIndex * (nodeHeight + rowGap),
-          projectCount: projectCountBySystemId.get(system.id) ?? 0,
-        })
-      })
-    }
-
-    return {
-      nodes: [...positionedNodes.values()],
-      edges: systemRelations
-        .map((relation) => ({
-          relation,
-          source: positionedNodes.get(relation.sourceSystemId),
-          target: positionedNodes.get(relation.targetSystemId),
-        }))
-        .filter(
-          (
-            item,
-          ): item is {
-            relation: (typeof systemRelations)[number]
-            source: PositionedNode
-            target: PositionedNode
-          } => Boolean(item.source && item.target),
-        ),
-      width: canvasPadding * 2 + (maxColumn + 1) * nodeWidth + maxColumn * columnGap,
-      height: canvasPadding * 2 + Math.max(maxRows, 1) * nodeHeight + Math.max(maxRows - 1, 0) * rowGap,
-    }
-  }, [projectCountBySystemId, sortedSystems, systemRelations])
-
   const summary = useMemo(
     () => ({
       systems: sortedSystems.length,
@@ -231,6 +116,26 @@ export function SystemLandscapePage() {
         <p className={pageStyles.emptyStateText}>{error}</p>
       </Panel>
     )
+  }
+
+  function handleEdgeHover(edgeId: string) {
+    const relation = systemRelations.find((item) => item.id === edgeId)
+
+    if (!relation) {
+      return
+    }
+
+    setHoveredEdge({
+      id: relation.id,
+      sourceName: systemById.get(relation.sourceSystemId)?.name ?? relation.sourceSystemId,
+      targetName: systemById.get(relation.targetSystemId)?.name ?? relation.targetSystemId,
+      protocol: relation.protocol ?? null,
+      note: relation.note ?? null,
+    })
+  }
+
+  function handleEdgeLeave(edgeId: string) {
+    setHoveredEdge((current) => (current?.id === edgeId ? null : current))
   }
 
   return (
@@ -278,39 +183,65 @@ export function SystemLandscapePage() {
         </label>
 
         {selectedSystem && focusedView ? (
-          <div className={styles.focusGrid}>
-            <section className={styles.focusColumn} data-testid="focused-system-upstream">
-              <header className={styles.focusHeader}>
-                <span className={styles.focusEyebrow}>上流</span>
-                <h3 className={styles.focusTitle}>データをもらう元</h3>
-              </header>
-              <div className={styles.focusList}>
+          <div className={styles.focusSection}>
+            <div className={styles.focusHeadingRow}>
+              <section className={styles.focusColumn} data-testid="focused-system-upstream">
+                <header className={styles.focusHeader}>
+                  <span className={styles.focusEyebrow}>上流</span>
+                  <h3 className={styles.focusTitle}>データをもらう元</h3>
+                </header>
                 {focusedView.upstream.length > 0 ? (
-                  focusedView.upstream.map(({ relation, system }) => (
-                    <article className={styles.systemCard} key={relation.id}>
-                      <strong className={styles.systemCardTitle}>{system.name}</strong>
-                      <span className={styles.systemCardMeta}>{system.category}</span>
-                      <span className={styles.systemCardMeta}>プロトコル {relation.protocol?.trim() || '未設定'}</span>
-                      <span className={styles.systemCardMeta}>関連案件 {projectCountBySystemId.get(system.id) ?? 0} 件</span>
-                      {relation.note ? <p className={styles.systemCardNote}>{relation.note}</p> : null}
-                    </article>
-                  ))
+                  <div className={styles.focusNameList}>
+                    {focusedView.upstream.map(({ relation, system }) => (
+                      <span className={styles.focusNameChip} key={relation.id}>
+                        {system.name}
+                      </span>
+                    ))}
+                  </div>
                 ) : (
-                  <p className={styles.emptyText}>このシステムにデータを送る上流システムはありません。</p>
+                  <div className={styles.focusListText}>
+                    このシステムにデータを送る上流システムはありません。
+                  </div>
                 )}
-              </div>
-            </section>
+              </section>
+
+              <section className={`${styles.focusColumn} ${styles.focusColumnPrimary}`}>
+                <header className={styles.focusHeader}>
+                  <span className={styles.focusEyebrow}>中心</span>
+                  <h3 className={styles.focusTitle}>選択中のシステム</h3>
+                </header>
+                <div className={styles.focusListText} data-testid="focused-system-center">
+                  {selectedSystem.name}
+                </div>
+              </section>
+
+              <section className={styles.focusColumn} data-testid="focused-system-downstream">
+                <header className={styles.focusHeader}>
+                  <span className={styles.focusEyebrow}>下流</span>
+                  <h3 className={styles.focusTitle}>データを渡す先</h3>
+                </header>
+                {focusedView.downstream.length > 0 ? (
+                  <div className={styles.focusNameList}>
+                    {focusedView.downstream.map(({ relation, system }) => (
+                      <span className={styles.focusNameChip} key={relation.id}>
+                        {system.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.focusListText}>
+                    このシステムからデータを渡す下流システムはありません。
+                  </div>
+                )}
+              </section>
+            </div>
 
             <div
               aria-label={`${selectedSystem.name} の上流接続メモ`}
-              className={`${styles.focusConnector} ${focusedView.upstream.length > 0 ? '' : styles.focusConnectorIdle}`}
+              className={`${styles.focusConnectorAssist} ${focusedView.upstream.length > 0 ? '' : styles.focusConnectorIdle}`}
               data-testid="focused-connector-upstream"
               tabIndex={focusedView.upstream.length > 0 ? 0 : -1}
             >
-              <span className={styles.focusConnectorLine}>
-                <span className={styles.focusConnectorFlow} />
-              </span>
-              <span className={styles.focusConnectorArrow}>→</span>
               {focusedView.upstream.length > 0 ? (
                 <div className={styles.focusConnectorTooltip}>
                   <strong className={styles.focusConnectorTooltipTitle}>
@@ -328,67 +259,19 @@ export function SystemLandscapePage() {
               ) : null}
             </div>
 
-            <section className={`${styles.focusColumn} ${styles.focusColumnPrimary}`}>
-              <header className={styles.focusHeader}>
-                <span className={styles.focusEyebrow}>中心</span>
-                <h3 className={styles.focusTitle}>選択中のシステム</h3>
-              </header>
-              <article className={`${styles.systemCard} ${styles.systemCardPrimary}`} data-testid="focused-system-center">
-                <strong className={styles.systemCardTitle}>{selectedSystem.name}</strong>
-                <span className={styles.systemCardMeta}>{selectedSystem.category}</span>
-                <span className={styles.systemCardMeta}>関連案件 {projectCountBySystemId.get(selectedSystem.id) ?? 0} 件</span>
-                {selectedSystem.note ? <p className={styles.systemCardNote}>{selectedSystem.note}</p> : null}
-              </article>
-            </section>
-
             <div
               aria-label={`${selectedSystem.name} の下流接続メモ`}
-              className={`${styles.focusConnector} ${focusedView.downstream.length > 0 ? '' : styles.focusConnectorIdle}`}
+              className={`${styles.focusConnectorAssist} ${focusedView.downstream.length > 0 ? '' : styles.focusConnectorIdle}`}
               data-testid="focused-connector-downstream"
               tabIndex={focusedView.downstream.length > 0 ? 0 : -1}
-            >
-              <span className={styles.focusConnectorLine}>
-                <span className={styles.focusConnectorFlow} />
-              </span>
-              <span className={styles.focusConnectorArrow}>→</span>
-              {focusedView.downstream.length > 0 ? (
-                <div className={styles.focusConnectorTooltip}>
-                  <strong className={styles.focusConnectorTooltipTitle}>
-                    {selectedSystem.name} から下流への接続
-                  </strong>
-                  <ul className={styles.focusConnectorTooltipList}>
-                    {focusedView.downstream.map(({ relation, system }) => (
-                      <li className={styles.focusConnectorTooltipItem} key={relation.id}>
-                        <span className={styles.focusConnectorTooltipItemName}>{system.name}</span>
-                        <span className={styles.focusConnectorTooltipItemText}>{relation.note ?? 'メモは未設定です。'}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
+            />
 
-            <section className={styles.focusColumn} data-testid="focused-system-downstream">
-              <header className={styles.focusHeader}>
-                <span className={styles.focusEyebrow}>下流</span>
-                <h3 className={styles.focusTitle}>データを渡す先</h3>
-              </header>
-              <div className={styles.focusList}>
-                {focusedView.downstream.length > 0 ? (
-                  focusedView.downstream.map(({ relation, system }) => (
-                    <article className={styles.systemCard} key={relation.id}>
-                      <strong className={styles.systemCardTitle}>{system.name}</strong>
-                      <span className={styles.systemCardMeta}>{system.category}</span>
-                      <span className={styles.systemCardMeta}>プロトコル {relation.protocol?.trim() || '未設定'}</span>
-                      <span className={styles.systemCardMeta}>関連案件 {projectCountBySystemId.get(system.id) ?? 0} 件</span>
-                      {relation.note ? <p className={styles.systemCardNote}>{relation.note}</p> : null}
-                    </article>
-                  ))
-                ) : (
-                  <p className={styles.emptyText}>このシステムからデータを渡す下流システムはありません。</p>
-                )}
-              </div>
-            </section>
+            <SystemFocusFlow
+              downstream={focusedView.downstream}
+              projectCountBySystemId={projectCountBySystemId}
+              selectedSystem={selectedSystem}
+              upstream={focusedView.upstream}
+            />
           </div>
         ) : (
           <p className={styles.emptyText}>表示できるシステムがありません。</p>
@@ -405,91 +288,40 @@ export function SystemLandscapePage() {
           </div>
         </div>
 
-        {diagram && diagram.edges.length > 0 ? (
+        {sortedSystems.length > 0 && systemRelations.length > 0 ? (
           <div className={styles.diagramWrap}>
-            <svg
-              aria-label="システム関連図"
-              className={styles.diagram}
-              height={diagram.height}
-              role="img"
-              viewBox={`0 0 ${diagram.width} ${diagram.height}`}
-              width={diagram.width}
-            >
-              <defs>
-                <marker id="system-arrow" markerHeight="10" markerUnits="strokeWidth" markerWidth="10" orient="auto" refX="9" refY="3">
-                  <path d="M0,0 L10,3 L0,6 z" fill="#0f4c5c" />
-                </marker>
-              </defs>
-
-              {diagram.edges.map(({ relation, source, target }) => {
-                const startX = source.x + nodeWidth
-                const startY = source.y + nodeHeight / 2
-                const endX = target.x
-                const endY = target.y + nodeHeight / 2
-                const controlOffset = Math.max((endX - startX) / 2, 60)
-                const labelX = (startX + endX) / 2
-                const labelY = (startY + endY) / 2 - 10
-                const edgePath = `M ${startX} ${startY} C ${startX + controlOffset} ${startY}, ${endX - controlOffset} ${endY}, ${endX} ${endY}`
-                const isEdgeActive = hoveredEdge?.id === relation.id
-                const showEdgeTooltip = () =>
-                  setHoveredEdge({
-                    id: relation.id,
-                    x: labelX,
-                    y: labelY - 18,
-                    sourceName: source.name,
-                    targetName: target.name,
-                    protocol: relation.protocol ?? null,
-                    note: relation.note ?? null,
-                  })
-                const hideEdgeTooltip = () =>
-                  setHoveredEdge((current) => (current?.id === relation.id ? null : current))
+            <SystemLandscapeFlow
+              activeEdgeId={hoveredEdge?.id ?? null}
+              onEdgeHover={handleEdgeHover}
+              onEdgeLeave={handleEdgeLeave}
+              projectCountBySystemId={projectCountBySystemId}
+              systemRelations={systemRelations}
+              systems={sortedSystems}
+            />
+            <div className={styles.edgeAssistList}>
+              {systemRelations.map((relation) => {
+                const sourceName = systemById.get(relation.sourceSystemId)?.name ?? relation.sourceSystemId
+                const targetName = systemById.get(relation.targetSystemId)?.name ?? relation.targetSystemId
 
                 return (
-                  <g key={relation.id}>
-                    <path className={`${styles.edgePath} ${isEdgeActive ? styles.edgePathActive : ''}`} d={edgePath} markerEnd="url(#system-arrow)" />
-                    <path className={`${styles.edgeFlow} ${isEdgeActive ? styles.edgeFlowActive : ''}`} d={edgePath} />
-                    <path
-                      aria-label={`${source.name} から ${target.name} への接続`}
-                      className={styles.edgeHitArea}
-                      d={edgePath}
-                      data-testid={`diagram-edge-${relation.id}`}
-                      onBlur={hideEdgeTooltip}
-                      onFocus={showEdgeTooltip}
-                      onMouseEnter={showEdgeTooltip}
-                      onMouseLeave={hideEdgeTooltip}
-                      tabIndex={0}
-                    />
-                    <text className={`${styles.edgeLabel} ${isEdgeActive ? styles.edgeLabelActive : ''}`} x={labelX} y={labelY}>
-                      仕向け → 被仕向け
-                    </text>
-                  </g>
+                  <button
+                    aria-label={`${sourceName} から ${targetName} への接続`}
+                    className={styles.edgeAssistButton}
+                    data-testid={`diagram-edge-${relation.id}`}
+                    key={relation.id}
+                    onBlur={() => handleEdgeLeave(relation.id)}
+                    onFocus={() => handleEdgeHover(relation.id)}
+                    onMouseEnter={() => handleEdgeHover(relation.id)}
+                    onMouseLeave={() => handleEdgeLeave(relation.id)}
+                    type="button"
+                  >
+                    仕向け → 被仕向け
+                  </button>
                 )
               })}
-
-              {diagram.nodes.map((node) => (
-                <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
-                  <rect className={styles.nodeCard} height={nodeHeight} rx="18" width={nodeWidth} />
-                  <text className={styles.nodeTitle} x="18" y="28">
-                    {node.name}
-                  </text>
-                  <text className={styles.nodeSubtitle} x="18" y="50">
-                    {node.category}
-                  </text>
-                  <text className={styles.nodeMeta} x="18" y="72">
-                    関連案件 {node.projectCount} 件
-                  </text>
-                </g>
-              ))}
-            </svg>
+            </div>
             {hoveredEdge ? (
-              <div
-                className={styles.edgeTooltip}
-                role="tooltip"
-                style={{
-                  left: `${hoveredEdge.x}px`,
-                  top: `${hoveredEdge.y}px`,
-                }}
-              >
+              <div className={styles.edgeTooltip} role="tooltip">
                 <strong className={styles.edgeTooltipTitle}>
                   {hoveredEdge.sourceName} → {hoveredEdge.targetName}
                 </strong>
