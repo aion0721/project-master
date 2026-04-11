@@ -187,9 +187,7 @@ export function Layout() {
           />
           <div className={styles.brandCopy}>
             <p className={styles.brandTitle}>Project Master</p>
-            <p className={styles.brandText}>
-              案件、体制、システムを一画面で比較できる管理アプリ
-            </p>
+            <p className={styles.brandText}>案件/体制/システム一括管理</p>
           </div>
         </div>
 
@@ -227,14 +225,6 @@ export function Layout() {
               </div>
             ))}
           </nav>
-
-          <div className={styles.sidebarCard}>
-            <p className={styles.sidebarCardLabel}>表示メモ</p>
-            <p className={styles.sidebarCardText}>
-              案件一覧では進捗と
-              PM、横断ビューでは案件の重なり、システム一覧では影響範囲を比較できます。
-            </p>
-          </div>
         </div>
 
         <div className={styles.userCard}>
