@@ -58,7 +58,7 @@ function renderMemberLevelCard({
   );
 }
 
-function renderHierarchyGroup(group: HierarchyGroup, selectedMemberId: string) {
+function renderHierarchyGroup(group: HierarchyGroup, selectedMemberId?: string) {
   return (
     <div
       className={styles.groupNode}
@@ -87,13 +87,9 @@ function renderHierarchyGroup(group: HierarchyGroup, selectedMemberId: string) {
   );
 }
 
-function buildHierarchyLevels(members: Member[], selectedMemberId: string) {
+function buildHierarchyLevels(members: Member[], selectedMemberId?: string) {
   const memberById = new Map(members.map((member) => [member.id, member]));
-  const selectedMember = memberById.get(selectedMemberId);
-
-  if (!selectedMember) {
-    return null;
-  }
+  const selectedMember = selectedMemberId ? memberById.get(selectedMemberId) : undefined;
 
   const childrenByManagerId = new Map<string | null, Member[]>();
 
@@ -126,6 +122,16 @@ function buildHierarchyLevels(members: Member[], selectedMemberId: string) {
       children: (childrenByManagerId.get(member.id) ?? []).map((child) =>
         buildHierarchyGroup(child),
       ),
+    };
+  }
+
+  if (!selectedMember) {
+    return {
+      lineage: [] as Member[],
+      descendantGroups: members
+        .filter((member) => !member.managerId || !memberById.has(member.managerId))
+        .sort((left, right) => left.name.localeCompare(right.name, "ja"))
+        .map((root) => buildHierarchyGroup(root)),
     };
   }
 
@@ -219,7 +225,7 @@ export function MemberHierarchyPage() {
     requestedMemberId &&
     visibleMembers.some((member) => member.id === requestedMemberId)
       ? requestedMemberId
-      : (visibleMembers[0]?.id ?? "");
+      : undefined;
 
   const hierarchyLevels = useMemo(
     () => buildHierarchyLevels(visibleMembers, activeMemberId),
@@ -227,7 +233,12 @@ export function MemberHierarchyPage() {
   );
 
   const topLevelCount = useMemo(
-    () => visibleMembers.filter((member) => !member.managerId).length,
+    () => {
+      const visibleMemberIds = new Set(visibleMembers.map((member) => member.id));
+      return visibleMembers.filter(
+        (member) => !member.managerId || !visibleMemberIds.has(member.managerId),
+      ).length;
+    },
     [visibleMembers],
   );
 
@@ -388,20 +399,8 @@ export function MemberHierarchyPage() {
                 data-testid="member-hierarchy-department-select"
                 onChange={(event) => {
                   const departmentName = event.target.value;
-                  const nextVisibleMembers = departmentName
-                    ? sortedMembers.filter(
-                        (member) => member.departmentName === departmentName,
-                      )
-                    : sortedMembers;
-                  const nextMemberId = nextVisibleMembers.some(
-                    (member) => member.id === activeMemberId,
-                  )
-                    ? activeMemberId
-                    : (nextVisibleMembers[0]?.id ?? "");
-
                   updateHierarchyParams({
                     departmentName,
-                    memberId: nextMemberId,
                   });
                   setRelationshipMessage(null);
                   setRelationshipError(null);
@@ -417,28 +416,6 @@ export function MemberHierarchyPage() {
               </select>
             </label>
 
-            <label className={formStyles.field}>
-              <span className={formStyles.label}>対象メンバー</span>
-              <select
-                className={formStyles.control}
-                data-testid="member-hierarchy-select"
-                onChange={(event) => {
-                  updateHierarchyParams({
-                    departmentName: requestedDepartmentName,
-                    memberId: event.target.value,
-                  });
-                  setRelationshipMessage(null);
-                  setRelationshipError(null);
-                }}
-                value={activeMemberId}
-              >
-                {visibleMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name} ({member.role})
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
 
           <div
@@ -493,7 +470,7 @@ export function MemberHierarchyPage() {
           {viewMode === "flow" ? (
             <div className={styles.flowAssist}>
               <p className={styles.flowAssistText}>
-                ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。
+                ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。部署を絞ると、その部署のメンバー全員をまとめて編集できます。
               </p>
               {isSavingRelation ? (
                 <p className={styles.flowPending}>上下関係を保存中です...</p>
@@ -530,7 +507,9 @@ export function MemberHierarchyPage() {
             >
               <div className={styles.pyramidLegend}>
                 <span>
-                  上位から対象メンバー、その配下メンバーまで段階的に表示します。
+                  {activeMemberId
+                    ? "上位から対象メンバー、その配下メンバーまで段階的に表示します。"
+                    : "表示中メンバーの上下関係を階層図として表示します。"}
                 </span>
               </div>
 
@@ -568,11 +547,7 @@ export function MemberHierarchyPage() {
                 ) : null}
               </div>
             </div>
-          ) : (
-            <p className={styles.emptyText}>
-              表示対象のメンバーを選択してください。
-            </p>
-          )}
+          ) : null}
         </div>
       </Panel>
     </div>

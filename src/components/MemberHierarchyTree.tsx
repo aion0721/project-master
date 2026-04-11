@@ -12,28 +12,33 @@ function sortMembers(members: Member[]) {
   return [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja'))
 }
 
+function getRootMembers(
+  members: Member[],
+  memberById: Map<string, Member>,
+) {
+  return sortMembers(
+    members.filter((member) => !member.managerId || !memberById.has(member.managerId)),
+  )
+}
+
 function buildDescendantNode(
   member: Member,
   childrenByManagerId: Map<string | null, Member[]>,
-  selectedMemberId: string,
+  selectedMemberId?: string,
 ): HierarchyNode {
   return {
     member,
     isSelected: member.id === selectedMemberId,
-    isPathNode: member.id === selectedMemberId,
+    isPathNode: Boolean(selectedMemberId) && member.id === selectedMemberId,
     children: sortMembers(childrenByManagerId.get(member.id) ?? []).map((child) =>
       buildDescendantNode(child, childrenByManagerId, selectedMemberId),
     ),
   }
 }
 
-function buildHierarchyTree(members: Member[], selectedMemberId: string) {
+function buildHierarchyForest(members: Member[], selectedMemberId?: string) {
   const memberById = new Map(members.map((member) => [member.id, member]))
-  const selectedMember = memberById.get(selectedMemberId)
-
-  if (!selectedMember) {
-    return null
-  }
+  const selectedMember = selectedMemberId ? memberById.get(selectedMemberId) : undefined
 
   const childrenByManagerId = new Map<string | null, Member[]>()
 
@@ -42,6 +47,10 @@ function buildHierarchyTree(members: Member[], selectedMemberId: string) {
     bucket.push(member)
     childrenByManagerId.set(member.managerId, bucket)
   })
+
+  if (!selectedMember) {
+    return getRootMembers(members, memberById).map((member) => buildDescendantNode(member, childrenByManagerId))
+  }
 
   const lineage: Member[] = []
   let cursor: Member | undefined = selectedMember
@@ -65,11 +74,11 @@ function buildHierarchyTree(members: Member[], selectedMemberId: string) {
           )
         : lineage[index + 1]
           ? [buildPathNode(index + 1)]
-          : [],
+      : [],
     }
   }
 
-  return buildPathNode(0)
+  return [buildPathNode(0)]
 }
 
 function getMemberInitials(name: string) {
@@ -141,7 +150,9 @@ function MemberHierarchyNodeView({ node, depth = 0 }: { node: HierarchyNode; dep
         </div>
 
         <div className={styles.memberSummary}>
-          {node.isSelected
+          {!node.isSelected && !node.isPathNode
+            ? '表示中のメンバーです。'
+            : node.isSelected
             ? '現在の選択メンバーです。'
             : node.isPathNode
               ? '選択メンバーまでの経路に含まれています。'
@@ -162,20 +173,22 @@ function MemberHierarchyNodeView({ node, depth = 0 }: { node: HierarchyNode; dep
 
 interface MemberHierarchyTreeProps {
   members: Member[]
-  selectedMemberId: string
+  selectedMemberId?: string
 }
 
 export function MemberHierarchyTree({ members, selectedMemberId }: MemberHierarchyTreeProps) {
-  const tree = buildHierarchyTree(members, selectedMemberId)
+  const forest = buildHierarchyForest(members, selectedMemberId)
 
-  if (!tree) {
+  if (forest.length === 0) {
     return <p className={styles.emptyText}>表示対象のメンバーを取得できませんでした。</p>
   }
 
   return (
     <div className={styles.treeWrap} data-testid="member-hierarchy-tree">
       <ul className={styles.rootList}>
-        <MemberHierarchyNodeView node={tree} />
+        {forest.map((node) => (
+          <MemberHierarchyNodeView key={node.member.id} node={node} />
+        ))}
       </ul>
     </div>
   )

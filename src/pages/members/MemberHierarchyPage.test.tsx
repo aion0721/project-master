@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../test/renderWithProviders'
 import { MemberHierarchyPage } from './MemberHierarchyPage'
 
 describe('MemberHierarchyPage', () => {
-  it('クエリの memberId を初期選択に反映する', async () => {
+  it('クエリの memberId を初期ハイライトに反映する', async () => {
     mockProjectApi()
 
     renderWithProviders(<MemberHierarchyPage />, {
@@ -13,7 +13,7 @@ describe('MemberHierarchyPage', () => {
     })
 
     expect(await screen.findByRole('heading', { name: 'メンバー体制図' })).toBeInTheDocument()
-    expect(screen.getByTestId('member-hierarchy-select')).toHaveValue('m4')
+    expect(screen.getByTestId('member-hierarchy-tree')).toHaveTextContent('選択中')
   })
 
   it('デフォルトでフロー表示になっている', async () => {
@@ -31,7 +31,7 @@ describe('MemberHierarchyPage', () => {
     expect(within(hierarchyFlow).getByText('PM')).toBeInTheDocument()
   })
 
-  it('ツリー表示で選択メンバーの関係を表示できる', async () => {
+  it('ツリー表示で部署指定がない場合は全体の関係を表示できる', async () => {
     mockProjectApi()
 
     renderWithProviders(<MemberHierarchyPage />, {
@@ -41,16 +41,12 @@ describe('MemberHierarchyPage', () => {
     await screen.findByRole('heading', { name: 'メンバー体制図' })
 
     fireEvent.click(screen.getByTestId('member-hierarchy-view-tree'))
-    fireEvent.change(screen.getByTestId('member-hierarchy-select'), {
-      target: { value: 'm2' },
-    })
 
     const hierarchyTree = screen.getByTestId('member-hierarchy-tree')
 
     expect(within(hierarchyTree).getAllByText('田中').length).toBeGreaterThan(0)
     expect(within(hierarchyTree).getAllByText('山本').length).toBeGreaterThan(0)
     expect(within(hierarchyTree).getAllByText('鈴木').length).toBeGreaterThan(0)
-    expect(within(hierarchyTree).getByText('選択中')).toBeInTheDocument()
   })
 
   it('階層図ビューに切り替えると配下グループを表示できる', async () => {
@@ -88,7 +84,7 @@ describe('MemberHierarchyPage', () => {
     expect(within(yamamotoGroup).getByText('木村')).toBeInTheDocument()
   })
 
-  it('部署を指定するとその部署のメンバーだけを選択対象にする', async () => {
+  it('部署を指定するとその部署のメンバー全員を表示する', async () => {
     mockProjectApi()
 
     renderWithProviders(<MemberHierarchyPage />, {
@@ -101,9 +97,9 @@ describe('MemberHierarchyPage', () => {
       target: { value: '品質保証部' },
     })
 
-    expect(screen.getByTestId('member-hierarchy-select')).toHaveValue('m10')
-    expect(screen.getByRole('option', { name: '伊藤 (テストリーダー)' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '渡辺 (QAエンジニア)' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: '田中 (PM)' })).not.toBeInTheDocument()
+    const hierarchyFlow = screen.getByTestId('member-hierarchy-tree')
+    expect(within(hierarchyFlow).getByText('伊藤')).toBeInTheDocument()
+    expect(within(hierarchyFlow).getByText('渡辺')).toBeInTheDocument()
+    expect(within(hierarchyFlow).queryByText('田中')).not.toBeInTheDocument()
   })
 })

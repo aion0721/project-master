@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { MemberHierarchyFlow } from '../../components/MemberHierarchyFlow'
 import { ListPageContentSection } from '../../components/ListPageContentSection'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
@@ -43,6 +44,16 @@ export function MemberDetailPage() {
         .filter((item) => item.managerId === member?.id)
         .sort((left, right) => left.name.localeCompare(right.name, 'ja')),
     [member?.id, members],
+  )
+
+  const departmentMembers = useMemo(
+    () =>
+      member
+        ? members
+            .filter((item) => item.departmentName === member.departmentName)
+            .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
+        : [],
+    [member, members],
   )
 
   const relatedProjects = useMemo<RelatedProjectItem[]>(() => {
@@ -174,7 +185,10 @@ export function MemberDetailPage() {
             <Button to="/members" variant="secondary">
               メンバー一覧
             </Button>
-            <Button to={`/members/hierarchy?memberId=${member.id}`} variant="secondary">
+            <Button
+              to={`/members/hierarchy?departmentName=${encodeURIComponent(member.departmentName)}&memberId=${member.id}`}
+              variant="secondary"
+            >
               階層図
             </Button>
           </div>
@@ -268,6 +282,28 @@ export function MemberDetailPage() {
             ) : (
               <p className={styles.emptyText}>直下メンバーはいません。</p>
             )}
+          </div>
+        </div>
+      </ListPageContentSection>
+
+      <ListPageContentSection
+        description="所属部署の中での位置を体制図で確認できます。編集は専用の体制図ページから行えます。"
+        title="体制図"
+      >
+        <div className={styles.hierarchySection}>
+          <div className={styles.hierarchyHeader}>
+            <p className={styles.hierarchyText}>
+              {member.departmentName} のメンバーを表示し、{member.name} を起点として強調しています。
+            </p>
+            <Button
+              to={`/members/hierarchy?departmentName=${encodeURIComponent(member.departmentName)}&memberId=${member.id}`}
+              variant="secondary"
+            >
+              体制図ページで開く
+            </Button>
+          </div>
+          <div className={styles.hierarchyCanvas} data-testid="member-detail-hierarchy">
+            <MemberHierarchyFlow members={departmentMembers} selectedMemberId={member.id} />
           </div>
         </div>
       </ListPageContentSection>

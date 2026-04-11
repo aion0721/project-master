@@ -25,7 +25,10 @@ describe('MemberManagementPage', () => {
     expect(within(screen.getByTestId('member-row-m4')).getByText('m1 / 田中')).toBeInTheDocument()
     expect(
       within(screen.getByTestId('member-row-m1')).getByRole('link', { name: '体制図' }),
-    ).toHaveAttribute('href', '/members/hierarchy?memberId=m1')
+    ).toHaveAttribute(
+      'href',
+      '/members/hierarchy?departmentName=%E4%BA%8B%E6%A5%AD%E6%8E%A8%E9%80%B2%E9%83%A8&memberId=m1',
+    )
     expect(screen.getByRole('link', { name: '新規メンバー' })).toHaveAttribute(
       'href',
       '/members/new',

@@ -1,14 +1,14 @@
-import { useMemo, useState } from 'react'
-import { ListPageContentSection } from '../../components/ListPageContentSection'
-import { ListPageFilterSection } from '../../components/ListPageFilterSection'
-import { ListPageHero } from '../../components/ListPageHero'
-import { Button } from '../../components/ui/Button'
-import { Panel } from '../../components/ui/Panel'
-import { SearchSelect } from '../../components/ui/SearchSelect'
-import { useProjectData } from '../../store/useProjectData'
-import formStyles from '../../styles/form.module.css'
-import pageStyles from '../../styles/page.module.css'
-import type { UpdateMemberInput } from '../../types/project'
+import { useMemo, useState } from "react";
+import { ListPageContentSection } from "../../components/ListPageContentSection";
+import { ListPageFilterSection } from "../../components/ListPageFilterSection";
+import { ListPageHero } from "../../components/ListPageHero";
+import { Button } from "../../components/ui/Button";
+import { Panel } from "../../components/ui/Panel";
+import { SearchSelect } from "../../components/ui/SearchSelect";
+import { useProjectData } from "../../store/useProjectData";
+import formStyles from "../../styles/form.module.css";
+import pageStyles from "../../styles/page.module.css";
+import type { UpdateMemberInput } from "../../types/project";
 import {
   buildEditForm,
   formatMemberOptionLabel,
@@ -16,71 +16,89 @@ import {
   toNullableManagerId,
   validateMemberInput,
   type MemberFormState,
-} from './memberFormUtils'
-import styles from './MemberManagementPage.module.css'
+} from "./memberFormUtils";
+import styles from "./MemberManagementPage.module.css";
 
 export function MemberManagementPage() {
-  const { members, projects, assignments, isLoading, error, updateMember, deleteMember } =
-    useProjectData()
-  const [isFilterVisible, setIsFilterVisible] = useState(false)
-  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<MemberFormState | null>(null)
-  const [filterKeyword, setFilterKeyword] = useState('')
-  const [filterRole, setFilterRole] = useState('')
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const {
+    members,
+    projects,
+    assignments,
+    isLoading,
+    error,
+    updateMember,
+    deleteMember,
+  } = useProjectData();
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<MemberFormState | null>(null);
+  const [filterKeyword, setFilterKeyword] = useState("");
+  const [filterRole, setFilterRole] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members])
+  const memberById = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
+    [members],
+  );
 
   const projectCountByMemberId = useMemo(() => {
-    const projectIdsByMember = new Map<string, Set<string>>()
+    const projectIdsByMember = new Map<string, Set<string>>();
 
     projects.forEach((project) => {
-      const bucket = projectIdsByMember.get(project.pmMemberId) ?? new Set<string>()
-      bucket.add(project.projectNumber)
-      projectIdsByMember.set(project.pmMemberId, bucket)
-    })
+      const bucket =
+        projectIdsByMember.get(project.pmMemberId) ?? new Set<string>();
+      bucket.add(project.projectNumber);
+      projectIdsByMember.set(project.pmMemberId, bucket);
+    });
 
     assignments.forEach((assignment) => {
-      const bucket = projectIdsByMember.get(assignment.memberId) ?? new Set<string>()
-      bucket.add(assignment.projectId)
-      projectIdsByMember.set(assignment.memberId, bucket)
-    })
+      const bucket =
+        projectIdsByMember.get(assignment.memberId) ?? new Set<string>();
+      bucket.add(assignment.projectId);
+      projectIdsByMember.set(assignment.memberId, bucket);
+    });
 
     return new Map(
-      [...projectIdsByMember.entries()].map(([memberId, projectIds]) => [memberId, projectIds.size]),
-    )
-  }, [assignments, projects])
+      [...projectIdsByMember.entries()].map(([memberId, projectIds]) => [
+        memberId,
+        projectIds.size,
+      ]),
+    );
+  }, [assignments, projects]);
 
   const sortedMembers = useMemo(
-    () => [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
+    () =>
+      [...members].sort((left, right) =>
+        left.name.localeCompare(right.name, "ja"),
+      ),
     [members],
-  )
+  );
 
   const roleOptions = useMemo(
     () =>
-      [...new Set(members.map((member) => member.role.trim()).filter(Boolean))].sort((left, right) =>
-        left.localeCompare(right, 'ja'),
-      ),
+      [
+        ...new Set(members.map((member) => member.role.trim()).filter(Boolean)),
+      ].sort((left, right) => left.localeCompare(right, "ja")),
     [members],
-  )
+  );
 
   const keywordOptions = useMemo(() => {
-    const values = new Map<string, { value: string; label: string }>()
+    const values = new Map<string, { value: string; label: string }>();
 
     sortedMembers.forEach((member) => {
       values.set(`member:${member.id}`, {
         value: member.id,
         label: `${member.id} / ${member.name}`,
-      })
+      });
       values.set(`department:${member.departmentName}`, {
         value: member.departmentName,
         label: member.departmentName,
-      })
-    })
+      });
+    });
 
-    return [...values.values()]
-  }, [sortedMembers])
+    return [...values.values()];
+  }, [sortedMembers]);
 
   const roleSearchOptions = useMemo(
     () =>
@@ -89,47 +107,56 @@ export function MemberManagementPage() {
         label: role,
       })),
     [roleOptions],
-  )
+  );
 
   const filteredMembers = useMemo(() => {
-    const normalizedKeyword = filterKeyword.trim().toLowerCase()
+    const normalizedKeyword = filterKeyword.trim().toLowerCase();
 
     return sortedMembers.filter((member) => {
-      const searchableText = `${member.id} ${member.departmentName}`.toLowerCase()
-      const matchesKeyword = !normalizedKeyword || searchableText.includes(normalizedKeyword)
-      const matchesRole = !filterRole || member.role === filterRole
+      const searchableText =
+        `${member.id} ${member.departmentName}`.toLowerCase();
+      const matchesKeyword =
+        !normalizedKeyword || searchableText.includes(normalizedKeyword);
+      const matchesRole = !filterRole || member.role === filterRole;
 
-      return matchesKeyword && matchesRole
-    })
-  }, [filterKeyword, filterRole, sortedMembers])
+      return matchesKeyword && matchesRole;
+    });
+  }, [filterKeyword, filterRole, sortedMembers]);
 
   const memberSummary = useMemo(
     () => ({
       total: members.length,
-      assigned: members.filter((member) => (projectCountByMemberId.get(member.id) ?? 0) > 0).length,
+      assigned: members.filter(
+        (member) => (projectCountByMemberId.get(member.id) ?? 0) > 0,
+      ).length,
       roles: roleOptions.length,
     }),
     [members, projectCountByMemberId, roleOptions.length],
-  )
+  );
 
-  function updateEditField<Key extends keyof MemberFormState>(key: Key, value: MemberFormState[Key]) {
-    setEditForm((current) => (current ? { ...current, [key]: value } : current))
+  function updateEditField<Key extends keyof MemberFormState>(
+    key: Key,
+    value: MemberFormState[Key],
+  ) {
+    setEditForm((current) =>
+      current ? { ...current, [key]: value } : current,
+    );
   }
 
   async function handleUpdateSubmit(memberId: string) {
     if (!editForm) {
-      return
+      return;
     }
 
-    setSubmitError(null)
+    setSubmitError(null);
 
-    const validationMessage = validateMemberInput(editForm)
+    const validationMessage = validateMemberInput(editForm);
     if (validationMessage) {
-      setSubmitError(validationMessage)
-      return
+      setSubmitError(validationMessage);
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       const input: UpdateMemberInput = {
@@ -138,68 +165,82 @@ export function MemberManagementPage() {
         departmentName: editForm.departmentName.trim(),
         role: editForm.role.trim(),
         managerId: toNullableManagerId(editForm.managerId),
-      }
-      await updateMember(memberId, input)
-      setEditingMemberId(null)
-      setEditForm(null)
+      };
+      await updateMember(memberId, input);
+      setEditingMemberId(null);
+      setEditForm(null);
     } catch (caughtError) {
       setSubmitError(
-        caughtError instanceof Error ? caughtError.message : 'メンバーの更新に失敗しました。',
-      )
+        caughtError instanceof Error
+          ? caughtError.message
+          : "メンバーの更新に失敗しました。",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
   async function handleDelete(memberId: string) {
-    const member = memberById.get(memberId)
+    const member = memberById.get(memberId);
 
-    if (!window.confirm(`メンバー ${member?.id ?? memberId} / ${member?.name ?? ''} を削除しますか？`)) {
-      return
+    if (
+      !window.confirm(
+        `メンバー ${member?.id ?? memberId} / ${member?.name ?? ""} を削除しますか？`,
+      )
+    ) {
+      return;
     }
 
-    setSubmitError(null)
-    setIsSubmitting(true)
+    setSubmitError(null);
+    setIsSubmitting(true);
 
     try {
-      await deleteMember(memberId)
+      await deleteMember(memberId);
 
       if (editingMemberId === memberId) {
-        setEditingMemberId(null)
-        setEditForm(null)
+        setEditingMemberId(null);
+        setEditForm(null);
       }
     } catch (caughtError) {
       setSubmitError(
-        caughtError instanceof Error ? caughtError.message : 'メンバーの削除に失敗しました。',
-      )
+        caughtError instanceof Error
+          ? caughtError.message
+          : "メンバーの削除に失敗しました。",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
   if (isLoading) {
     return (
       <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>メンバー一覧を読み込み中です</h1>
+        <h1 className={pageStyles.emptyStateTitle}>
+          メンバー一覧を読み込み中です
+        </h1>
         <p className={pageStyles.emptyStateText}>
           バックエンドからメンバー情報を取得しています。
         </p>
       </Panel>
-    )
+    );
   }
 
   if (error) {
     return (
       <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>メンバー一覧を表示できませんでした</h1>
+        <h1 className={pageStyles.emptyStateTitle}>
+          メンバー一覧を表示できませんでした
+        </h1>
         <p className={pageStyles.emptyStateText}>{error}</p>
       </Panel>
-    )
+    );
   }
 
-  const keywordSummary = filterKeyword.trim() ? ` / "${filterKeyword.trim()}"` : ''
-  const roleSummary = filterRole ? ` / ${filterRole}` : ''
-  const filterSummaryText = `${filteredMembers.length} 件表示${roleSummary}${keywordSummary}`
+  const keywordSummary = filterKeyword.trim()
+    ? ` / "${filterKeyword.trim()}"`
+    : "";
+  const roleSummary = filterRole ? ` / ${filterRole}` : "";
+  const filterSummaryText = `${filteredMembers.length} 件表示${roleSummary}${keywordSummary}`;
 
   return (
     <div className={pageStyles.page}>
@@ -212,9 +253,9 @@ export function MemberManagementPage() {
         iconKind="member"
         storageKey="project-master:hero-collapsed:members"
         stats={[
-          { label: '登録メンバー', value: memberSummary.total },
-          { label: '担当案件あり', value: memberSummary.assigned },
-          { label: 'ロール種別', value: memberSummary.roles },
+          { label: "登録メンバー", value: memberSummary.total },
+          { label: "担当案件あり", value: memberSummary.assigned },
+          { label: "ロール種別", value: memberSummary.roles },
         ]}
         title="メンバー一覧"
       />
@@ -251,7 +292,9 @@ export function MemberManagementPage() {
         summary={
           <div className={styles.filterSummary}>
             <span className={styles.filterSummaryLabel}>表示件数</span>
-            <span className={styles.filterSummaryValue}>{filterSummaryText}</span>
+            <span className={styles.filterSummaryValue}>
+              {filterSummaryText}
+            </span>
           </div>
         }
         visible={isFilterVisible}
@@ -265,16 +308,16 @@ export function MemberManagementPage() {
             size="small"
             variant="secondary"
           >
-            {isFilterVisible ? '絞り込みを非表示' : '絞り込みを表示'}
+            {isFilterVisible ? "絞り込みを非表示" : "絞り込みを表示"}
           </Button>
         }
         description="部署コード、ロール、上長、関連案件数を比較しながら確認できます。利用中のメンバーはこの一覧から直接編集できます。"
         emptyState={
           filteredMembers.length === 0
             ? {
-                title: '条件に一致するメンバーはありません',
+                title: "条件に一致するメンバーはありません",
                 description:
-                  '絞り込み条件やロールを見直して、表示されるメンバーを確認してください。',
+                  "絞り込み条件やロールを見直して、表示されるメンバーを確認してください。",
               }
             : null
         }
@@ -298,9 +341,13 @@ export function MemberManagementPage() {
             </thead>
             <tbody>
               {filteredMembers.map((member) => {
-                const isEditing = editingMemberId === member.id && editForm
-                const managerOptions = sortedMembers.filter((option) => option.id !== member.id)
-                const manager = member.managerId ? memberById.get(member.managerId) : null
+                const isEditing = editingMemberId === member.id && editForm;
+                const managerOptions = sortedMembers.filter(
+                  (option) => option.id !== member.id,
+                );
+                const manager = member.managerId
+                  ? memberById.get(member.managerId)
+                  : null;
 
                 return (
                   <tr data-testid={`member-row-${member.id}`} key={member.id}>
@@ -310,7 +357,9 @@ export function MemberManagementPage() {
                         <input
                           aria-label="氏名"
                           className={styles.inlineInput}
-                          onChange={(event) => updateEditField('name', event.target.value)}
+                          onChange={(event) =>
+                            updateEditField("name", event.target.value)
+                          }
                           value={editForm.name}
                         />
                       ) : (
@@ -322,7 +371,12 @@ export function MemberManagementPage() {
                         <input
                           aria-label="部署コード"
                           className={styles.inlineInput}
-                          onChange={(event) => updateEditField('departmentCode', event.target.value)}
+                          onChange={(event) =>
+                            updateEditField(
+                              "departmentCode",
+                              event.target.value,
+                            )
+                          }
                           value={editForm.departmentCode}
                         />
                       ) : (
@@ -334,7 +388,12 @@ export function MemberManagementPage() {
                         <input
                           aria-label="部署名"
                           className={styles.inlineInput}
-                          onChange={(event) => updateEditField('departmentName', event.target.value)}
+                          onChange={(event) =>
+                            updateEditField(
+                              "departmentName",
+                              event.target.value,
+                            )
+                          }
                           value={editForm.departmentName}
                         />
                       ) : (
@@ -346,7 +405,9 @@ export function MemberManagementPage() {
                         <input
                           aria-label="ロール"
                           className={styles.inlineInput}
-                          onChange={(event) => updateEditField('role', event.target.value)}
+                          onChange={(event) =>
+                            updateEditField("role", event.target.value)
+                          }
                           value={editForm.role}
                         />
                       ) : (
@@ -358,11 +419,17 @@ export function MemberManagementPage() {
                         <SearchSelect
                           ariaLabel="上司"
                           className={styles.inlineInput}
-                          onChange={(managerId) => updateEditField('managerId', managerId)}
+                          onChange={(managerId) =>
+                            updateEditField("managerId", managerId)
+                          }
                           options={managerOptions.map((option) => ({
                             value: option.id,
                             label: formatMemberOptionLabel(option),
-                            keywords: [option.name, option.departmentName, option.role],
+                            keywords: [
+                              option.name,
+                              option.departmentName,
+                              option.role,
+                            ],
                           }))}
                           placeholder="上司を検索"
                           value={editForm.managerId}
@@ -370,7 +437,7 @@ export function MemberManagementPage() {
                       ) : manager ? (
                         formatMemberShortLabel(manager)
                       ) : (
-                        '未設定'
+                        "未設定"
                       )}
                     </td>
                     <td>{projectCountByMemberId.get(member.id) ?? 0}</td>
@@ -388,9 +455,9 @@ export function MemberManagementPage() {
                             <Button
                               disabled={isSubmitting}
                               onClick={() => {
-                                setEditingMemberId(null)
-                                setEditForm(null)
-                                setSubmitError(null)
+                                setEditingMemberId(null);
+                                setEditForm(null);
+                                setSubmitError(null);
                               }}
                               size="small"
                               variant="secondary"
@@ -400,12 +467,16 @@ export function MemberManagementPage() {
                           </>
                         ) : (
                           <>
-                            <Button size="small" to={`/members/${member.id}`} variant="secondary">
+                            <Button
+                              size="small"
+                              to={`/members/${member.id}`}
+                              variant="secondary"
+                            >
                               詳細
                             </Button>
                             <Button
                               size="small"
-                              to={`/members/hierarchy?memberId=${member.id}`}
+                              to={`/members/hierarchy?departmentName=${encodeURIComponent(member.departmentName)}&memberId=${member.id}`}
                               variant="secondary"
                             >
                               体制図
@@ -414,9 +485,9 @@ export function MemberManagementPage() {
                               data-testid={`edit-member-${member.id}`}
                               disabled={isSubmitting}
                               onClick={() => {
-                                setEditingMemberId(member.id)
-                                setEditForm(buildEditForm(member))
-                                setSubmitError(null)
+                                setEditingMemberId(member.id);
+                                setEditForm(buildEditForm(member));
+                                setSubmitError(null);
                               }}
                               size="small"
                               variant="secondary"
@@ -437,12 +508,12 @@ export function MemberManagementPage() {
                       </div>
                     </td>
                   </tr>
-                )
+                );
               })}
             </tbody>
           </table>
         </div>
       </ListPageContentSection>
     </div>
-  )
+  );
 }

@@ -69,15 +69,24 @@ function sortMembers(members: Member[]) {
   );
 }
 
+function getRootMembers(
+  members: Member[],
+  memberById: Map<string, Member>,
+) {
+  return sortMembers(
+    members.filter((member) => !member.managerId || !memberById.has(member.managerId)),
+  );
+}
+
 function buildDescendantNode(
   member: Member,
   childrenByManagerId: Map<string | null, Member[]>,
-  selectedMemberId: string,
+  selectedMemberId?: string,
 ): HierarchyTreeNode {
   return {
     member,
     isSelected: member.id === selectedMemberId,
-    isPathNode: member.id === selectedMemberId,
+    isPathNode: Boolean(selectedMemberId) && member.id === selectedMemberId,
     children: sortMembers(childrenByManagerId.get(member.id) ?? []).map(
       (child) =>
         buildDescendantNode(child, childrenByManagerId, selectedMemberId),
@@ -85,13 +94,9 @@ function buildDescendantNode(
   };
 }
 
-function buildHierarchyTree(members: Member[], selectedMemberId: string) {
+function buildHierarchyForest(members: Member[], selectedMemberId?: string) {
   const memberById = new Map(members.map((member) => [member.id, member]));
-  const selectedMember = memberById.get(selectedMemberId);
-
-  if (!selectedMember) {
-    return null;
-  }
+  const selectedMember = selectedMemberId ? memberById.get(selectedMemberId) : undefined;
 
   const childrenByManagerId = new Map<string | null, Member[]>();
 
@@ -100,6 +105,12 @@ function buildHierarchyTree(members: Member[], selectedMemberId: string) {
     bucket.push(member);
     childrenByManagerId.set(member.managerId, bucket);
   });
+
+  if (!selectedMember) {
+    return getRootMembers(members, memberById).map((member) =>
+      buildDescendantNode(member, childrenByManagerId),
+    );
+  }
 
   const lineage: Member[] = [];
   let cursor: Member | undefined = selectedMember;
@@ -123,11 +134,11 @@ function buildHierarchyTree(members: Member[], selectedMemberId: string) {
           )
         : lineage[index + 1]
           ? [buildPathNode(index + 1)]
-          : [],
+      : [],
     };
   }
 
-  return buildPathNode(0);
+  return [buildPathNode(0)];
 }
 
 function findSelectedNode(node: HierarchyTreeNode): HierarchyTreeNode | null {
@@ -153,30 +164,38 @@ function collectMemberIds(node: HierarchyTreeNode): string[] {
   ];
 }
 
-function getBranchGroups(tree: HierarchyTreeNode): BranchGroup[] {
-  const selectedNode = findSelectedNode(tree);
+function getBranchGroups(forest: HierarchyTreeNode[]): BranchGroup[] {
+  const selectedNode = forest
+    .map((root) => findSelectedNode(root))
+    .find((node): node is HierarchyTreeNode => Boolean(node));
 
-  if (!selectedNode) {
-    return [];
+  if (selectedNode) {
+    const orderedChildren = [...selectedNode.children].sort((left, right) => {
+      const leftIsLeaf = left.children.length === 0;
+      const rightIsLeaf = right.children.length === 0;
+
+      if (leftIsLeaf !== rightIsLeaf) {
+        return leftIsLeaf ? -1 : 1;
+      }
+
+      return left.member.name.localeCompare(right.member.name, "ja");
+    });
+
+    return orderedChildren.map((child, index) => ({
+      id: `branch-${child.member.id}`,
+      anchorMemberId: child.member.id,
+      label: child.member.lineLabel?.trim() || `${child.member.name} ライン`,
+      tone: index % branchTones.length,
+      memberIds: collectMemberIds(child),
+    }));
   }
 
-  const orderedChildren = [...selectedNode.children].sort((left, right) => {
-    const leftIsLeaf = left.children.length === 0;
-    const rightIsLeaf = right.children.length === 0;
-
-    if (leftIsLeaf !== rightIsLeaf) {
-      return leftIsLeaf ? -1 : 1;
-    }
-
-    return left.member.name.localeCompare(right.member.name, "ja");
-  });
-
-  return orderedChildren.map((child, index) => ({
-    id: `branch-${child.member.id}`,
-    anchorMemberId: child.member.id,
-    label: child.member.lineLabel?.trim() || `${child.member.name} ライン`,
+  return forest.map((root, index) => ({
+    id: `branch-root-${root.member.id}`,
+    anchorMemberId: root.member.id,
+    label: root.member.lineLabel?.trim() || root.member.departmentName || root.member.name,
     tone: index % branchTones.length,
-    memberIds: collectMemberIds(child),
+    memberIds: collectMemberIds(root),
   }));
 }
 
@@ -530,7 +549,7 @@ const nodeTypes = {
 
 interface MemberHierarchyFlowProps {
   members: Member[];
-  selectedMemberId: string;
+  selectedMemberId?: string;
   isEditable?: boolean;
   onManagerConnect?: (connection: Connection) => void;
 }
@@ -541,17 +560,17 @@ export function MemberHierarchyFlow({
   isEditable = false,
   onManagerConnect,
 }: MemberHierarchyFlowProps) {
-  const tree = useMemo(
-    () => buildHierarchyTree(members, selectedMemberId),
+  const forest = useMemo(
+    () => buildHierarchyForest(members, selectedMemberId),
     [members, selectedMemberId],
   );
 
   const { nodes, edges } = useMemo(() => {
-    if (!tree) {
+    if (forest.length === 0) {
       return { nodes: [] as HierarchyFlowNode[], edges: [] as Edge[] };
     }
 
-    const branchGroups = getBranchGroups(tree);
+    const branchGroups = getBranchGroups(forest);
     const branchToneByMemberId = new Map<string, number>();
 
     branchGroups.forEach((group) => {
@@ -562,7 +581,9 @@ export function MemberHierarchyFlow({
 
     const memberNodes: MemberFlowNodeType[] = [];
     const nextEdges: Edge[] = [];
-    flattenTree(tree, memberNodes, nextEdges, branchToneByMemberId, isEditable);
+    forest.forEach((root) => {
+      flattenTree(root, memberNodes, nextEdges, branchToneByMemberId, isEditable);
+    });
     const positionedMemberNodes = arrangeTopLevelBranches(
       layoutNodes(memberNodes, nextEdges),
       branchGroups,
@@ -576,7 +597,7 @@ export function MemberHierarchyFlow({
       nodes: [...branchBandNodes, ...positionedMemberNodes] as HierarchyFlowNode[],
       edges: nextEdges,
     };
-  }, [isEditable, tree]);
+  }, [forest, isEditable]);
 
   const handleConnect = useMemo<OnConnect | undefined>(() => {
     if (!isEditable || !onManagerConnect) {
@@ -588,7 +609,7 @@ export function MemberHierarchyFlow({
     };
   }, [isEditable, onManagerConnect]);
 
-  if (!tree) {
+  if (forest.length === 0) {
     return (
       <p className={styles.emptyText}>
         表示対象のメンバーを取得できませんでした。
