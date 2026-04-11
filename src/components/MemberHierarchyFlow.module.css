@@ -35,10 +35,6 @@
   stroke-linejoin: round;
 }
 
-.flowWrap :global(.react-flow__handle) {
-  pointer-events: none;
-}
-
 .flowWrap :global(.react-flow__node-branchBand) {
   pointer-events: none;
   z-index: -1 !important;
@@ -107,6 +103,7 @@
   background: #ffffff;
   border-radius: 999px;
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.94);
+  cursor: crosshair;
 }
 
 .handleTop {

@@ -2,9 +2,11 @@ import dagre from '@dagrejs/dagre'
 import { useMemo } from 'react'
 import ReactFlow, {
   Background,
+  type Connection,
   Controls,
   Handle,
   MarkerType,
+  type OnConnect,
   Position,
   type Edge,
   type Node,
@@ -20,6 +22,7 @@ interface HierarchyNodeData {
   isPathNode: boolean
   hasParent: boolean
   hasChildren: boolean
+  isEditable: boolean
 }
 
 interface BranchBandData {
@@ -170,6 +173,7 @@ function flattenTree(
   nodes: Node<HierarchyNodeData>[],
   edges: Edge[],
   branchToneByMemberId: Map<string, number>,
+  isEditable: boolean,
   parentId?: string,
 ) {
   nodes.push({
@@ -182,6 +186,7 @@ function flattenTree(
       isPathNode: node.isPathNode,
       hasParent: Boolean(parentId),
       hasChildren: node.children.length > 0,
+      isEditable,
     },
     sourcePosition: Position.Bottom,
     targetPosition: Position.Top,
@@ -209,7 +214,7 @@ function flattenTree(
       },
     })
 
-    flattenTree(child, nodes, edges, branchToneByMemberId, node.member.id)
+    flattenTree(child, nodes, edges, branchToneByMemberId, isEditable, node.member.id)
   })
 }
 
@@ -422,8 +427,12 @@ function MemberFlowNode({ data }: NodeProps<HierarchyNodeData>) {
 
   return (
     <div className={className}>
-      {data.hasParent ? <Handle className={styles.handleTop} position={Position.Top} type="target" /> : null}
-      {data.hasChildren ? <Handle className={styles.handleBottom} position={Position.Bottom} type="source" /> : null}
+      {data.hasParent || data.isEditable ? (
+        <Handle className={styles.handleTop} position={Position.Top} type="target" />
+      ) : null}
+      {data.hasChildren || data.isEditable ? (
+        <Handle className={styles.handleBottom} position={Position.Bottom} type="source" />
+      ) : null}
 
       <div className={styles.nodeInner}>
         <div className={styles.nodeHeader}>
@@ -458,9 +467,16 @@ const nodeTypes = {
 interface MemberHierarchyFlowProps {
   members: Member[]
   selectedMemberId: string
+  isEditable?: boolean
+  onManagerConnect?: (connection: Connection) => void
 }
 
-export function MemberHierarchyFlow({ members, selectedMemberId }: MemberHierarchyFlowProps) {
+export function MemberHierarchyFlow({
+  members,
+  selectedMemberId,
+  isEditable = false,
+  onManagerConnect,
+}: MemberHierarchyFlowProps) {
   const tree = useMemo(() => buildHierarchyTree(members, selectedMemberId), [members, selectedMemberId])
 
   const { nodes, edges } = useMemo(() => {
@@ -479,7 +495,7 @@ export function MemberHierarchyFlow({ members, selectedMemberId }: MemberHierarc
 
     const memberNodes: Node<HierarchyNodeData>[] = []
     const nextEdges: Edge[] = []
-    flattenTree(tree, memberNodes, nextEdges, branchToneByMemberId)
+    flattenTree(tree, memberNodes, nextEdges, branchToneByMemberId, isEditable)
     const positionedMemberNodes = arrangeTopLevelBranches(layoutNodes(memberNodes, nextEdges), branchGroups)
     const branchBandNodes = buildBranchBandNodes(positionedMemberNodes, branchGroups)
 
@@ -487,7 +503,17 @@ export function MemberHierarchyFlow({ members, selectedMemberId }: MemberHierarc
       nodes: [...branchBandNodes, ...positionedMemberNodes],
       edges: nextEdges,
     }
-  }, [tree])
+  }, [isEditable, tree])
+
+  const handleConnect = useMemo<OnConnect | undefined>(() => {
+    if (!isEditable || !onManagerConnect) {
+      return undefined
+    }
+
+    return (connection) => {
+      onManagerConnect(connection)
+    }
+  }, [isEditable, onManagerConnect])
 
   if (!tree) {
     return <p className={styles.emptyText}>表示対象のメンバーを取得できませんでした。</p>
@@ -505,8 +531,9 @@ export function MemberHierarchyFlow({ members, selectedMemberId }: MemberHierarc
         minZoom={0.35}
         nodeTypes={nodeTypes}
         nodes={nodes}
-        nodesConnectable={false}
+        nodesConnectable={isEditable}
         nodesDraggable={false}
+        onConnect={handleConnect}
         panOnDrag
         proOptions={{ hideAttribution: true }}
       >

@@ -1,29 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { ListPageContentSection } from "../../components/ListPageContentSection";
-import { ListPageFilterSection } from "../../components/ListPageFilterSection";
+import { useSearchParams } from "react-router-dom";
 import { ListPageHero } from "../../components/ListPageHero";
-import { StatusBadge } from "../../components/StatusBadge";
-import { Button } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { useProjectData } from "../../store/useProjectData";
 import { useUserSession } from "../../store/useUserSession";
-import type { Member, Project, ProjectAssignment } from "../../types/project";
+import type { Project } from "../../types/project";
+import { getMemberDefaultProjectStatusFilters } from "../../utils/userPreferences";
+import { CrossProjectFilterSection } from "./CrossProjectFilterSection";
+import { CrossProjectTimelineSection } from "./CrossProjectTimelineSection";
 import {
-  getActiveEventsForRange,
-  getActivePhasesForRange,
-  getActivePhasesForWeek,
-  getProjectPm,
-  isCurrentMonthSlot,
-  isDateInRange,
-  isDateInWeekSlot,
-} from "../../utils/projectUtils";
-import {
-  allWorkStatuses,
-  getMemberDefaultProjectStatusFilters,
-} from "../../utils/userPreferences";
-import { formatMemberShortLabel } from "../members/memberFormUtils";
-import { getPhaseToneKey, useCrossProjectView } from "./useCrossProjectView";
+  getEmptyState,
+  getSelectedSystemLabel,
+} from "./crossProjectViewHelpers";
+import { useCrossProjectRows } from "./useCrossProjectRows";
+import { useCrossProjectView } from "./useCrossProjectView";
 import styles from "./CrossProjectViewPage.module.css";
 
 export function CrossProjectViewPage() {
@@ -43,7 +33,6 @@ export function CrossProjectViewPage() {
   const selectedSystemId = searchParams.get("systemId")?.trim() || "";
   const currentUserId = currentUser?.id ?? null;
   const currentUserRef = useRef(currentUser);
-  currentUserRef.current = currentUser;
   const tableWrapRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedStatuses, setSelectedStatuses] = useState<Project["status"][]>(
@@ -57,6 +46,8 @@ export function CrossProjectViewPage() {
   const [isGroupedByPrimarySystem, setIsGroupedByPrimarySystem] =
     useState(false);
 
+  currentUserRef.current = currentUser;
+
   useEffect(() => {
     setSelectedStatuses(
       getMemberDefaultProjectStatusFilters(currentUserRef.current),
@@ -64,28 +55,66 @@ export function CrossProjectViewPage() {
     setSaveFeedback(null);
   }, [currentUserId]);
 
-  const {
-    filteredProjects,
-    hasNoProjectsInMode,
-    hasNoSearchResults,
-    hasNoStatusMatches,
-    hasNoStatusesSelected,
-    isBookmarkMode,
-    keyword,
-    peakBusy,
-    setKeyword,
-    setTimeScale,
-    setViewMode,
-    timeScale,
-    timelineSlots,
-    viewMode,
-  } = useCrossProjectView({
+  const view = useCrossProjectView({
     currentUser,
     getProjectEvents,
     getProjectPhases,
     projects,
     selectedStatuses,
   });
+  const systemNameById = useMemo(
+    () => new Map(systems.map((system) => [system.id, system.name])),
+    [systems],
+  );
+  const selectedSystemLabel = getSelectedSystemLabel(
+    selectedSystemId,
+    systemNameById,
+  );
+  const { rows, scopedProjects } = useCrossProjectRows({
+    projects: view.filteredProjects,
+    selectedSystemId,
+    systemNameById,
+    isGroupedByPrimarySystem,
+  });
+  const emptyState = getEmptyState({
+    hasNoProjectsInMode: view.hasNoProjectsInMode,
+    hasNoSearchResults: view.hasNoSearchResults,
+    hasNoStatusMatches: view.hasNoStatusMatches,
+    hasNoStatusesSelected: view.hasNoStatusesSelected,
+    isBookmarkMode: view.isBookmarkMode,
+    scopedProjectCount: scopedProjects.length,
+    selectedSystemId,
+    selectedSystemLabel,
+  });
+
+  useEffect(() => {
+    const tableWrap = tableWrapRef.current;
+
+    if (!tableWrap || view.timelineSlots.length === 0) {
+      return;
+    }
+
+    const currentHeader = tableWrap.querySelector<HTMLTableCellElement>(
+      `[data-testid^='cross-project-current-${view.timeScale}-']`,
+    );
+
+    if (!currentHeader) {
+      return;
+    }
+
+    const stickyColumn = tableWrap.querySelector<HTMLElement>(
+      `.${styles.stickyColumn}`,
+    );
+    const stickyWidth = stickyColumn?.offsetWidth ?? 0;
+    const targetLeft = Math.max(0, currentHeader.offsetLeft - stickyWidth - 24);
+
+    if (typeof tableWrap.scrollTo !== "function") {
+      tableWrap.scrollLeft = targetLeft;
+      return;
+    }
+
+    tableWrap.scrollTo({ left: targetLeft, behavior: "smooth" });
+  }, [view.timeScale, view.timelineSlots]);
 
   const handleStatusToggle = (status: Project["status"]) => {
     setSaveFeedback(null);
@@ -114,89 +143,12 @@ export function CrossProjectViewPage() {
     }
   };
 
-  const systemNameById = useMemo(
-    () => new Map(systems.map((system) => [system.id, system.name])),
-    [systems],
-  );
-
-  const selectedSystemLabel = selectedSystemId
-    ? `${selectedSystemId} / ${systemNameById.get(selectedSystemId) ?? selectedSystemId}`
-    : null;
-
-  const scopedProjects = useMemo(() => {
-    if (!selectedSystemId) {
-      return filteredProjects;
-    }
-
-    return filteredProjects.filter(
-      (project) => project.relatedSystemIds?.[0] === selectedSystemId,
-    );
-  }, [filteredProjects, selectedSystemId]);
-
-  const groupedProjects = useMemo(() => {
-    const groups = new Map<string, Project[]>();
-
-    scopedProjects.forEach((project) => {
-      const primarySystemId = project.relatedSystemIds?.[0];
-      const groupLabel = primarySystemId
-        ? `${primarySystemId} / ${systemNameById.get(primarySystemId) ?? primarySystemId}`
-        : "未設定";
-      const current = groups.get(groupLabel) ?? [];
-      current.push(project);
-      groups.set(groupLabel, current);
-    });
-
-    return [...groups.entries()]
-      .sort((left, right) => left[0].localeCompare(right[0], "ja"))
-      .map(([label, projectsInGroup]) => ({
-        label,
-        projects: projectsInGroup.sort((left, right) =>
-          left.name.localeCompare(right.name, "ja"),
-        ),
-      }));
-  }, [scopedProjects, systemNameById]);
-
-  useEffect(() => {
-    const tableWrap = tableWrapRef.current;
-
-    if (!tableWrap || timelineSlots.length === 0) {
-      return;
-    }
-
-    const currentHeader = tableWrap.querySelector<HTMLTableCellElement>(
-      `[data-testid^='cross-project-current-${timeScale}-']`,
-    );
-
-    if (!currentHeader) {
-      return;
-    }
-
-    const stickyColumn = tableWrap.querySelector<HTMLElement>(
-      `.${styles.stickyColumn}`,
-    );
-    const stickyWidth = stickyColumn?.offsetWidth ?? 0;
-    const targetLeft = Math.max(
-      0,
-      currentHeader.offsetLeft - stickyWidth - 24,
-    );
-
-    if (typeof tableWrap.scrollTo !== "function") {
-      tableWrap.scrollLeft = targetLeft;
-      return;
-    }
-
-    tableWrap.scrollTo({
-      left: targetLeft,
-      behavior: "smooth",
-    });
-  }, [timeScale, timelineSlots]);
-
   if (isLoading) {
     return (
       <Panel className={styles.section}>
-        <h1 className={styles.title}>横断ビューを読み込み中です</h1>
+        <h1 className={styles.title}>{"案件ビューを読み込み中です"}</h1>
         <p className={styles.description}>
-          横断表示に必要な案件データを取得しています。
+          {"案件表示に必要な情報を取得しています。"}
         </p>
       </Panel>
     );
@@ -205,505 +157,69 @@ export function CrossProjectViewPage() {
   if (error) {
     return (
       <Panel className={styles.section}>
-        <h1 className={styles.title}>横断ビューを表示できませんでした</h1>
+        <h1 className={styles.title}>{"案件ビューを表示できませんでした"}</h1>
         <p className={styles.description}>{error}</p>
       </Panel>
     );
   }
-
-  const emptyState =
-    isBookmarkMode && hasNoProjectsInMode
-      ? {
-          title: "ブックマーク案件はまだありません",
-          description:
-            "案件一覧または案件詳細から案件をブックマークすると、この横断ビューで確認できます。",
-        }
-      : hasNoStatusesSelected
-        ? {
-            title: "状態フィルターが未選択です",
-            description:
-              "表示したい状態を選ぶと、対象の案件だけを横断ビューに表示できます。",
-          }
-        : hasNoStatusMatches
-          ? {
-              title: "条件に一致する案件はありません",
-              description:
-                "状態フィルターや表示モードの条件を見直してください。",
-            }
-          : hasNoSearchResults
-            ? {
-                title: "検索条件に一致する案件はありません",
-                description:
-                  "案件番号または案件名を変更して再度検索してください。",
-              }
-            : null;
-
-  const scopedEmptyState =
-    !emptyState && selectedSystemId && scopedProjects.length === 0
-      ? {
-          title: "対象システムに一致する案件はありません",
-          description: `${selectedSystemLabel ?? selectedSystemId} を主システムに持つ案件は、現在の表示条件では見つかりません。`,
-        }
-      : emptyState;
 
   return (
     <div className={styles.page}>
       <ListPageHero
         className={styles.hero}
         collapsible
-        description="複数案件の進捗や重なりを、週または月の粒度で比較できます。表示モードや絞り込みを切り替えながら、今どこが混んでいるかを横断で確認します。"
+        description={
+          "複数案件の進行や偏りを、週または月単位で比較できます。表示モードや絞り込みを切り替えながら、どこが詰まっているかを横断で確認します。"
+        }
         eyebrow="Cross Project Timeline"
         iconKind="project"
         storageKey="project-master:hero-collapsed:cross-project"
         stats={[
           { label: "表示案件数", value: scopedProjects.length },
           {
-            label: "最大稼働密度",
-            value: `${peakBusy} Phase / ${timeScale === "month" ? "Month" : "Week"}`,
+            label: "最大同時稼働",
+            value: `${view.peakBusy} Phase / ${view.timeScale === "month" ? "Month" : "Week"}`,
           },
         ]}
-        title="横断案件ビュー"
+        title={"横断案件ビュー"}
       />
 
-      <ListPageFilterSection
-        className={styles.controls}
-        topRow={
-          <div className={styles.filterTopRow}>
-            <div className={styles.toggleGroup}>
-              <button
-                className={
-                  viewMode === "all"
-                    ? `${styles.toggle} ${styles.toggleActive}`
-                    : styles.toggle
-                }
-                onClick={() => setViewMode("all")}
-                type="button"
-              >
-                全案件
-              </button>
-              <button
-                className={
-                  viewMode === "bookmarks"
-                    ? `${styles.toggle} ${styles.toggleActive}`
-                    : styles.toggle
-                }
-                disabled={!currentUser}
-                onClick={() => setViewMode("bookmarks")}
-                type="button"
-              >
-                ブックマーク
-              </button>
-            </div>
-
-            <p className={styles.filterHint}>
-              {currentUser
-                ? `${currentUser.name} さんのブックマーク ${currentUser.bookmarkedProjectIds.length} 件`
-                : "利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。"}
-            </p>
-
-            <label className={styles.searchField}>
-              <span className={styles.searchLabel}>案件フィルター</span>
-              <input
-                aria-label="プロジェクト番号または案件名でフィルター"
-                className={styles.searchInput}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="例: PRJ-001 / 基幹会計刷新"
-                type="search"
-                value={keyword}
-              />
-            </label>
-          </div>
-        }
-        summary={
-          <div className={styles.filterSummaryRow}>
-            <div className={styles.filterSummaryHeading}>
-              <p className={styles.statusFilterTitle}>状態フィルター</p>
-              <p className={styles.statusFilterHint}>
-                横断表示では複数案件を同じ条件で比較します。不要な状態を外すと見やすくなります。
-              </p>
-            </div>
-            <div className={styles.statusFilterActions}>
-              <Button
-                disabled={!currentUser || isSavingDefaults}
-                onClick={() => void handleSaveDefaults()}
-                size="small"
-                variant="secondary"
-              >
-                {isSavingDefaults ? "保存中..." : "この状態を既定値に保存"}
-              </Button>
-              <p className={styles.statusFilterMeta}>
-                {saveFeedback ?? "利用メンバーを選ぶと既定値を保存できます。"}
-              </p>
-            </div>
-          </div>
-        }
-        body={
-          <div className={styles.statusFilters}>
-            {selectedSystemLabel ? (
-              <p className={styles.filterHint}>
-                主システム絞り込み中: {selectedSystemLabel}{" "}
-                <Link className={styles.projectLink} to="/cross-project">
-                  解除
-                </Link>
-              </p>
-            ) : null}
-            <div className={styles.statusCheckboxGroup}>
-              {allWorkStatuses.map((status) => (
-                <label className={styles.statusCheckbox} key={status}>
-                  <input
-                    checked={selectedStatuses.includes(status)}
-                    onChange={() => handleStatusToggle(status)}
-                    type="checkbox"
-                  />
-                  <span>{status}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        }
-        visible={isFilterVisible}
+      <CrossProjectFilterSection
+        currentUser={currentUser}
+        handleSaveDefaults={handleSaveDefaults}
+        handleStatusToggle={handleStatusToggle}
+        isFilterVisible={isFilterVisible}
+        isSavingDefaults={isSavingDefaults}
+        keyword={view.keyword}
+        saveFeedback={saveFeedback}
+        selectedStatuses={selectedStatuses}
+        selectedSystemLabel={selectedSystemLabel}
+        setKeyword={view.setKeyword}
+        setViewMode={view.setViewMode}
+        viewMode={view.viewMode}
       />
 
-      <ListPageContentSection
-        actions={
-          <div className={styles.timelineToolbar}>
-            <div className={styles.timelineToolbarGroup}>
-              <Button
-                aria-expanded={isFilterVisible}
-                onClick={() => setIsFilterVisible((current) => !current)}
-                size="small"
-                variant="secondary"
-              >
-                {isFilterVisible ? "絞り込みを隠す" : "絞り込みを表示"}
-              </Button>
-            </div>
-            <div className={styles.timelineToolbarGroup}>
-              <Button
-                aria-pressed={timeScale === "week"}
-                className={
-                  timeScale === "week"
-                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
-                    : styles.toggleStateButton
-                }
-                onClick={() => setTimeScale("week")}
-                size="small"
-                variant="secondary"
-              >
-                週表示
-              </Button>
-              <Button
-                aria-pressed={timeScale === "month"}
-                className={
-                  timeScale === "month"
-                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
-                    : styles.toggleStateButton
-                }
-                onClick={() => setTimeScale("month")}
-                size="small"
-                variant="secondary"
-              >
-                月表示
-              </Button>
-              <Button
-                aria-pressed={isStructureVisible}
-                className={
-                  isStructureVisible
-                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
-                    : styles.toggleStateButton
-                }
-                onClick={() => setIsStructureVisible((current) => !current)}
-                size="small"
-                variant="secondary"
-              >
-                {`体制: ${isStructureVisible ? "ON" : "OFF"}`}
-              </Button>
-              <Button
-                aria-pressed={!isCompactMode}
-                className={
-                  !isCompactMode
-                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
-                    : styles.toggleStateButton
-                }
-                onClick={() => setIsCompactMode((current) => !current)}
-                size="small"
-                variant="secondary"
-              >
-                {`詳細表示: ${isCompactMode ? "OFF" : "ON"}`}
-              </Button>
-              <Button
-                aria-pressed={isGroupedByPrimarySystem}
-                className={
-                  isGroupedByPrimarySystem
-                    ? `${styles.toggleStateButton} ${styles.toggleStateButtonActive}`
-                    : styles.toggleStateButton
-                }
-                onClick={() =>
-                  setIsGroupedByPrimarySystem((current) => !current)
-                }
-                size="small"
-                variant="secondary"
-              >
-                {`システムグルーピング: ${isGroupedByPrimarySystem ? "ON" : "OFF"}`}
-              </Button>
-            </div>
-          </div>
-        }
-        className={styles.section}
-        description="案件ごとの進行フェーズとイベントを横断で比較できます。週表示では密度を、月表示では全体感を掴みやすくしています。"
-        emptyState={scopedEmptyState}
-        title="横断案件タイムライン"
-      >
-        <p className={styles.timelineToolbarHint}>
-          表示切替はタイムライン単位で反映されます。情報量と並び順を見ながら比較しやすい形に調整できます。
-        </p>
-        <div
-          className={styles.tableWrap}
-          data-testid="cross-project-table-wrap"
-          ref={tableWrapRef}
-        >
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.stickyColumn}>案件</th>
-                {timelineSlots.map((slot) => {
-                  const isCurrentSlot =
-                    timeScale === "month"
-                      ? isCurrentMonthSlot(slot.startDate, slot.endDate)
-                      : isDateInWeekSlot(slot.startDate);
-
-                  return (
-                    <th
-                      key={slot.index}
-                      className={
-                        isCurrentSlot ? styles.currentWeekHeader : undefined
-                      }
-                      data-testid={
-                        isCurrentSlot
-                          ? `cross-project-current-${timeScale}-${slot.index}`
-                          : undefined
-                      }
-                    >
-                      <span className={styles.weekLabel}>{slot.label}</span>
-                      <span className={styles.weekDate}>{slot.subLabel}</span>
-                      {isCurrentSlot ? (
-                        <span className={styles.currentWeekBadge}>
-                          {timeScale === "month" ? "今月" : "今週"}
-                        </span>
-                      ) : null}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {(isGroupedByPrimarySystem
-                ? groupedProjects.flatMap((group, groupIndex) => [
-                    {
-                      type: "group" as const,
-                      label: group.label,
-                      toneIndex: groupIndex % 4,
-                    },
-                    ...group.projects.map((project) => ({
-                      type: "project" as const,
-                      project,
-                      toneIndex: groupIndex % 4,
-                    })),
-                  ])
-                : scopedProjects.map((project) => ({
-                    type: "project" as const,
-                    project,
-                    toneIndex: 0,
-                  }))
-              ).map((row) => {
-                if (row.type === "group") {
-                  return (
-                    <tr
-                      className={`${styles.groupRow} ${styles[`groupTone${row.toneIndex}`]}`}
-                      key={`group-${row.label}`}
-                    >
-                      <td
-                        className={`${styles.stickyColumn} ${styles.groupCell} ${styles[`groupCellTone${row.toneIndex}`]}`}
-                        colSpan={timelineSlots.length + 1}
-                        data-testid={`cross-project-group-${row.label}`}
-                      >
-                        主システム: {row.label}
-                      </td>
-                    </tr>
-                  );
-                }
-
-                const project = row.project;
-                const projectPhases = getProjectPhases(project.projectNumber);
-                const projectEvents = getProjectEvents(project.projectNumber);
-                const structureMembers = getProjectAssignments(
-                  project.projectNumber,
-                )
-                  .map((assignment) => ({
-                    assignment,
-                    member: getMemberById(assignment.memberId),
-                  }))
-                  .filter(
-                    (
-                      item,
-                    ): item is {
-                      assignment: ProjectAssignment;
-                      member: Member;
-                    } => item.member !== undefined,
-                  )
-                  .sort((left, right) => {
-                    const responsibilityCompare =
-                      left.assignment.responsibility.localeCompare(
-                        right.assignment.responsibility,
-                        "ja",
-                      );
-
-                    if (responsibilityCompare !== 0) {
-                      return responsibilityCompare;
-                    }
-
-                    return left.member.name.localeCompare(
-                      right.member.name,
-                      "ja",
-                    );
-                  });
-                const pm = getProjectPm(project, members);
-
-                return (
-                  <tr className={styles.projectRow} key={project.projectNumber}>
-                    <td
-                      className={
-                        project.hasReportItems
-                          ? `${styles.stickyColumn} ${styles.stickyColumnAlert} ${isGroupedByPrimarySystem ? `${styles.groupedProjectCell} ${styles[`groupedProjectCellTone${row.toneIndex}`]}` : ""}`
-                          : `${styles.stickyColumn} ${isGroupedByPrimarySystem ? `${styles.groupedProjectCell} ${styles[`groupedProjectCellTone${row.toneIndex}`]}` : ""}`
-                      }
-                    >
-                      <div
-                        className={
-                          isCompactMode
-                            ? `${styles.projectInfo} ${styles.projectInfoCompact}`
-                            : styles.projectInfo
-                        }
-                        data-testid={`cross-project-project-info-${project.projectNumber}`}
-                      >
-                        <Link
-                          className={styles.projectLink}
-                          to={`/projects/${project.projectNumber}`}
-                        >
-                          {project.name}
-                        </Link>
-                        <div className={styles.metaLine}>
-                          {project.projectNumber}
-                        </div>
-                        {!isCompactMode ? (
-                          <>
-                            <div className={styles.metaLine}>
-                              PM: {pm?.name ?? "未設定"}
-                            </div>
-                            <div className={styles.metaLine}>
-                              体制: {structureMembers.length}名
-                            </div>
-                          </>
-                        ) : null}
-                        <StatusBadge status={project.status} />
-                        {isStructureVisible ? (
-                          <div className={styles.structureList}>
-                            {structureMembers.map(({ assignment, member }) => (
-                              <div
-                                key={assignment.id}
-                                className={styles.structureItem}
-                                data-testid={`cross-project-structure-${project.projectNumber}-${assignment.id}`}
-                              >
-                                <span className={styles.structureRole}>
-                                  {assignment.responsibility}
-                                </span>
-                                <span className={styles.structureMember}>
-                                  {formatMemberShortLabel(member)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    </td>
-
-                    {timelineSlots.map((slot) => {
-                      const activePhases =
-                        timeScale === "month"
-                          ? getActivePhasesForRange(
-                              project,
-                              projectPhases,
-                              slot.startDate,
-                              slot.endDate,
-                            )
-                          : getActivePhasesForWeek(
-                              project,
-                              projectPhases,
-                              slot.startDate,
-                            );
-                      const activeEvents =
-                        timeScale === "month"
-                          ? getActiveEventsForRange(
-                              project,
-                              projectEvents,
-                              slot.startDate,
-                              slot.endDate,
-                            )
-                          : projectEvents.filter((event) => event.week === slot.index);
-                      const busy =
-                        activePhases.length + activeEvents.length > 1;
-                      const isCurrentSlot =
-                        timeScale === "month"
-                          ? isDateInRange(slot.startDate, slot.endDate)
-                          : isDateInWeekSlot(slot.startDate);
-
-                      return (
-                        <td
-                          key={`${project.projectNumber}-${slot.index}`}
-                          className={
-                            busy
-                              ? `${styles.cell} ${styles.busy} ${isCurrentSlot ? styles.currentWeekCell : ""}`
-                              : `${styles.cell} ${isCurrentSlot ? styles.currentWeekCell : ""}`
-                          }
-                        >
-                          {activePhases.length > 0 ||
-                          activeEvents.length > 0 ? (
-                            <div className={styles.phaseChipList}>
-                              {activePhases.map((phase) => (
-                                <span
-                                  key={phase.id}
-                                  className={`${styles.phaseChip} ${styles[getPhaseToneKey(phase.name)]}`}
-                                >
-                                  {phase.name}
-                                </span>
-                              ))}
-                              {activeEvents.map((event) => (
-                                <span
-                                  key={event.id}
-                                  className={`${styles.phaseChip} ${styles.eventChip}`}
-                                  data-testid={`cross-project-event-${project.projectNumber}-${event.id}`}
-                                >
-                                  <span className={styles.eventChipTag}>
-                                    EV
-                                  </span>
-                                  <span className={styles.eventChipText}>
-                                    {event.name}
-                                  </span>
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className={styles.emptyCell}>-</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </ListPageContentSection>
+      <CrossProjectTimelineSection
+        emptyState={emptyState}
+        getMemberById={getMemberById}
+        getProjectAssignments={getProjectAssignments}
+        getProjectEvents={getProjectEvents}
+        getProjectPhases={getProjectPhases}
+        isCompactMode={isCompactMode}
+        isFilterVisible={isFilterVisible}
+        isGroupedByPrimarySystem={isGroupedByPrimarySystem}
+        isStructureVisible={isStructureVisible}
+        members={members}
+        rows={rows}
+        setIsCompactMode={setIsCompactMode}
+        setIsFilterVisible={setIsFilterVisible}
+        setIsGroupedByPrimarySystem={setIsGroupedByPrimarySystem}
+        setIsStructureVisible={setIsStructureVisible}
+        setTimeScale={view.setTimeScale}
+        tableWrapRef={tableWrapRef}
+        timeScale={view.timeScale}
+        timelineSlots={view.timelineSlots}
+      />
     </div>
   );
 }

@@ -14,6 +14,34 @@
   gap: 16px;
 }
 
+.flowAssist {
+  display: grid;
+  gap: 8px;
+}
+
+.flowAssistText,
+.flowPending,
+.flowSuccess,
+.flowError {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.flowAssistText,
+.flowPending {
+  color: var(--text-subtle);
+}
+
+.flowSuccess {
+  color: #047857;
+  font-weight: 700;
+}
+
+.flowError {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
 .viewToggle {
   display: inline-flex;
   align-items: center;

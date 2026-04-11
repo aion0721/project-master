@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import type { Connection } from 'reactflow'
 import { MemberHierarchyFlow } from '../../components/MemberHierarchyFlow'
 import { MemberHierarchyTree } from '../../components/MemberHierarchyTree'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
-import type { Member } from '../../types/project'
+import type { Member, UpdateMemberInput } from '../../types/project'
 import formStyles from '../../styles/form.module.css'
 import pageStyles from '../../styles/page.module.css'
 import styles from './MemberHierarchyPage.module.css'
@@ -116,10 +117,39 @@ function buildHierarchyLevels(members: Member[], selectedMemberId: string) {
   }
 }
 
+function createsCycle(members: Member[], memberId: string, nextManagerId: string) {
+  const memberById = new Map(members.map((member) => [member.id, member]))
+  let cursor = memberById.get(nextManagerId)
+
+  while (cursor) {
+    if (cursor.id === memberId) {
+      return true
+    }
+
+    cursor = cursor.managerId ? memberById.get(cursor.managerId) : undefined
+  }
+
+  return false
+}
+
+function buildUpdateMemberInput(member: Member, managerId: string): UpdateMemberInput {
+  return {
+    name: member.name,
+    departmentCode: member.departmentCode,
+    departmentName: member.departmentName,
+    role: member.role,
+    lineLabel: member.lineLabel,
+    managerId,
+  }
+}
+
 export function MemberHierarchyPage() {
-  const { members, isLoading, error } = useProjectData()
+  const { members, isLoading, error, updateMember } = useProjectData()
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<HierarchyViewMode>('flow')
+  const [relationshipMessage, setRelationshipMessage] = useState<string | null>(null)
+  const [relationshipError, setRelationshipError] = useState<string | null>(null)
+  const [isSavingRelation, setIsSavingRelation] = useState(false)
 
   const sortedMembers = useMemo(
     () => [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
@@ -177,6 +207,61 @@ export function MemberHierarchyPage() {
     }
 
     setSearchParams(params)
+  }
+
+  async function handleManagerConnect(connection: Connection) {
+    const nextManagerId = connection.source
+    const memberId = connection.target
+
+    setRelationshipMessage(null)
+    setRelationshipError(null)
+
+    if (!nextManagerId || !memberId) {
+      setRelationshipError('接続元と接続先を正しく指定してください。')
+      return
+    }
+
+    if (nextManagerId === memberId) {
+      setRelationshipError('自分自身を上司には設定できません。')
+      return
+    }
+
+    const visibleMemberIds = new Set(visibleMembers.map((member) => member.id))
+    if (!visibleMemberIds.has(nextManagerId) || !visibleMemberIds.has(memberId)) {
+      setRelationshipError('表示中の部署メンバー同士だけ接続できます。')
+      return
+    }
+
+    const member = members.find((item) => item.id === memberId)
+    const nextManager = members.find((item) => item.id === nextManagerId)
+
+    if (!member || !nextManager) {
+      setRelationshipError('接続対象のメンバーが見つかりません。')
+      return
+    }
+
+    if (member.managerId === nextManagerId) {
+      setRelationshipMessage(`${member.name} はすでに ${nextManager.name} 配下です。`)
+      return
+    }
+
+    if (createsCycle(members, memberId, nextManagerId)) {
+      setRelationshipError('循環する上下関係になるため、この接続はできません。')
+      return
+    }
+
+    setIsSavingRelation(true)
+
+    try {
+      await updateMember(member.id, buildUpdateMemberInput(member, nextManagerId))
+      setRelationshipMessage(`${member.name} の上司を ${nextManager.name} に更新しました。`)
+    } catch (caughtError) {
+      setRelationshipError(
+        caughtError instanceof Error ? caughtError.message : '上下関係の更新に失敗しました。',
+      )
+    } finally {
+      setIsSavingRelation(false)
+    }
   }
 
   if (isLoading) {
@@ -242,6 +327,8 @@ export function MemberHierarchyPage() {
                     : (nextVisibleMembers[0]?.id ?? '')
 
                   updateHierarchyParams({ departmentName, memberId: nextMemberId })
+                  setRelationshipMessage(null)
+                  setRelationshipError(null)
                 }}
                 value={requestedDepartmentName}
               >
@@ -264,6 +351,8 @@ export function MemberHierarchyPage() {
                     departmentName: requestedDepartmentName,
                     memberId: event.target.value,
                   })
+                  setRelationshipMessage(null)
+                  setRelationshipError(null)
                 }}
                 value={activeMemberId}
               >
@@ -312,12 +401,28 @@ export function MemberHierarchyPage() {
             </button>
           </div>
 
+          {viewMode === 'flow' ? (
+            <div className={styles.flowAssist}>
+              <p className={styles.flowAssistText}>
+                ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。
+              </p>
+              {isSavingRelation ? <p className={styles.flowPending}>上下関係を保存中です...</p> : null}
+              {relationshipMessage ? <p className={styles.flowSuccess}>{relationshipMessage}</p> : null}
+              {relationshipError ? <p className={styles.flowError}>{relationshipError}</p> : null}
+            </div>
+          ) : null}
+
           {visibleMembers.length === 0 ? (
             <p className={styles.emptyText}>指定した部署に表示対象のメンバーがいません。</p>
           ) : viewMode === 'tree' ? (
             <MemberHierarchyTree members={visibleMembers} selectedMemberId={activeMemberId} />
           ) : viewMode === 'flow' ? (
-            <MemberHierarchyFlow members={visibleMembers} selectedMemberId={activeMemberId} />
+            <MemberHierarchyFlow
+              isEditable={!isSavingRelation}
+              members={visibleMembers}
+              onManagerConnect={handleManagerConnect}
+              selectedMemberId={activeMemberId}
+            />
           ) : hierarchyLevels ? (
             <div className={styles.pyramidWrap} data-testid="member-hierarchy-pyramid">
               <div className={styles.pyramidLegend}>
