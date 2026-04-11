@@ -1,85 +1,10 @@
 import type { Member } from '../types/project'
+import {
+  buildMemberHierarchyForest,
+  getMemberRoleTone,
+  type MemberHierarchyNode,
+} from '../utils/memberHierarchyUtils'
 import styles from './MemberHierarchyTree.module.css'
-
-interface HierarchyNode {
-  member: Member
-  children: HierarchyNode[]
-  isSelected: boolean
-  isPathNode: boolean
-}
-
-function sortMembers(members: Member[]) {
-  return [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja'))
-}
-
-function getRootMembers(
-  members: Member[],
-  memberById: Map<string, Member>,
-) {
-  return sortMembers(
-    members.filter((member) => !member.managerId || !memberById.has(member.managerId)),
-  )
-}
-
-function buildDescendantNode(
-  member: Member,
-  childrenByManagerId: Map<string | null, Member[]>,
-  selectedMemberId?: string,
-): HierarchyNode {
-  return {
-    member,
-    isSelected: member.id === selectedMemberId,
-    isPathNode: Boolean(selectedMemberId) && member.id === selectedMemberId,
-    children: sortMembers(childrenByManagerId.get(member.id) ?? []).map((child) =>
-      buildDescendantNode(child, childrenByManagerId, selectedMemberId),
-    ),
-  }
-}
-
-function buildHierarchyForest(members: Member[], selectedMemberId?: string) {
-  const memberById = new Map(members.map((member) => [member.id, member]))
-  const selectedMember = selectedMemberId ? memberById.get(selectedMemberId) : undefined
-
-  const childrenByManagerId = new Map<string | null, Member[]>()
-
-  members.forEach((member) => {
-    const bucket = childrenByManagerId.get(member.managerId) ?? []
-    bucket.push(member)
-    childrenByManagerId.set(member.managerId, bucket)
-  })
-
-  if (!selectedMember) {
-    return getRootMembers(members, memberById).map((member) => buildDescendantNode(member, childrenByManagerId))
-  }
-
-  const lineage: Member[] = []
-  let cursor: Member | undefined = selectedMember
-
-  while (cursor) {
-    lineage.unshift(cursor)
-    cursor = cursor.managerId ? memberById.get(cursor.managerId) : undefined
-  }
-
-  function buildPathNode(index: number): HierarchyNode {
-    const member = lineage[index]
-    const isSelected = member.id === selectedMemberId
-
-    return {
-      member,
-      isSelected,
-      isPathNode: true,
-      children: isSelected
-        ? sortMembers(childrenByManagerId.get(member.id) ?? []).map((child) =>
-            buildDescendantNode(child, childrenByManagerId, selectedMemberId),
-          )
-        : lineage[index + 1]
-          ? [buildPathNode(index + 1)]
-      : [],
-    }
-  }
-
-  return [buildPathNode(0)]
-}
 
 function getMemberInitials(name: string) {
   const normalized = name.replace(/\s+/g, '')
@@ -92,26 +17,28 @@ function getMemberInitials(name: string) {
 }
 
 function getRoleToneClass(role: string) {
-  if (role.includes('部長') || role.includes('本部長')) {
+  const tone = getMemberRoleTone(role)
+
+  if (tone === 'executive') {
     return styles.toneExecutive
   }
 
-  if (role.includes('PM') || role.includes('リーダー')) {
+  if (tone === 'lead') {
     return styles.toneLead
   }
 
-  if (role.includes('テスト') || role.includes('品質')) {
+  if (tone === 'quality') {
     return styles.toneQuality
   }
 
-  if (role.includes('インフラ') || role.includes('基盤')) {
+  if (tone === 'platform') {
     return styles.tonePlatform
   }
 
   return styles.toneDefault
 }
 
-function MemberHierarchyNodeView({ node, depth = 0 }: { node: HierarchyNode; depth?: number }) {
+function MemberHierarchyNodeView({ node, depth = 0 }: { node: MemberHierarchyNode; depth?: number }) {
   const className = [
     styles.nodeCard,
     node.isSelected ? styles.selectedCard : '',
@@ -177,7 +104,7 @@ interface MemberHierarchyTreeProps {
 }
 
 export function MemberHierarchyTree({ members, selectedMemberId }: MemberHierarchyTreeProps) {
-  const forest = buildHierarchyForest(members, selectedMemberId)
+  const forest = buildMemberHierarchyForest(members, selectedMemberId)
 
   if (forest.length === 0) {
     return <p className={styles.emptyText}>表示対象のメンバーを取得できませんでした。</p>

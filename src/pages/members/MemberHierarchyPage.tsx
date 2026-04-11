@@ -8,6 +8,11 @@ import { Button } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { useProjectData } from "../../store/useProjectData";
 import type { Member, UpdateMemberInput } from "../../types/project";
+import {
+  buildMemberHierarchyLevels,
+  createsMemberHierarchyCycle,
+  type MemberHierarchyNode,
+} from "../../utils/memberHierarchyUtils";
 import formStyles from "../../styles/form.module.css";
 import pageStyles from "../../styles/page.module.css";
 import styles from "./MemberHierarchyPage.module.css";
@@ -18,11 +23,6 @@ interface MemberLevelCardProps {
   member: Member;
   isSelected: boolean;
   isPathNode: boolean;
-}
-
-interface HierarchyGroup {
-  member: Member;
-  children: HierarchyGroup[];
 }
 
 function renderMemberLevelCard({
@@ -58,7 +58,7 @@ function renderMemberLevelCard({
   );
 }
 
-function renderHierarchyGroup(group: HierarchyGroup, selectedMemberId?: string) {
+function renderHierarchyGroup(group: MemberHierarchyNode, selectedMemberId?: string) {
   return (
     <div
       className={styles.groupNode}
@@ -85,81 +85,6 @@ function renderHierarchyGroup(group: HierarchyGroup, selectedMemberId?: string) 
       ) : null}
     </div>
   );
-}
-
-function buildHierarchyLevels(members: Member[], selectedMemberId?: string) {
-  const memberById = new Map(members.map((member) => [member.id, member]));
-  const selectedMember = selectedMemberId ? memberById.get(selectedMemberId) : undefined;
-
-  const childrenByManagerId = new Map<string | null, Member[]>();
-
-  members.forEach((member) => {
-    const bucket = childrenByManagerId.get(member.managerId) ?? [];
-    bucket.push(member);
-    childrenByManagerId.set(member.managerId, bucket);
-  });
-
-  childrenByManagerId.forEach((bucket, managerId) => {
-    childrenByManagerId.set(
-      managerId,
-      [...bucket].sort((left, right) =>
-        left.name.localeCompare(right.name, "ja"),
-      ),
-    );
-  });
-
-  const lineage: Member[] = [];
-  let cursor: Member | undefined = selectedMember;
-
-  while (cursor) {
-    lineage.unshift(cursor);
-    cursor = cursor.managerId ? memberById.get(cursor.managerId) : undefined;
-  }
-
-  function buildHierarchyGroup(member: Member): HierarchyGroup {
-    return {
-      member,
-      children: (childrenByManagerId.get(member.id) ?? []).map((child) =>
-        buildHierarchyGroup(child),
-      ),
-    };
-  }
-
-  if (!selectedMember) {
-    return {
-      lineage: [] as Member[],
-      descendantGroups: members
-        .filter((member) => !member.managerId || !memberById.has(member.managerId))
-        .sort((left, right) => left.name.localeCompare(right.name, "ja"))
-        .map((root) => buildHierarchyGroup(root)),
-    };
-  }
-
-  return {
-    lineage,
-    descendantGroups: (childrenByManagerId.get(selectedMember.id) ?? []).map(
-      (child) => buildHierarchyGroup(child),
-    ),
-  };
-}
-
-function createsCycle(
-  members: Member[],
-  memberId: string,
-  nextManagerId: string,
-) {
-  const memberById = new Map(members.map((member) => [member.id, member]));
-  let cursor = memberById.get(nextManagerId);
-
-  while (cursor) {
-    if (cursor.id === memberId) {
-      return true;
-    }
-
-    cursor = cursor.managerId ? memberById.get(cursor.managerId) : undefined;
-  }
-
-  return false;
 }
 
 function buildUpdateMemberInput(
@@ -228,7 +153,7 @@ export function MemberHierarchyPage() {
       : undefined;
 
   const hierarchyLevels = useMemo(
-    () => buildHierarchyLevels(visibleMembers, activeMemberId),
+    () => buildMemberHierarchyLevels(visibleMembers, activeMemberId),
     [activeMemberId, visibleMembers],
   );
 
@@ -308,7 +233,7 @@ export function MemberHierarchyPage() {
       return;
     }
 
-    if (createsCycle(members, memberId, nextManagerId)) {
+    if (createsMemberHierarchyCycle(members, memberId, nextManagerId)) {
       setRelationshipError(
         "循環する上下関係になるため、この接続はできません。",
       );

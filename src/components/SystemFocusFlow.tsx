@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   Background,
   BaseEdge,
@@ -8,8 +8,6 @@ import {
   MarkerType,
   Position,
   ReactFlow,
-  useEdgesState,
-  useNodesState,
   getSmoothStepPath,
   type Edge,
   type EdgeProps,
@@ -121,13 +119,11 @@ export function SystemFocusFlow({
 }: SystemFocusFlowProps) {
   const columnWidth = 340
   const rowGap = 176
-  const centerY =
-    Math.max(upstream.length, downstream.length, 1) > 1
-      ? ((Math.max(upstream.length, downstream.length, 1) - 1) * rowGap) / 2
-      : 0
+  const maxColumnCount = Math.max(upstream.length, downstream.length, 1)
+  const centerY = maxColumnCount > 1 ? ((maxColumnCount - 1) * rowGap) / 2 : 0
 
-  const { initialNodes, initialEdges } = useMemo(() => ({
-    initialNodes: [
+  const { nodes, edges } = useMemo(() => ({
+    nodes: [
       {
         id: selectedSystem.id,
         type: 'focusNode',
@@ -167,7 +163,7 @@ export function SystemFocusFlow({
         targetPosition: Position.Left,
       })),
     ] as FocusNode[],
-    initialEdges: [
+    edges: [
       ...upstream.map(({ relation }) => ({
         id: `upstream-edge-${relation.id}`,
         source: `upstream-${relation.id}`,
@@ -223,17 +219,6 @@ export function SystemFocusFlow({
     ] as Edge[],
   }), [centerY, columnWidth, downstream, projectCountBySystemId, rowGap, selectedSystem, upstream])
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
-
-  useEffect(() => {
-    setNodes(initialNodes)
-  }, [initialNodes, setNodes])
-
-  useEffect(() => {
-    setEdges(initialEdges)
-  }, [initialEdges, setEdges])
-
   return (
     <div className={styles.flowWrap}>
       <ReactFlow
@@ -247,10 +232,8 @@ export function SystemFocusFlow({
         edgeTypes={edgeTypes}
         nodeTypes={nodeTypes}
         nodes={nodes}
-        onEdgesChange={onEdgesChange}
-        onNodesChange={onNodesChange}
         nodesConnectable={false}
-        nodesDraggable
+        nodesDraggable={false}
         panOnDrag
         proOptions={{ hideAttribution: true }}
       >

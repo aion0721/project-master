@@ -16,6 +16,11 @@ import {
 } from "@xyflow/react";
 import type { Member } from "../types/project";
 import "@xyflow/react/dist/style.css";
+import {
+  buildMemberHierarchyForest,
+  getMemberRoleTone,
+  type MemberHierarchyNode,
+} from "../utils/memberHierarchyUtils";
 import styles from "./MemberHierarchyFlow.module.css";
 
 interface HierarchyNodeData extends Record<string, unknown> {
@@ -30,13 +35,6 @@ interface HierarchyNodeData extends Record<string, unknown> {
 interface BranchBandData extends Record<string, unknown> {
   label: string;
   tone: number;
-}
-
-interface HierarchyTreeNode {
-  member: Member;
-  isSelected: boolean;
-  isPathNode: boolean;
-  children: HierarchyTreeNode[];
 }
 
 interface BranchGroup {
@@ -63,85 +61,7 @@ const branchTones = [
   { stroke: "#a78bfa", fill: "rgba(167, 139, 250, 0.08)" },
 ];
 
-function sortMembers(members: Member[]) {
-  return [...members].sort((left, right) =>
-    left.name.localeCompare(right.name, "ja"),
-  );
-}
-
-function getRootMembers(
-  members: Member[],
-  memberById: Map<string, Member>,
-) {
-  return sortMembers(
-    members.filter((member) => !member.managerId || !memberById.has(member.managerId)),
-  );
-}
-
-function buildDescendantNode(
-  member: Member,
-  childrenByManagerId: Map<string | null, Member[]>,
-  selectedMemberId?: string,
-): HierarchyTreeNode {
-  return {
-    member,
-    isSelected: member.id === selectedMemberId,
-    isPathNode: Boolean(selectedMemberId) && member.id === selectedMemberId,
-    children: sortMembers(childrenByManagerId.get(member.id) ?? []).map(
-      (child) =>
-        buildDescendantNode(child, childrenByManagerId, selectedMemberId),
-    ),
-  };
-}
-
-function buildHierarchyForest(members: Member[], selectedMemberId?: string) {
-  const memberById = new Map(members.map((member) => [member.id, member]));
-  const selectedMember = selectedMemberId ? memberById.get(selectedMemberId) : undefined;
-
-  const childrenByManagerId = new Map<string | null, Member[]>();
-
-  members.forEach((member) => {
-    const bucket = childrenByManagerId.get(member.managerId) ?? [];
-    bucket.push(member);
-    childrenByManagerId.set(member.managerId, bucket);
-  });
-
-  if (!selectedMember) {
-    return getRootMembers(members, memberById).map((member) =>
-      buildDescendantNode(member, childrenByManagerId),
-    );
-  }
-
-  const lineage: Member[] = [];
-  let cursor: Member | undefined = selectedMember;
-
-  while (cursor) {
-    lineage.unshift(cursor);
-    cursor = cursor.managerId ? memberById.get(cursor.managerId) : undefined;
-  }
-
-  function buildPathNode(index: number): HierarchyTreeNode {
-    const member = lineage[index];
-    const isSelected = member.id === selectedMemberId;
-
-    return {
-      member,
-      isSelected,
-      isPathNode: true,
-      children: isSelected
-        ? sortMembers(childrenByManagerId.get(member.id) ?? []).map((child) =>
-            buildDescendantNode(child, childrenByManagerId, selectedMemberId),
-          )
-        : lineage[index + 1]
-          ? [buildPathNode(index + 1)]
-      : [],
-    };
-  }
-
-  return [buildPathNode(0)];
-}
-
-function findSelectedNode(node: HierarchyTreeNode): HierarchyTreeNode | null {
+function findSelectedNode(node: MemberHierarchyNode): MemberHierarchyNode | null {
   if (node.isSelected) {
     return node;
   }
@@ -157,17 +77,17 @@ function findSelectedNode(node: HierarchyTreeNode): HierarchyTreeNode | null {
   return null;
 }
 
-function collectMemberIds(node: HierarchyTreeNode): string[] {
+function collectMemberIds(node: MemberHierarchyNode): string[] {
   return [
     node.member.id,
     ...node.children.flatMap((child) => collectMemberIds(child)),
   ];
 }
 
-function getBranchGroups(forest: HierarchyTreeNode[]): BranchGroup[] {
+function getBranchGroups(forest: MemberHierarchyNode[]): BranchGroup[] {
   const selectedNode = forest
     .map((root) => findSelectedNode(root))
-    .find((node): node is HierarchyTreeNode => Boolean(node));
+    .find((node): node is MemberHierarchyNode => Boolean(node));
 
   if (selectedNode) {
     const orderedChildren = [...selectedNode.children].sort((left, right) => {
@@ -200,7 +120,7 @@ function getBranchGroups(forest: HierarchyTreeNode[]): BranchGroup[] {
 }
 
 function flattenTree(
-  node: HierarchyTreeNode,
+  node: MemberHierarchyNode,
   nodes: MemberFlowNodeType[],
   edges: Edge[],
   branchToneByMemberId: Map<string, number>,
@@ -467,19 +387,21 @@ function buildBranchBandNodes(
 }
 
 function getRoleToneClass(role: string) {
-  if (role.includes("部長") || role.includes("本部長")) {
+  const tone = getMemberRoleTone(role);
+
+  if (tone === "executive") {
     return styles.toneExecutive;
   }
 
-  if (role.includes("PM") || role.includes("リーダー")) {
+  if (tone === "lead") {
     return styles.toneLead;
   }
 
-  if (role.includes("テスト") || role.includes("品質")) {
+  if (tone === "quality") {
     return styles.toneQuality;
   }
 
-  if (role.includes("インフラ") || role.includes("基盤")) {
+  if (tone === "platform") {
     return styles.tonePlatform;
   }
 
@@ -561,7 +483,7 @@ export function MemberHierarchyFlow({
   onManagerConnect,
 }: MemberHierarchyFlowProps) {
   const forest = useMemo(
-    () => buildHierarchyForest(members, selectedMemberId),
+    () => buildMemberHierarchyForest(members, selectedMemberId),
     [members, selectedMemberId],
   );
 
