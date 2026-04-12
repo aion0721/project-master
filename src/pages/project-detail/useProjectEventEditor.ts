@@ -7,7 +7,7 @@ interface UseProjectEventEditorResult {
   eventDrafts: EventFormState[]
   eventError: string | null
   isSavingEvents: boolean
-  addEventDraft: () => void
+  addEventDraft: (initialValues?: { week?: number }) => EventFormState
   removeEventDraft: (key: string) => void
   updateEventDraft: (key: string, patch: Partial<EventFormState>) => void
   saveEvents: () => Promise<void>
@@ -17,11 +17,15 @@ function createDraftKey() {
   return `event-draft-${crypto.randomUUID()}`
 }
 
-function createEmptyEventDraft(workStatusOptions: WorkStatus[], members: Member[]): EventFormState {
+function createEmptyEventDraft(
+  workStatusOptions: WorkStatus[],
+  members: Member[],
+  initialValues?: { week?: number },
+): EventFormState {
   return {
     key: createDraftKey(),
     name: '',
-    week: '1',
+    week: String(initialValues?.week ?? 1),
     status: workStatusOptions[0] ?? '未着手',
     ownerMemberId: members[0]?.id ?? '',
     note: '',
@@ -44,18 +48,25 @@ export function useProjectEventEditor(
     setEventError(null)
   }, [initialEvents])
 
-  function addEventDraft() {
-    setEventDrafts((current) => [...current, createEmptyEventDraft(workStatusOptions, members)])
+  function addEventDraft(initialValues?: { week?: number }) {
+    const nextDraft = createEmptyEventDraft(workStatusOptions, members, initialValues)
+
+    setEventDrafts((current) => [...current, nextDraft])
+    setEventError(null)
+
+    return nextDraft
   }
 
   function removeEventDraft(key: string) {
     setEventDrafts((current) => current.filter((event) => event.key !== key))
+    setEventError(null)
   }
 
   function updateEventDraft(key: string, patch: Partial<EventFormState>) {
     setEventDrafts((current) =>
       current.map((event) => (event.key === key ? { ...event, ...patch } : event)),
     )
+    setEventError(null)
   }
 
   async function saveEvents() {

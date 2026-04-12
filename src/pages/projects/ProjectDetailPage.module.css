@@ -629,6 +629,10 @@
   border-bottom: 0;
 }
 
+.selectedEventRow td {
+  background: rgba(224, 242, 254, 0.5);
+}
+
 .actionCell {
   display: flex;
   flex-direction: column;

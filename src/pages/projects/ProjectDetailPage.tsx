@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PhaseTimeline } from '../../components/PhaseTimeline'
 import { Button } from '../../components/ui/Button'
@@ -8,7 +8,7 @@ import { useUserSession } from '../../store/useUserSession'
 import { ProjectDetailHero } from '../project-detail/ProjectDetailHero'
 import { ProjectEventSection } from '../project-detail/ProjectEventSection'
 import { ProjectPhaseSection } from '../project-detail/ProjectPhaseSection'
-import { buildDraftPhaseForRange } from '../project-detail/projectDetailTypes'
+import { buildDraftEvent, buildDraftPhaseForRange } from '../project-detail/projectDetailTypes'
 import type { PhaseFormState } from '../project-detail/projectDetailTypes'
 import { ProjectStructureSection } from '../project-detail/ProjectStructureSection'
 import { useProjectDetailData } from '../project-detail/useProjectDetailData'
@@ -47,6 +47,7 @@ export function ProjectDetailPage() {
   } = useProjectData()
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
   const [selectedTimelinePhaseId, setSelectedTimelinePhaseId] = useState<string | null>(null)
+  const [selectedEventKey, setSelectedEventKey] = useState<string | null>(null)
   const [projectStatusBulkApplyEnabled, setProjectStatusBulkApplyEnabled] = useState(false)
   const [isPhaseEditingEnabled, setIsPhaseEditingEnabled] = useState(false)
   const [timelineEditingRange, setTimelineEditingRange] = useState<{
@@ -57,6 +58,7 @@ export function ProjectDetailPage() {
   const [timelineEditingSnapshot, setTimelineEditingSnapshot] = useState<PhaseFormState[] | null>(
     null,
   )
+  const timelineSectionRef = useRef<HTMLDivElement | null>(null)
 
   const project = projectNumber ? getProjectById(projectNumber) : undefined
   const {
@@ -131,6 +133,14 @@ export function ProjectDetailPage() {
     return primarySystemId ? systems.filter((system) => system.id === primarySystemId) : []
   }, [project, systems])
 
+  const timelineEvents = useMemo(() => {
+    if (!project) {
+      return []
+    }
+
+    return eventEditor.eventDrafts.map((draft) => buildDraftEvent(project.projectNumber, draft))
+  }, [eventEditor.eventDrafts, project])
+
   function clonePhaseDrafts() {
     return phaseEditor.phaseDrafts.map((phase) => ({ ...phase }))
   }
@@ -159,6 +169,30 @@ export function ProjectDetailPage() {
     setSelectedTimelinePhaseId(null)
     setTimelineEditingRange(null)
     setTimelineEditingSnapshot(null)
+  }
+
+  function handleEventAdd(week?: number) {
+    const nextDraft = eventEditor.addEventDraft(week ? { week } : undefined)
+    setSelectedEventKey(nextDraft.key)
+  }
+
+  function handleEventRemove(key: string) {
+    eventEditor.removeEventDraft(key)
+
+    if (selectedEventKey === key) {
+      setSelectedEventKey(null)
+    }
+  }
+
+  function handleEventSelect(eventId: string) {
+    setSelectedEventKey(eventId)
+  }
+
+  function handleBackToPhases() {
+    timelineSectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
   }
 
   function handleTogglePhaseEditing() {
@@ -472,76 +506,98 @@ export function ProjectDetailPage() {
         scheduleError={summaryEditor.scheduleError}
       />
 
-      <Panel className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <div>
-            <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
-            <p className={styles.sectionDescription}>
-              行を選ぶと状態変更、削除、並び替え、週単位の期間調整ができます。フェーズ追加もここから始められ、詳細な名称編集だけ下の補助テーブルで扱います。
-            </p>
-          </div>
-          <div className={styles.phaseSectionControls}>
-            <span
-              className={
-                isPhaseEditingEnabled ? styles.phaseEditStatusOn : styles.phaseEditStatusOff
-              }
-            >
-              編集: {isPhaseEditingEnabled ? 'ON' : 'OFF'}
-            </span>
-            <Button
-              data-testid="phase-editor-toggle"
-              onClick={handleTogglePhaseEditing}
-              size="small"
-              variant="secondary"
-            >
-              {isPhaseEditingEnabled ? '編集を閉じる' : '編集を開く'}
-            </Button>
-            {isPhaseEditingEnabled ? (
-              <Button onClick={handleTimelinePhaseAdd} size="small" variant="secondary">
-                フェーズを追加
+      <div ref={timelineSectionRef}>
+        <Panel className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
+              <p className={styles.sectionDescription}>
+                行を選ぶと状態変更、削除、並び替え、週単位の期間調整ができます。フェーズ追加もここから始められ、詳細な名称編集だけ下の補助テーブルで扱います。
+              </p>
+            </div>
+            <div className={styles.phaseSectionControls}>
+              <span
+                className={
+                  isPhaseEditingEnabled ? styles.phaseEditStatusOn : styles.phaseEditStatusOff
+                }
+              >
+                編集: {isPhaseEditingEnabled ? 'ON' : 'OFF'}
+              </span>
+              <Button
+                data-testid="phase-editor-toggle"
+                onClick={handleTogglePhaseEditing}
+                size="small"
+                variant="secondary"
+              >
+                {isPhaseEditingEnabled ? '編集を閉じる' : '編集を開く'}
               </Button>
-            ) : null}
+              {isPhaseEditingEnabled ? (
+                <Button onClick={handleTimelinePhaseAdd} size="small" variant="secondary">
+                  フェーズを追加
+                </Button>
+              ) : null}
+            </div>
           </div>
-        </div>
-        {phaseEditor.phaseStructureError && !isPhaseEditingEnabled ? (
-          <p className={styles.sectionError}>{phaseEditor.phaseStructureError}</p>
-        ) : null}
-        <PhaseTimeline
-          editable={isPhaseEditingEnabled}
-          events={projectEvents}
-          onPhaseCancel={isPhaseEditingEnabled ? handleTimelinePhaseCancel : undefined}
-          onPhaseConfirm={(phaseId) => {
-            void handleTimelinePhaseConfirm(phaseId)
-          }}
-          onPhaseMove={isPhaseEditingEnabled ? phaseEditor.movePhaseDraft : undefined}
-          onPhaseRemove={isPhaseEditingEnabled ? handleTimelinePhaseRemove : undefined}
-          onPhaseResize={(phaseId, nextRange) => {
-            phaseEditor.updatePhaseDraftRange(phaseId, nextRange)
-          }}
-          onPhaseSelect={isPhaseEditingEnabled ? handleTimelinePhaseSelect : undefined}
-          onPhaseStatusChange={isPhaseEditingEnabled ? handleTimelinePhaseStatusChange : undefined}
-          phases={timelinePhases}
-          project={project}
-          selectedPhaseId={isPhaseEditingEnabled ? selectedTimelinePhaseId : null}
-          workStatusOptions={workStatusOptions}
-        />
-        {isPhaseEditingEnabled ? (
-          <ProjectPhaseSection
-            isSavingPhaseStructure={phaseEditor.isSavingPhaseStructure}
-            onAddPhase={phaseEditor.addPhaseDraft}
-            onMovePhase={phaseEditor.movePhaseDraft}
-            onRemovePhase={phaseEditor.removePhaseDraft}
-            onSave={() => {
-              void phaseEditor.savePhaseStructure()
+          {phaseEditor.phaseStructureError && !isPhaseEditingEnabled ? (
+            <p className={styles.sectionError}>{phaseEditor.phaseStructureError}</p>
+          ) : null}
+          <PhaseTimeline
+            editable={isPhaseEditingEnabled}
+            events={timelineEvents}
+            onEventAdd={isPhaseEditingEnabled ? handleEventAdd : undefined}
+            onEventSelect={handleEventSelect}
+            onPhaseCancel={isPhaseEditingEnabled ? handleTimelinePhaseCancel : undefined}
+            onPhaseConfirm={(phaseId) => {
+              void handleTimelinePhaseConfirm(phaseId)
             }}
-            onUpdatePhase={phaseEditor.updatePhaseDraft}
-            phaseDrafts={phaseEditor.phaseDrafts}
-            phaseStructureError={phaseEditor.phaseStructureError}
+            onPhaseMove={isPhaseEditingEnabled ? phaseEditor.movePhaseDraft : undefined}
+            onPhaseRemove={isPhaseEditingEnabled ? handleTimelinePhaseRemove : undefined}
+            onPhaseResize={(phaseId, nextRange) => {
+              phaseEditor.updatePhaseDraftRange(phaseId, nextRange)
+            }}
+            onPhaseSelect={isPhaseEditingEnabled ? handleTimelinePhaseSelect : undefined}
+            onPhaseStatusChange={isPhaseEditingEnabled ? handleTimelinePhaseStatusChange : undefined}
+            phases={timelinePhases}
             project={project}
+            selectedEventId={selectedEventKey}
+            selectedPhaseId={isPhaseEditingEnabled ? selectedTimelinePhaseId : null}
             workStatusOptions={workStatusOptions}
           />
-        ) : null}
-      </Panel>
+          {isPhaseEditingEnabled ? (
+            <ProjectPhaseSection
+              isSavingPhaseStructure={phaseEditor.isSavingPhaseStructure}
+              onAddPhase={phaseEditor.addPhaseDraft}
+              onMovePhase={phaseEditor.movePhaseDraft}
+              onRemovePhase={phaseEditor.removePhaseDraft}
+              onSave={() => {
+                void phaseEditor.savePhaseStructure()
+              }}
+              onUpdatePhase={phaseEditor.updatePhaseDraft}
+              phaseDrafts={phaseEditor.phaseDrafts}
+              phaseStructureError={phaseEditor.phaseStructureError}
+              project={project}
+              workStatusOptions={workStatusOptions}
+            />
+          ) : null}
+        </Panel>
+      </div>
+
+      <ProjectEventSection
+        eventDrafts={eventEditor.eventDrafts}
+        eventError={eventEditor.eventError}
+        isSavingEvents={eventEditor.isSavingEvents}
+        members={members}
+        onBackToPhases={handleBackToPhases}
+        onAddEvent={() => handleEventAdd()}
+        onRemoveEvent={handleEventRemove}
+        onSave={() => {
+          void eventEditor.saveEvents()
+        }}
+        onUpdateEvent={eventEditor.updateEventDraft}
+        project={project}
+        selectedEventKey={selectedEventKey}
+        workStatusOptions={workStatusOptions}
+      />
 
       <ProjectStructureSection
         isEditing={structureEditor.isStructureEditing}
@@ -563,21 +619,6 @@ export function ProjectDetailPage() {
         structureChanged={structureEditor.structureChanged}
         structureError={structureEditor.structureError}
         structurePmMemberId={structureEditor.structurePmMemberId}
-      />
-
-      <ProjectEventSection
-        eventDrafts={eventEditor.eventDrafts}
-        eventError={eventEditor.eventError}
-        isSavingEvents={eventEditor.isSavingEvents}
-        members={members}
-        onAddEvent={eventEditor.addEventDraft}
-        onRemoveEvent={eventEditor.removeEventDraft}
-        onSave={() => {
-          void eventEditor.saveEvents()
-        }}
-        onUpdateEvent={eventEditor.updateEventDraft}
-        project={project}
-        workStatusOptions={workStatusOptions}
       />
     </div>
   )

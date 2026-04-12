@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -14,6 +15,8 @@ interface ProjectEventSectionProps {
   eventDrafts: EventFormState[]
   eventError: string | null
   isSavingEvents: boolean
+  selectedEventKey?: string | null
+  onBackToPhases: () => void
   onAddEvent: () => void
   onRemoveEvent: (key: string) => void
   onUpdateEvent: (key: string, patch: Partial<EventFormState>) => void
@@ -27,6 +30,8 @@ export function ProjectEventSection({
   eventDrafts,
   eventError,
   isSavingEvents,
+  selectedEventKey = null,
+  onBackToPhases,
   onAddEvent,
   onRemoveEvent,
   onUpdateEvent,
@@ -40,6 +45,18 @@ export function ProjectEventSection({
     keywords: [member.name, member.departmentName, member.role],
   }))
 
+  useEffect(() => {
+    if (!selectedEventKey) {
+      return
+    }
+
+    const row = document.querySelector(`[data-event-row-key="${selectedEventKey}"]`)
+
+    if (row instanceof HTMLElement && typeof row.scrollIntoView === 'function') {
+      row.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [selectedEventKey])
+
   return (
     <Panel className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -50,6 +67,9 @@ export function ProjectEventSection({
           </p>
         </div>
         <div className={styles.phaseHeaderActions}>
+          <Button data-testid="project-events-back-to-phases-button" onClick={onBackToPhases} size="small" variant="secondary">
+            フェーズに戻る
+          </Button>
           <Button data-testid="project-events-add-button" onClick={onAddEvent} size="small" variant="secondary">
             イベント追加
           </Button>
@@ -87,7 +107,12 @@ export function ProjectEventSection({
               </tr>
             ) : (
               eventDrafts.map((event, index) => (
-                <tr key={event.key}>
+                <tr
+                  className={selectedEventKey === event.key ? styles.selectedEventRow : undefined}
+                  data-event-row-key={event.key}
+                  data-testid={`event-row-${event.key}`}
+                  key={event.key}
+                >
                   <td>
                     <input
                       className={styles.selectInput}

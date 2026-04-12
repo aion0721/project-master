@@ -51,7 +51,7 @@ describe('ProjectDetailPage', () => {
       project.projectLinks[0]?.url,
     )
     expect(
-      screen.getByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`),
+      await screen.findByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`),
     ).toBeInTheDocument()
     expect(screen.getAllByText(projectEvent.name).length).toBeGreaterThan(0)
     expect(screen.queryByTestId('structure-editor')).not.toBeInTheDocument()
@@ -123,7 +123,7 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByTestId('project-summary-pm-value')).toHaveTextContent('PM: 田中')
     expect(screen.getByTestId('current-phase-value')).toHaveTextContent(currentPhase.name)
     expect(
-      screen.getByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`),
+      await screen.findByTestId(`timeline-event-${projectEvent.id}-week-${projectEvent.week}`),
     ).toBeInTheDocument()
     expect(screen.getAllByText(projectEvent.name).length).toBeGreaterThan(0)
     expect(screen.getAllByText(editableAssignment.responsibility).length).toBeGreaterThan(0)
@@ -569,6 +569,44 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('タイムラインのイベント行から対象週を指定して追加できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
+    fireEvent.click(screen.getByTestId('timeline-event-add-week-9'))
+
+    expect(await screen.findByTestId('event-week-2')).toHaveValue(9)
+    fireEvent.change(screen.getByTestId('event-name-2'), {
+      target: { value: '利用部門確認' },
+    })
+    fireEvent.change(screen.getByTestId('event-owner-2'), {
+      target: { value: 'm6' },
+    })
+    fireEvent.click(screen.getByTestId('project-events-save-button'))
+
+    await waitFor(() => {
+      const eventsCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/events') && init?.method === 'PATCH'
+      })
+
+      expect(eventsCall).toBeDefined()
+      const body = JSON.parse(String(eventsCall?.[1]?.body))
+      expect(body.events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: '利用部門確認',
+            week: 9,
+            ownerMemberId: 'm6',
+          }),
+        ]),
+      )
+    })
+  })
+
   it('案件期間を超えるイベント週は保存前にエラーにする', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -590,6 +628,27 @@ describe('ProjectDetailPage', () => {
     })
 
     expect(eventsCall).toBeUndefined()
+  })
+
+  it('関連イベントからフェーズ進捗タイムラインへ戻れる', async () => {
+    mockProjectApi()
+
+    const scrollIntoViewMock = vi.fn()
+    Object.defineProperty(HTMLDivElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoViewMock,
+    })
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-events-back-to-phases-button'))
+
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
   })
 
   it('タイムライン上でフェーズ期間を調整して保存できる', async () => {

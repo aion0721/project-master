@@ -12,6 +12,7 @@ interface PhaseTimelineProps {
   events?: ProjectEvent[]
   editable?: boolean
   selectedPhaseId?: string | null
+  selectedEventId?: string | null
   onPhaseSelect?: (phaseId: string) => void
   onPhaseMove?: (phaseId: string, direction: 'up' | 'down') => void
   onPhaseResize?: (phaseId: string, nextRange: { startWeek: number; endWeek: number }) => void
@@ -19,6 +20,8 @@ interface PhaseTimelineProps {
   onPhaseRemove?: (phaseId: string) => void
   onPhaseConfirm?: (phaseId: string) => void
   onPhaseCancel?: (phaseId: string) => void
+  onEventAdd?: (week: number) => void
+  onEventSelect?: (eventId: string) => void
   workStatusOptions?: WorkStatus[]
 }
 
@@ -28,6 +31,7 @@ export function PhaseTimeline({
   events = [],
   editable = false,
   selectedPhaseId = null,
+  selectedEventId = null,
   onPhaseSelect,
   onPhaseMove,
   onPhaseResize,
@@ -35,6 +39,8 @@ export function PhaseTimeline({
   onPhaseRemove,
   onPhaseConfirm,
   onPhaseCancel,
+  onEventAdd,
+  onEventSelect,
   workStatusOptions = [],
 }: PhaseTimelineProps) {
   const weekSlots = getProjectWeekSlots(project, phases, events)
@@ -121,7 +127,7 @@ export function PhaseTimeline({
           })}
         </div>
 
-        {orderedEvents.length > 0 ? (
+        {orderedEvents.length > 0 || editable ? (
           <div className={styles.eventRow} style={{ gridTemplateColumns: columns }}>
             <div className={styles.eventLead}>イベント</div>
             {weekSlots.map((slot) => {
@@ -136,23 +142,40 @@ export function PhaseTimeline({
                       ? `${styles.eventCell} ${styles.currentWeek}`
                       : styles.eventCell
                   }
+                  data-testid={`timeline-event-slot-${slot.index}`}
                 >
                   {slotEvents.length > 0 ? (
                     <div className={styles.eventChipList}>
                       {slotEvents.map((event) => (
-                        <span
+                        <button
                           key={event.id}
-                          className={styles.eventChip}
+                          className={
+                            selectedEventId === event.id
+                              ? `${styles.eventChip} ${styles.eventChipSelected}`
+                              : styles.eventChip
+                          }
                           data-testid={`timeline-event-${event.id}-week-${slot.index}`}
+                          onClick={() => onEventSelect?.(event.id)}
+                          type="button"
                         >
                           <span className={styles.eventChipTag}>EV</span>
                           <span className={styles.eventChipText}>{event.name}</span>
-                        </span>
+                        </button>
                       ))}
                     </div>
                   ) : (
-                    <span className={styles.eventEmpty}>-</span>
+                    <span className={styles.eventEmpty}>イベントなし</span>
                   )}
+                  {editable ? (
+                    <button
+                      className={styles.eventAddButton}
+                      data-testid={`timeline-event-add-week-${slot.index}`}
+                      onClick={() => onEventAdd?.(slot.index)}
+                      type="button"
+                    >
+                      + 追加
+                    </button>
+                  ) : null}
                 </div>
               )
             })}
