@@ -7,9 +7,12 @@ import { getStructureReportingOptions } from './projectStructureUtils'
 import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectStructureEditorProps {
+  canCopyFromSystem: boolean
+  copySourceSystemName?: string | null
   members: Member[]
   onAddAssignment: () => void
   onClose: () => void
+  onCopyFromSystem: () => void
   onRemoveAssignment: (index: number) => void
   onSave: () => void
   onStructurePmChange: (memberId: string) => void
@@ -23,9 +26,12 @@ interface ProjectStructureEditorProps {
 }
 
 export function ProjectStructureEditor({
+  canCopyFromSystem,
+  copySourceSystemName = null,
   members,
   onAddAssignment,
   onClose,
+  onCopyFromSystem,
   onRemoveAssignment,
   onSave,
   onStructurePmChange,
@@ -67,10 +73,24 @@ export function ProjectStructureEditor({
       <div className={styles.assignmentEditor}>
         <div className={styles.assignmentHeader}>
           <h3 className={styles.assignmentTitle}>プロジェクト体制</h3>
-          <Button onClick={onAddAssignment} size="small" variant="secondary">
-            追加
-          </Button>
+          <div className={styles.phaseHeaderActions}>
+            <Button
+              data-testid="structure-copy-from-system-button"
+              disabled={!canCopyFromSystem}
+              onClick={onCopyFromSystem}
+              size="small"
+              variant="secondary"
+            >
+              {copySourceSystemName ? `${copySourceSystemName} からコピー` : 'システム体制からコピー'}
+            </Button>
+            <Button onClick={onAddAssignment} size="small" variant="secondary">
+              追加
+            </Button>
+          </div>
         </div>
+        {!canCopyFromSystem ? (
+          <p className={styles.emptyText}>主システムが未設定のため、システム体制コピーは利用できません。</p>
+        ) : null}
 
         <div className={styles.assignmentList}>
           {structureAssignments.length === 0 ? (

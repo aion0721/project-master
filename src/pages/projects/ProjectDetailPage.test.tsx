@@ -520,6 +520,130 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('主システムの体制をプロジェクト体制へコピーして保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('structure-edit-toggle'))
+    fireEvent.click(screen.getByTestId('structure-copy-from-system-button'))
+    fireEvent.click(screen.getByTestId('structure-save-button'))
+
+    await waitFor(() => {
+      const structureCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/structure') && init?.method === 'PATCH'
+      })
+
+      expect(structureCall).toBeDefined()
+      const body = JSON.parse(String(structureCall?.[1]?.body))
+      expect(body.pmMemberId).toBe('m1')
+      expect(body.assignments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            memberId: 'm2',
+            responsibility: '業務窓口',
+            reportsToMemberId: 'm1',
+          }),
+          expect.objectContaining({
+            memberId: 'm4',
+            responsibility: '運用統括',
+            reportsToMemberId: 'm1',
+          }),
+          expect.objectContaining({
+            memberId: 'm7',
+            responsibility: '基盤担当',
+            reportsToMemberId: 'm4',
+          }),
+          expect.objectContaining({
+            memberId: 'm5',
+            responsibility: '品質管理',
+            reportsToMemberId: 'm4',
+          }),
+        ]),
+      )
+    })
+  })
+
+  it('プロジェクト体制をツリーとフローで切り替えられる', async () => {
+    mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    expect(screen.getByTestId('member-tree')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('structure-view-flow'))
+    expect(await screen.findByTestId('project-structure-flow')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('structure-view-tree'))
+    expect(await screen.findByTestId('member-tree')).toBeInTheDocument()
+  })
+
+  it('フロー表示でメンバーを追加して保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('structure-view-flow'))
+    fireEvent.click(screen.getByTestId('structure-edit-toggle'))
+    fireEvent.change(screen.getByTestId('structure-flow-member-select'), {
+      target: { value: 'm6' },
+    })
+    fireEvent.click(screen.getByTestId('structure-flow-add-button'))
+    fireEvent.click(screen.getByTestId('structure-save-button'))
+
+    await waitFor(() => {
+      const structureCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/structure') && init?.method === 'PATCH'
+      })
+
+      expect(structureCall).toBeDefined()
+      const body = JSON.parse(String(structureCall?.[1]?.body))
+      expect(body.assignments).toContainEqual(
+        expect.objectContaining({
+          memberId: 'm6',
+        }),
+      )
+    })
+  })
+
+  it('フロー表示でメンバーを削除すると依存を外して保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('structure-view-flow'))
+    fireEvent.click(screen.getByTestId('structure-edit-toggle'))
+    fireEvent.click(screen.getByTestId('project-structure-node-m2'))
+    fireEvent.click(screen.getByTestId('structure-flow-remove-button'))
+    fireEvent.click(screen.getByTestId('structure-save-button'))
+
+    await waitFor(() => {
+      const structureCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/structure') && init?.method === 'PATCH'
+      })
+
+      expect(structureCall).toBeDefined()
+      const body = JSON.parse(String(structureCall?.[1]?.body))
+      expect(body.assignments).not.toContainEqual(
+        expect.objectContaining({
+          memberId: 'm2',
+        }),
+      )
+      expect(body.assignments).toContainEqual(
+        expect.objectContaining({
+          memberId: 'm3',
+          reportsToMemberId: null,
+        }),
+      )
+    })
+  })
+
   it('関連イベントを追加と更新で保存できる', async () => {
     const fetchSpy = mockProjectApi()
 

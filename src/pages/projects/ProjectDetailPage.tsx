@@ -9,6 +9,7 @@ import { ProjectDetailHero } from '../project-detail/ProjectDetailHero'
 import { ProjectEventSection } from '../project-detail/ProjectEventSection'
 import { ProjectPhaseSection } from '../project-detail/ProjectPhaseSection'
 import { buildDraftEvent, buildDraftPhaseForRange } from '../project-detail/projectDetailTypes'
+import { buildStructureDraftsFromSystemAssignments } from '../project-detail/projectStructureUtils'
 import type { PhaseFormState } from '../project-detail/projectDetailTypes'
 import { ProjectStructureSection } from '../project-detail/ProjectStructureSection'
 import { useProjectDetailData } from '../project-detail/useProjectDetailData'
@@ -25,6 +26,7 @@ export function ProjectDetailPage() {
     assignments,
     members,
     systems,
+    getSystemAssignments,
     getProjectById,
     getProjectPhases,
     getProjectAssignments,
@@ -133,6 +135,12 @@ export function ProjectDetailPage() {
     return primarySystemId ? systems.filter((system) => system.id === primarySystemId) : []
   }, [project, systems])
 
+  const primarySystem = relatedSystems[0] ?? null
+  const primarySystemAssignments = useMemo(
+    () => (primarySystem ? getSystemAssignments(primarySystem.id) : []),
+    [getSystemAssignments, primarySystem],
+  )
+
   const timelineEvents = useMemo(() => {
     if (!project) {
       return []
@@ -193,6 +201,18 @@ export function ProjectDetailPage() {
       behavior: 'smooth',
       block: 'start',
     })
+  }
+
+  function handleCopyProjectStructureFromSystem() {
+    if (!project || !primarySystemAssignments.length) {
+      return
+    }
+
+    const nextStructure = buildStructureDraftsFromSystemAssignments(primarySystemAssignments)
+    structureEditor.replaceStructureDrafts(
+      nextStructure.pmMemberId || project.pmMemberId,
+      nextStructure.assignments,
+    )
   }
 
   function handleTogglePhaseEditing() {
@@ -600,18 +620,24 @@ export function ProjectDetailPage() {
       />
 
       <ProjectStructureSection
+        canCopyFromSystem={primarySystemAssignments.length > 0}
+        copySourceSystemName={primarySystem?.name ?? null}
         isEditing={structureEditor.isStructureEditing}
         isSavingStructure={structureEditor.isSavingStructure}
         members={members}
         onAddAssignment={structureEditor.addStructureAssignment}
+        onAddAssignmentForMember={structureEditor.addStructureAssignmentForMember}
         onClose={structureEditor.closeStructureEditor}
+        onCopyFromSystem={handleCopyProjectStructureFromSystem}
         onOpen={structureEditor.openStructureEditor}
         onRemoveAssignment={structureEditor.removeStructureAssignment}
+        onRemoveAssignmentByMemberId={structureEditor.removeStructureAssignmentByMemberId}
         onSave={() => {
           void structureEditor.saveStructure()
         }}
         onStructurePmChange={structureEditor.setStructurePmMemberId}
         onUpdateAssignment={structureEditor.updateStructureAssignment}
+        onUpdateAssignmentByMemberId={structureEditor.updateStructureAssignmentByMemberId}
         pmMemberId={project.pmMemberId}
         projectAssignments={projectAssignments}
         responsibilityOptions={responsibilityOptions}

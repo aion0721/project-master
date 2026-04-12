@@ -69,6 +69,7 @@ export function useProjectStructureEditor(
   }
 
   function updateStructureAssignment(index: number, patch: Partial<StructureAssignmentDraft>) {
+    setStructureError(null)
     setStructureAssignments((current) =>
       current.map((assignment, assignmentIndex) =>
         assignmentIndex === index ? { ...assignment, ...patch } : assignment,
@@ -77,6 +78,7 @@ export function useProjectStructureEditor(
   }
 
   function addStructureAssignment() {
+    setStructureError(null)
     setStructureAssignments((current) => [
       ...current,
       {
@@ -88,9 +90,63 @@ export function useProjectStructureEditor(
   }
 
   function removeStructureAssignment(index: number) {
+    setStructureError(null)
     setStructureAssignments((current) =>
       current.filter((_, assignmentIndex) => assignmentIndex !== index),
     )
+  }
+
+  function addStructureAssignmentForMember(memberId: string, responsibility?: string) {
+    if (!memberId) {
+      return
+    }
+
+    setStructureError(null)
+    setStructureAssignments((current) => {
+      if (current.some((assignment) => assignment.memberId === memberId)) {
+        return current
+      }
+
+      return [
+        ...current,
+        {
+          memberId,
+          responsibility: responsibility ?? responsibilityOptions[0] ?? 'OS',
+          reportsToMemberId: '',
+        },
+      ]
+    })
+  }
+
+  function removeStructureAssignmentByMemberId(memberId: string) {
+    setStructureError(null)
+    setStructureAssignments((current) =>
+      current
+        .filter((assignment) => assignment.memberId !== memberId)
+        .map((assignment) =>
+          assignment.reportsToMemberId === memberId
+            ? { ...assignment, reportsToMemberId: '' }
+            : assignment,
+        ),
+    )
+  }
+
+  function updateStructureAssignmentByMemberId(
+    memberId: string,
+    patch: Partial<StructureAssignmentDraft>,
+  ) {
+    setStructureError(null)
+    setStructureAssignments((current) =>
+      current.map((assignment) =>
+        assignment.memberId === memberId ? { ...assignment, ...patch } : assignment,
+      ),
+    )
+  }
+
+  function replaceStructureDrafts(pmMemberId: string, assignments: StructureAssignmentDraft[]) {
+    setStructureError(null)
+    setStructurePmMemberId(pmMemberId)
+    setStructureAssignments(assignments)
   }
 
   async function saveStructure() {
@@ -151,9 +207,13 @@ export function useProjectStructureEditor(
     addStructureAssignment,
     closeStructureEditor,
     openStructureEditor,
+    addStructureAssignmentForMember,
+    replaceStructureDrafts,
     removeStructureAssignment,
+    removeStructureAssignmentByMemberId,
     saveStructure,
     setStructurePmMemberId,
     updateStructureAssignment,
+    updateStructureAssignmentByMemberId,
   }
 }
