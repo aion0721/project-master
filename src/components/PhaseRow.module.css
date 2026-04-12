@@ -120,6 +120,28 @@
   gap: 8px;
 }
 
+.statusField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statusLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.statusSelect {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-strong);
+  font: inherit;
+}
+
 .reorderActions {
   display: flex;
   gap: 8px;
@@ -132,7 +154,8 @@
 
 .confirmButton,
 .cancelButton,
-.reorderButton {
+.reorderButton,
+.removeButton {
   min-height: 30px;
   padding: 0 10px;
   border-radius: 999px;
@@ -158,7 +181,14 @@
   color: var(--text-strong);
 }
 
-.reorderButton:disabled {
+.removeButton {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(254, 242, 242, 0.96);
+  color: #b91c1c;
+}
+
+.reorderButton:disabled,
+.removeButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }

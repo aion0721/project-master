@@ -9,6 +9,7 @@ import { ProjectDetailHero } from '../project-detail/ProjectDetailHero'
 import { ProjectEventSection } from '../project-detail/ProjectEventSection'
 import { ProjectPhaseSection } from '../project-detail/ProjectPhaseSection'
 import { buildDraftPhaseForRange } from '../project-detail/projectDetailTypes'
+import type { PhaseFormState } from '../project-detail/projectDetailTypes'
 import { ProjectStructureSection } from '../project-detail/ProjectStructureSection'
 import { useProjectDetailData } from '../project-detail/useProjectDetailData'
 import { useProjectEventEditor } from '../project-detail/useProjectEventEditor'
@@ -47,11 +48,15 @@ export function ProjectDetailPage() {
   const { currentUser, toggleBookmark, isBookmarked } = useUserSession()
   const [selectedTimelinePhaseId, setSelectedTimelinePhaseId] = useState<string | null>(null)
   const [projectStatusBulkApplyEnabled, setProjectStatusBulkApplyEnabled] = useState(false)
+  const [isPhaseEditingEnabled, setIsPhaseEditingEnabled] = useState(false)
   const [timelineEditingRange, setTimelineEditingRange] = useState<{
     phaseId: string
     startWeek: number
     endWeek: number
   } | null>(null)
+  const [timelineEditingSnapshot, setTimelineEditingSnapshot] = useState<PhaseFormState[] | null>(
+    null,
+  )
 
   const project = projectNumber ? getProjectById(projectNumber) : undefined
   const {
@@ -126,6 +131,10 @@ export function ProjectDetailPage() {
     return primarySystemId ? systems.filter((system) => system.id === primarySystemId) : []
   }, [project, systems])
 
+  function clonePhaseDrafts() {
+    return phaseEditor.phaseDrafts.map((phase) => ({ ...phase }))
+  }
+
   function handleTimelinePhaseSelect(phaseId: string) {
     if (selectedTimelinePhaseId === phaseId) {
       return
@@ -142,6 +151,90 @@ export function ProjectDetailPage() {
       phaseId,
       startWeek: phase.startWeek,
       endWeek: phase.endWeek,
+    })
+    setTimelineEditingSnapshot(clonePhaseDrafts())
+  }
+
+  function clearTimelineEditing() {
+    setSelectedTimelinePhaseId(null)
+    setTimelineEditingRange(null)
+    setTimelineEditingSnapshot(null)
+  }
+
+  function handleTogglePhaseEditing() {
+    if (isPhaseEditingEnabled) {
+      clearTimelineEditing()
+      setIsPhaseEditingEnabled(false)
+      return
+    }
+
+    setIsPhaseEditingEnabled(true)
+  }
+
+  function handleTimelinePhaseAdd() {
+    const nextDraft = phaseEditor.addPhaseDraft()
+
+    setTimelineEditingSnapshot(clonePhaseDrafts())
+    setSelectedTimelinePhaseId(nextDraft.key)
+    setTimelineEditingRange({
+      phaseId: nextDraft.key,
+      startWeek: Number(nextDraft.startWeek) || 1,
+      endWeek: Number(nextDraft.endWeek) || 1,
+    })
+  }
+
+  function handleTimelinePhaseStatusChange(phaseId: string, status: (typeof workStatusOptions)[number]) {
+    const targetPhase = phaseEditor.phaseDrafts.find((phase) => (phase.id ?? phase.key) === phaseId)
+
+    if (!targetPhase) {
+      return
+    }
+
+    phaseEditor.updatePhaseDraft(targetPhase.key, {
+      status,
+      progress: status === '完了' ? '100' : status === '未着手' ? '0' : targetPhase.progress,
+    })
+  }
+
+  function handleTimelinePhaseRemove(phaseId: string) {
+    const phaseIndex = phaseEditor.phaseDrafts.findIndex((phase) => (phase.id ?? phase.key) === phaseId)
+
+    if (phaseIndex < 0) {
+      return
+    }
+
+    const targetPhase = phaseEditor.phaseDrafts[phaseIndex]
+
+    if (!targetPhase) {
+      return
+    }
+
+    const phaseLabel = targetPhase.name || '新規フェーズ'
+
+    if (!window.confirm(`フェーズ「${phaseLabel}」を削除しますか？`)) {
+      return
+    }
+
+    const nextDrafts = phaseEditor.phaseDrafts.filter((phase) => phase.key !== targetPhase.key)
+    const nextSelectedPhase =
+      nextDrafts[phaseIndex] ?? nextDrafts[Math.max(phaseIndex - 1, 0)] ?? null
+
+    if (!timelineEditingSnapshot) {
+      setTimelineEditingSnapshot(clonePhaseDrafts())
+    }
+
+    phaseEditor.removePhaseDraft(targetPhase.key)
+
+    if (!nextSelectedPhase) {
+      clearTimelineEditing()
+      return
+    }
+
+    setSelectedTimelinePhaseId(nextSelectedPhase.id ?? nextSelectedPhase.key)
+    setTimelineEditingRange({
+      phaseId: nextSelectedPhase.id ?? nextSelectedPhase.key,
+      startWeek: Number(nextSelectedPhase.startWeek) || 1,
+      endWeek: Number(nextSelectedPhase.endWeek) || 1,
     })
   }
 
@@ -164,23 +257,22 @@ export function ProjectDetailPage() {
       return
     }
 
-    setSelectedTimelinePhaseId(null)
-    setTimelineEditingRange(null)
+    clearTimelineEditing()
   }
 
   function handleTimelinePhaseCancel(phaseId: string) {
-    if (!timelineEditingRange || timelineEditingRange.phaseId !== phaseId) {
-      setSelectedTimelinePhaseId(null)
-      setTimelineEditingRange(null)
+    if (!timelineEditingRange || !timelineEditingSnapshot) {
+      clearTimelineEditing()
       return
     }
 
-    phaseEditor.updatePhaseDraftRange(phaseId, {
-      startWeek: timelineEditingRange.startWeek,
-      endWeek: timelineEditingRange.endWeek,
-    })
-    setSelectedTimelinePhaseId(null)
-    setTimelineEditingRange(null)
+    if (timelineEditingRange.phaseId !== phaseId && selectedTimelinePhaseId !== phaseId) {
+      clearTimelineEditing()
+      return
+    }
+
+    phaseEditor.replacePhaseDrafts(timelineEditingSnapshot)
+    clearTimelineEditing()
   }
 
   async function handleProjectStatusSave() {
@@ -385,66 +477,93 @@ export function ProjectDetailPage() {
           <div>
             <h2 className={styles.sectionTitle}>フェーズ進捗タイムライン</h2>
             <p className={styles.sectionDescription}>
-              行を選ぶと左右端のハンドルで週単位の期間調整ができます。変更内容は下のフェーズ編集と共通で、「フェーズ構成を保存」で反映します。
+              行を選ぶと状態変更、削除、並び替え、週単位の期間調整ができます。フェーズ追加もここから始められ、詳細な名称編集だけ下の補助テーブルで扱います。
             </p>
           </div>
+          <div className={styles.phaseSectionControls}>
+            <span
+              className={
+                isPhaseEditingEnabled ? styles.phaseEditStatusOn : styles.phaseEditStatusOff
+              }
+            >
+              編集: {isPhaseEditingEnabled ? 'ON' : 'OFF'}
+            </span>
+            <Button
+              data-testid="phase-editor-toggle"
+              onClick={handleTogglePhaseEditing}
+              size="small"
+              variant="secondary"
+            >
+              {isPhaseEditingEnabled ? '編集を閉じる' : '編集を開く'}
+            </Button>
+            {isPhaseEditingEnabled ? (
+              <Button onClick={handleTimelinePhaseAdd} size="small" variant="secondary">
+                フェーズを追加
+              </Button>
+            ) : null}
+          </div>
         </div>
+        {phaseEditor.phaseStructureError && !isPhaseEditingEnabled ? (
+          <p className={styles.sectionError}>{phaseEditor.phaseStructureError}</p>
+        ) : null}
         <PhaseTimeline
-          editable
+          editable={isPhaseEditingEnabled}
           events={projectEvents}
-          onPhaseCancel={handleTimelinePhaseCancel}
+          onPhaseCancel={isPhaseEditingEnabled ? handleTimelinePhaseCancel : undefined}
           onPhaseConfirm={(phaseId) => {
             void handleTimelinePhaseConfirm(phaseId)
           }}
-          onPhaseMove={phaseEditor.movePhaseDraft}
+          onPhaseMove={isPhaseEditingEnabled ? phaseEditor.movePhaseDraft : undefined}
+          onPhaseRemove={isPhaseEditingEnabled ? handleTimelinePhaseRemove : undefined}
           onPhaseResize={(phaseId, nextRange) => {
             phaseEditor.updatePhaseDraftRange(phaseId, nextRange)
           }}
-          onPhaseSelect={handleTimelinePhaseSelect}
+          onPhaseSelect={isPhaseEditingEnabled ? handleTimelinePhaseSelect : undefined}
+          onPhaseStatusChange={isPhaseEditingEnabled ? handleTimelinePhaseStatusChange : undefined}
           phases={timelinePhases}
           project={project}
-          selectedPhaseId={selectedTimelinePhaseId}
-        />
-      </Panel>
-
-      <div className={styles.detailGrid}>
-        <ProjectPhaseSection
-          isSavingPhaseStructure={phaseEditor.isSavingPhaseStructure}
-          onAddPhase={phaseEditor.addPhaseDraft}
-          onMovePhase={phaseEditor.movePhaseDraft}
-          onRemovePhase={phaseEditor.removePhaseDraft}
-          onSave={() => {
-            void phaseEditor.savePhaseStructure()
-          }}
-          onUpdatePhase={phaseEditor.updatePhaseDraft}
-          phaseDrafts={phaseEditor.phaseDrafts}
-          phaseStructureError={phaseEditor.phaseStructureError}
-          project={project}
+          selectedPhaseId={isPhaseEditingEnabled ? selectedTimelinePhaseId : null}
           workStatusOptions={workStatusOptions}
         />
+        {isPhaseEditingEnabled ? (
+          <ProjectPhaseSection
+            isSavingPhaseStructure={phaseEditor.isSavingPhaseStructure}
+            onAddPhase={phaseEditor.addPhaseDraft}
+            onMovePhase={phaseEditor.movePhaseDraft}
+            onRemovePhase={phaseEditor.removePhaseDraft}
+            onSave={() => {
+              void phaseEditor.savePhaseStructure()
+            }}
+            onUpdatePhase={phaseEditor.updatePhaseDraft}
+            phaseDrafts={phaseEditor.phaseDrafts}
+            phaseStructureError={phaseEditor.phaseStructureError}
+            project={project}
+            workStatusOptions={workStatusOptions}
+          />
+        ) : null}
+      </Panel>
 
-        <ProjectStructureSection
-          isEditing={structureEditor.isStructureEditing}
-          isSavingStructure={structureEditor.isSavingStructure}
-          members={members}
-          onAddAssignment={structureEditor.addStructureAssignment}
-          onClose={structureEditor.closeStructureEditor}
-          onOpen={structureEditor.openStructureEditor}
-          onRemoveAssignment={structureEditor.removeStructureAssignment}
-          onSave={() => {
-            void structureEditor.saveStructure()
-          }}
-          onStructurePmChange={structureEditor.setStructurePmMemberId}
-          onUpdateAssignment={structureEditor.updateStructureAssignment}
-          pmMemberId={project.pmMemberId}
-          projectAssignments={projectAssignments}
-          responsibilityOptions={responsibilityOptions}
-          structureAssignments={structureEditor.structureAssignments}
-          structureChanged={structureEditor.structureChanged}
-          structureError={structureEditor.structureError}
-          structurePmMemberId={structureEditor.structurePmMemberId}
-        />
-      </div>
+      <ProjectStructureSection
+        isEditing={structureEditor.isStructureEditing}
+        isSavingStructure={structureEditor.isSavingStructure}
+        members={members}
+        onAddAssignment={structureEditor.addStructureAssignment}
+        onClose={structureEditor.closeStructureEditor}
+        onOpen={structureEditor.openStructureEditor}
+        onRemoveAssignment={structureEditor.removeStructureAssignment}
+        onSave={() => {
+          void structureEditor.saveStructure()
+        }}
+        onStructurePmChange={structureEditor.setStructurePmMemberId}
+        onUpdateAssignment={structureEditor.updateStructureAssignment}
+        pmMemberId={project.pmMemberId}
+        projectAssignments={projectAssignments}
+        responsibilityOptions={responsibilityOptions}
+        structureAssignments={structureEditor.structureAssignments}
+        structureChanged={structureEditor.structureChanged}
+        structureError={structureEditor.structureError}
+        structurePmMemberId={structureEditor.structurePmMemberId}
+      />
 
       <ProjectEventSection
         eventDrafts={eventEditor.eventDrafts}
@@ -457,7 +576,7 @@ export function ProjectDetailPage() {
           void eventEditor.saveEvents()
         }}
         onUpdateEvent={eventEditor.updateEventDraft}
-        projectPhases={projectPhases}
+        project={project}
         workStatusOptions={workStatusOptions}
       />
     </div>

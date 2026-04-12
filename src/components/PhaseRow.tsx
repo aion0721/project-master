@@ -1,4 +1,4 @@
-import type { Phase } from '../types/project'
+import type { Phase, WorkStatus } from '../types/project'
 import { getPhaseToneKey } from '../utils/projectPhasePresets'
 import { isDateInWeekSlot, type WeekSlot } from '../utils/projectUtils'
 import { StatusBadge } from './StatusBadge'
@@ -26,12 +26,16 @@ interface PhaseRowProps {
   isDragging?: boolean
   canMoveUp?: boolean
   canMoveDown?: boolean
+  canRemove?: boolean
   onSelect?: (phaseId: string) => void
   onConfirm?: (phaseId: string) => void
   onCancel?: (phaseId: string) => void
   onMove?: (phaseId: string, direction: 'up' | 'down') => void
   onResizeStart?: (phaseId: string, edge: 'start' | 'end') => void
   onResizeHover?: (phaseId: string, week: number) => void
+  onStatusChange?: (phaseId: string, status: WorkStatus) => void
+  onRemove?: (phaseId: string) => void
+  workStatusOptions?: WorkStatus[]
 }
 
 export function PhaseRow({
@@ -42,12 +46,16 @@ export function PhaseRow({
   isDragging = false,
   canMoveUp = false,
   canMoveDown = false,
+  canRemove = true,
   onSelect,
   onConfirm,
   onCancel,
   onMove,
   onResizeStart,
   onResizeHover,
+  onStatusChange,
+  onRemove,
+  workStatusOptions = [],
 }: PhaseRowProps) {
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
   const rowClassName = isSelected ? `${styles.row} ${styles.selectedRow}` : styles.row
@@ -85,8 +93,31 @@ export function PhaseRow({
         {editable && isSelected ? (
           <div className={styles.editControls}>
             <span className={styles.editHint}>
-              {isDragging ? 'ドラッグ中: 週セル上で期間を調整' : '端のハンドルをドラッグして期間調整'}
+              {isDragging
+                ? 'ドラッグ中: 週セル上で期間を調整'
+                : '右端をドラッグで終了週調整。必要なら左端で開始週も調整できます。'}
             </span>
+            <label className={styles.statusField}>
+              <span className={styles.statusLabel}>状態</span>
+              <select
+                className={styles.statusSelect}
+                data-testid={`timeline-status-${phase.id}`}
+                onChange={(event) => {
+                  event.stopPropagation()
+                  onStatusChange?.(phase.id, event.target.value as WorkStatus)
+                }}
+                onClick={(event) => {
+                  event.stopPropagation()
+                }}
+                value={phase.status}
+              >
+                {workStatusOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className={styles.reorderActions}>
               <button
                 className={styles.reorderButton}
@@ -114,6 +145,18 @@ export function PhaseRow({
               </button>
             </div>
             <div className={styles.editActions}>
+              <button
+                className={styles.removeButton}
+                data-testid={`timeline-remove-${phase.id}`}
+                disabled={!canRemove}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onRemove?.(phase.id)
+                }}
+                type="button"
+              >
+                削除
+              </button>
               <button
                 className={styles.confirmButton}
                 data-testid={`timeline-confirm-${phase.id}`}

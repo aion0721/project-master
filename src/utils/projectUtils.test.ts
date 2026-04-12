@@ -3,6 +3,7 @@ import { events, phases, projects } from '../data/mockData'
 import {
   getActivePhasesForWeek,
   getProjectCurrentPhase,
+  getProjectTotalWeeks,
   getProjectWeekSlots,
   isDateInWeekSlot,
 } from './projectUtils'
@@ -14,7 +15,7 @@ describe('projectUtils', () => {
     expect(getProjectCurrentPhase(projectPhases)?.name).toBe('詳細設計')
   })
 
-  it('案件の週スロットを最大週まで生成する', () => {
+  it('案件の週スロットを案件期間にあわせて生成する', () => {
     const project = projects.find((item) => item.projectNumber === 'PRJ-001')
     const projectPhases = phases.filter((phase) => phase.projectId === 'PRJ-001')
 
@@ -30,7 +31,18 @@ describe('projectUtils', () => {
     expect(weekSlots[11]?.label).toBe('W12')
   })
 
-  it('イベントがフェーズより後ろの週にあっても週スロットを生成する', () => {
+  it('案件期間の総週数を返す', () => {
+    const project = projects.find((item) => item.projectNumber === 'PRJ-001')
+
+    expect(project).toBeDefined()
+    if (!project) {
+      return
+    }
+
+    expect(getProjectTotalWeeks(project)).toBe(12)
+  })
+
+  it('イベントが案件期間より後ろの週にあっても週スロットは案件期間で固定する', () => {
     const project = projects.find((item) => item.projectNumber === 'PRJ-001')
     const projectPhases = phases.filter((phase) => phase.projectId === 'PRJ-001')
 
@@ -50,8 +62,8 @@ describe('projectUtils', () => {
       },
     ])
 
-    expect(weekSlots).toHaveLength(14)
-    expect(weekSlots[13]?.label).toBe('W14')
+    expect(weekSlots).toHaveLength(12)
+    expect(weekSlots[11]?.label).toBe('W12')
   })
 
   it('重なる週に該当するフェーズを正しく返す', () => {

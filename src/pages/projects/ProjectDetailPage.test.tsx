@@ -324,6 +324,7 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
     fireEvent.change(await screen.findByTestId('phase-name-ph-p1-2'), {
       target: { value: '基盤検討' },
     })
@@ -363,6 +364,7 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
     fireEvent.click(await screen.findByTestId('phase-remove-ph-p1-3'))
 
     expect(screen.getByTestId('phase-row-ph-p1-3')).toBeInTheDocument()
@@ -375,6 +377,7 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
     fireEvent.click(await screen.findByTestId('phase-move-up-ph-p1-3'))
     fireEvent.click(screen.getByTestId('phase-structure-save-button'))
 
@@ -390,6 +393,30 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('案件期間を超えるフェーズ週は保存前にエラーにする', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
+    fireEvent.change(await screen.findByTestId('phase-end-ph-p1-5'), {
+      target: { value: '13' },
+    })
+    fireEvent.click(screen.getByTestId('phase-structure-save-button'))
+
+    expect(
+      await screen.findByText('「移行」の開始週・終了週は案件期間内の W1 - W12 で入力してください。'),
+    ).toBeInTheDocument()
+
+    const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+      return String(url).includes('/api/projects/PRJ-001/phases') && init?.method === 'PATCH'
+    })
+
+    expect(phaseCall).toBeUndefined()
+  })
+
   it('タイムラインで選択したフェーズを上下移動して確定で保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -397,6 +424,7 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
     fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-3-5'))
     expect(screen.getByTestId('timeline-move-up-ph-p1-3')).toBeEnabled()
     expect(screen.getByTestId('timeline-move-down-ph-p1-3')).toBeEnabled()
@@ -416,6 +444,36 @@ describe('ProjectDetailPage', () => {
     })
 
     expect(screen.queryByTestId('timeline-confirm-ph-p1-3')).not.toBeInTheDocument()
+  })
+
+  it('タイムライン上でフェーズ状態を変更して保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
+    fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
+    fireEvent.change(screen.getByTestId('timeline-status-ph-p1-2'), {
+      target: { value: '完了' },
+    })
+    fireEvent.click(screen.getByTestId('timeline-confirm-ph-p1-2'))
+
+    await waitFor(() => {
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/phases/ph-p1-2') && init?.method === 'PATCH'
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body).toEqual({
+        startWeek: 3,
+        endWeek: 5,
+        status: '完了',
+        progress: 100,
+      })
+    })
   })
 
   it('プロジェクト体制を編集モードで更新できる', async () => {
@@ -511,6 +569,29 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('案件期間を超えるイベント週は保存前にエラーにする', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.change(await screen.findByTestId('event-week-0'), {
+      target: { value: '13' },
+    })
+    fireEvent.click(screen.getByTestId('project-events-save-button'))
+
+    expect(
+      await screen.findByText('イベント週は案件期間内の W1 - W12 で入力してください。'),
+    ).toBeInTheDocument()
+
+    const eventsCall = fetchSpy.mock.calls.find(([url, init]) => {
+      return String(url).includes('/api/projects/PRJ-001/events') && init?.method === 'PATCH'
+    })
+
+    expect(eventsCall).toBeUndefined()
+  })
+
   it('タイムライン上でフェーズ期間を調整して保存できる', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -518,6 +599,7 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
     fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
     fireEvent.mouseDown(await screen.findByTestId('timeline-resize-start-ph-p1-2'))
     fireEvent.mouseEnter(await screen.findByTestId('timeline-phase-cell-ph-p1-2-2'))
@@ -547,6 +629,7 @@ describe('ProjectDetailPage', () => {
 
     await screen.findByRole('heading', { name: project.name })
 
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
     fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
     fireEvent.mouseDown(await screen.findByTestId('timeline-resize-start-ph-p1-2'))
     fireEvent.mouseEnter(await screen.findByTestId('timeline-phase-cell-ph-p1-2-2'))

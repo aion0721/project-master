@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Phase, Project, ProjectEvent } from '../types/project'
+import type { Phase, Project, ProjectEvent, WorkStatus } from '../types/project'
 import { getProjectWeekSlots, isDateInWeekSlot } from '../utils/projectUtils'
 import { PhaseRow } from './PhaseRow'
 import styles from './PhaseTimeline.module.css'
@@ -15,8 +15,11 @@ interface PhaseTimelineProps {
   onPhaseSelect?: (phaseId: string) => void
   onPhaseMove?: (phaseId: string, direction: 'up' | 'down') => void
   onPhaseResize?: (phaseId: string, nextRange: { startWeek: number; endWeek: number }) => void
+  onPhaseStatusChange?: (phaseId: string, status: WorkStatus) => void
+  onPhaseRemove?: (phaseId: string) => void
   onPhaseConfirm?: (phaseId: string) => void
   onPhaseCancel?: (phaseId: string) => void
+  workStatusOptions?: WorkStatus[]
 }
 
 export function PhaseTimeline({
@@ -28,8 +31,11 @@ export function PhaseTimeline({
   onPhaseSelect,
   onPhaseMove,
   onPhaseResize,
+  onPhaseStatusChange,
+  onPhaseRemove,
   onPhaseConfirm,
   onPhaseCancel,
+  workStatusOptions = [],
 }: PhaseTimelineProps) {
   const weekSlots = getProjectWeekSlots(project, phases, events)
   const columns = `240px repeat(${weekSlots.length}, minmax(88px, 1fr))`
@@ -167,9 +173,13 @@ export function PhaseTimeline({
               onMove={onPhaseMove}
               onResizeHover={handleResizeHover}
               onResizeStart={handleResizeStart}
+              onRemove={onPhaseRemove}
               onSelect={onPhaseSelect}
+              onStatusChange={onPhaseStatusChange}
               phase={phase}
+              canRemove={phases.length > 1}
               weekSlots={weekSlots}
+              workStatusOptions={workStatusOptions}
             />
           ))}
         </div>

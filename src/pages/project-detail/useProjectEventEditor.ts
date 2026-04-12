@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Member, Project, ProjectEvent, UpdateProjectEventsInput, WorkStatus } from '../../types/project'
+import { getProjectTotalWeeks } from '../../utils/projectUtils'
 import { buildDraftEvent, buildEventFormState, type EventFormState } from './projectDetailTypes'
 
 interface UseProjectEventEditorResult {
@@ -62,6 +63,8 @@ export function useProjectEventEditor(
       return
     }
 
+    const maxWeek = getProjectTotalWeeks(project)
+
     for (const draft of eventDrafts) {
       if (!draft.name.trim()) {
         setEventError('イベント名を入力してください。')
@@ -71,6 +74,11 @@ export function useProjectEventEditor(
       const week = Number(draft.week)
       if (!Number.isInteger(week) || week < 1) {
         setEventError('イベント週は 1 以上の整数で入力してください。')
+        return
+      }
+
+      if (week > maxWeek) {
+        setEventError(`イベント週は案件期間内の W1 - W${maxWeek} で入力してください。`)
         return
       }
     }

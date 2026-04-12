@@ -1,5 +1,3 @@
-import { Button } from '../../components/ui/Button'
-import { Panel } from '../../components/ui/Panel'
 import type { Project, WorkStatus } from '../../types/project'
 import type { PhaseFormState } from './projectDetailTypes'
 import { ProjectPhaseTableRow } from './ProjectPhaseTableRow'
@@ -31,26 +29,28 @@ export function ProjectPhaseSection({
   onSave,
 }: ProjectPhaseSectionProps) {
   return (
-    <Panel className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <div>
-          <h2 className={styles.sectionTitle}>フェーズ編集</h2>
-          <p className={styles.sectionDescription}>
-            フェーズ名、期間、状態を編集できます。並び替えや削除、新規フェーズの追加にも対応しています。
-          </p>
-        </div>
+    <div className={styles.phaseEditorDetail}>
+      <div className={styles.phaseEditorToolbar}>
+        <p className={styles.phaseEditorDescription}>
+          フェーズ名の詳細変更や開始週の直接入力が必要な場合だけこの表を使います。
+        </p>
         <div className={styles.phaseHeaderActions}>
-          <Button onClick={onAddPhase} size="small" variant="secondary">
+          <button
+            className={styles.phaseInlineButton}
+            onClick={onAddPhase}
+            type="button"
+          >
             フェーズを追加
-          </Button>
-          <Button
+          </button>
+          <button
+            className={styles.phaseInlinePrimaryButton}
             data-testid="phase-structure-save-button"
             disabled={isSavingPhaseStructure}
             onClick={onSave}
-            size="small"
+            type="button"
           >
             {isSavingPhaseStructure ? '保存中...' : 'フェーズ構成を保存'}
-          </Button>
+          </button>
         </div>
       </div>
       {phaseStructureError ? <p className={styles.sectionError}>{phaseStructureError}</p> : null}
@@ -83,6 +83,6 @@ export function ProjectPhaseSection({
           </tbody>
         </table>
       </div>
-    </Panel>
+    </div>
   )
 }

@@ -24,6 +24,8 @@ const monthFormatter = new Intl.DateTimeFormat('ja-JP', {
   month: 'numeric',
 })
 
+const millisecondsPerDay = 24 * 60 * 60 * 1000
+
 export function parseDate(value: string) {
   return new Date(`${value}T00:00:00`)
 }
@@ -83,16 +85,27 @@ export function getProjectCurrentPhase(projectPhases: Phase[]) {
   )
 }
 
+export function getProjectTotalWeeks(project: Project) {
+  const startTime = parseDate(project.startDate).getTime()
+  const endTime = parseDate(project.endDate).getTime()
+
+  if (Number.isNaN(startTime) || Number.isNaN(endTime) || endTime < startTime) {
+    return 1
+  }
+
+  const totalDays = Math.floor((endTime - startTime) / millisecondsPerDay) + 1
+  return Math.max(Math.ceil(totalDays / 7), 1)
+}
+
 export function getProjectWeekSlots(
   project: Project,
   projectPhases: Phase[],
   projectEvents: ProjectEvent[] = [],
 ): WeekSlot[] {
-  const totalWeeks = Math.max(
-    ...projectPhases.map((phase) => phase.endWeek),
-    ...projectEvents.map((event) => event.week),
-    1,
-  )
+  void projectPhases
+  void projectEvents
+
+  const totalWeeks = getProjectTotalWeeks(project)
 
   return Array.from({ length: totalWeeks }, (_, index) => {
     const startDate = addWeeks(project.startDate, index)

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Phase, Project, UpdatePhaseInput, WorkStatus } from '../../types/project'
+import { getProjectTotalWeeks } from '../../utils/projectUtils'
 import { buildPhaseFormState, type PhaseFormState } from './projectDetailTypes'
 import { createNewPhaseDraft, normalizePhaseDrafts } from './phaseEditorUtils'
 
@@ -50,6 +51,11 @@ export function useProjectPhaseEditor(
     )
   }
 
+  function replacePhaseDrafts(nextDrafts: PhaseFormState[]) {
+    setPhaseDrafts(nextDrafts)
+    setPhaseStructureError(null)
+  }
+
   function updatePhaseDraftRange(
     key: string,
     nextRange: {
@@ -74,11 +80,12 @@ export function useProjectPhaseEditor(
   }
 
   function addPhaseDraft() {
-    setPhaseDrafts((current) => [
-      ...current,
-      createNewPhaseDraft(current, workStatusOptions, project),
-    ])
+    const nextDraft = createNewPhaseDraft(phaseDrafts, workStatusOptions, project)
+
+    setPhaseDrafts((current) => [...current, nextDraft])
     setPhaseStructureError(null)
+
+    return nextDraft
   }
 
   function removePhaseDraft(key: string) {
@@ -118,7 +125,7 @@ export function useProjectPhaseEditor(
       return false
     }
 
-    const { phases: normalizedPhases, error } = normalizePhaseDrafts(phaseDrafts)
+    const { phases: normalizedPhases, error } = normalizePhaseDrafts(phaseDrafts, project)
 
     if (error) {
       setPhaseStructureError(error)
@@ -142,6 +149,10 @@ export function useProjectPhaseEditor(
   }
 
   async function savePhaseRange(key: string) {
+    if (!project) {
+      return false
+    }
+
     const targetPhase = phaseDrafts.find((phase) => phase.key === key)
 
     if (!targetPhase) {
@@ -156,9 +167,17 @@ export function useProjectPhaseEditor(
     const startWeek = Number(targetPhase.startWeek)
     const endWeek = Number(targetPhase.endWeek)
     const progress = Number(targetPhase.progress)
+    const maxWeek = getProjectTotalWeeks(project)
 
     if (!Number.isInteger(startWeek) || !Number.isInteger(endWeek) || startWeek < 1 || endWeek < startWeek) {
       setPhaseStructureError(`「${targetPhase.name || 'フェーズ'}」の開始週・終了週が不正です。`)
+      return false
+    }
+
+    if (startWeek > maxWeek || endWeek > maxWeek) {
+      setPhaseStructureError(
+        `「${targetPhase.name || 'フェーズ'}」の開始週・終了週は案件期間内の W1 - W${maxWeek} で入力してください。`,
+      )
       return false
     }
 
@@ -199,7 +218,7 @@ export function useProjectPhaseEditor(
       status,
       progress: nextProgress,
     }))
-    const { phases: normalizedPhases, error } = normalizePhaseDrafts(nextPhaseDrafts)
+    const { phases: normalizedPhases, error } = normalizePhaseDrafts(nextPhaseDrafts, project)
 
     if (error) {
       setPhaseStructureError(error)
@@ -233,6 +252,7 @@ export function useProjectPhaseEditor(
     applyStatusToAllPhases,
     savePhaseRange,
     savePhaseStructure,
+    replacePhaseDrafts,
     updatePhaseDraft,
     updatePhaseDraftRange,
   }

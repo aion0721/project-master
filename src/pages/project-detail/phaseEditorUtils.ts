@@ -1,4 +1,5 @@
 import type { Project, WorkStatus } from '../../types/project'
+import { getProjectTotalWeeks } from '../../utils/projectUtils'
 import { buildDraftPhaseForRange, type PhaseFormState } from './projectDetailTypes'
 
 export interface NormalizedPhaseDraft {
@@ -20,7 +21,8 @@ export function createNewPhaseDraft(
     (max, phase) => Math.max(max, Number(phase.endWeek) || 0),
     0,
   )
-  const initialWeek = String(Math.max(previousEndWeek + 1, 1))
+  const maxWeek = project ? getProjectTotalWeeks(project) : Math.max(previousEndWeek + 1, 1)
+  const initialWeek = String(Math.min(Math.max(previousEndWeek + 1, 1), maxWeek))
 
   return {
     key: `new-${Date.now()}-${nextIndex}`,
@@ -34,6 +36,7 @@ export function createNewPhaseDraft(
 
 export function normalizePhaseDrafts(
   phaseDrafts: PhaseFormState[],
+  project?: Project,
 ): { phases: NormalizedPhaseDraft[]; error: string | null } {
   if (phaseDrafts.length === 0) {
     return {
@@ -43,6 +46,7 @@ export function normalizePhaseDrafts(
   }
 
   const normalizedPhases: NormalizedPhaseDraft[] = []
+  const maxWeek = project ? getProjectTotalWeeks(project) : null
 
   for (const phase of phaseDrafts) {
     const name = phase.name.trim()
@@ -61,6 +65,13 @@ export function normalizePhaseDrafts(
       return {
         phases: [],
         error: `「${name}」の開始週・終了週が不正です。`,
+      }
+    }
+
+    if (maxWeek && (startWeek > maxWeek || endWeek > maxWeek)) {
+      return {
+        phases: [],
+        error: `「${name}」の開始週・終了週は案件期間内の W1 - W${maxWeek} で入力してください。`,
       }
     }
 

@@ -1,13 +1,14 @@
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { SearchSelect } from '../../components/ui/SearchSelect'
-import type { Member, Phase, WorkStatus } from '../../types/project'
+import type { Member, Project, WorkStatus } from '../../types/project'
+import { getProjectTotalWeeks } from '../../utils/projectUtils'
 import { formatMemberShortLabel } from '../members/memberFormUtils'
 import type { EventFormState } from './projectDetailTypes'
 import styles from '../projects/ProjectDetailPage.module.css'
 
 interface ProjectEventSectionProps {
-  projectPhases: Phase[]
+  project: Project
   members: Member[]
   workStatusOptions: WorkStatus[]
   eventDrafts: EventFormState[]
@@ -20,7 +21,7 @@ interface ProjectEventSectionProps {
 }
 
 export function ProjectEventSection({
-  projectPhases,
+  project,
   members,
   workStatusOptions,
   eventDrafts,
@@ -31,11 +32,7 @@ export function ProjectEventSection({
   onUpdateEvent,
   onSave,
 }: ProjectEventSectionProps) {
-  const maxWeek = Math.max(
-    ...projectPhases.map((phase) => phase.endWeek),
-    ...eventDrafts.map((event) => Number(event.week) || 1),
-    1,
-  )
+  const maxWeek = getProjectTotalWeeks(project)
   const summaryEvents = [...eventDrafts].sort((left, right) => Number(left.week) - Number(right.week))
   const memberOptions = members.map((member) => ({
     value: member.id,
