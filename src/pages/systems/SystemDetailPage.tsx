@@ -7,13 +7,19 @@ import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
 import pageStyles from '../../styles/page.module.css'
-import type { ProjectLink } from '../../types/project'
+import type {
+  CreateSystemTransactionInput,
+  ProjectLink,
+  UpdateSystemRelationInput,
+  UpdateSystemTransactionInput,
+} from '../../types/project'
 import styles from './SystemDetailPage.module.css'
 import { SystemDepartmentSection } from './SystemDepartmentSection'
 import { SystemLinksSection } from './SystemLinksSection'
 import { SystemOverviewSection } from './SystemOverviewSection'
 import { SystemRelationsSection } from './SystemRelationsSection'
 import { SystemStructureEditor, type SystemStructureDraft } from './SystemStructureEditor'
+import { SystemTransactionsSection } from './SystemTransactionsSection'
 import {
   buildEditSystemForm,
   buildInitialSystemForm,
@@ -33,6 +39,8 @@ export function SystemDetailPage() {
   const {
     systems,
     systemRelations,
+    systemTransactions,
+    systemTransactionSteps,
     projects,
     members,
     isLoading,
@@ -42,7 +50,11 @@ export function SystemDetailPage() {
     updateSystem,
     updateSystemStructure,
     createSystemRelation,
+    createSystemTransaction,
     deleteSystemRelation,
+    updateSystemRelation,
+    updateSystemTransaction,
+    deleteSystemTransaction,
   } = useProjectData()
   const [systemForm, setSystemForm] = useState(buildInitialSystemForm)
   const [isStructureEditing, setIsStructureEditing] = useState(false)
@@ -120,6 +132,140 @@ export function SystemDetailPage() {
       .filter((item) => item.id !== system.id)
       .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
   }, [system, systems])
+
+  const systemById = useMemo(() => new Map(systems.map((item) => [item.id, item])), [systems])
+
+  const transactionGroups = useMemo(() => {
+    if (!system) {
+      return []
+    }
+
+    const transactionById = new Map(systemTransactions.map((transaction) => [transaction.id, transaction]))
+    const stepsByTransactionId = new Map<string, typeof systemTransactionSteps>()
+
+    systemTransactionSteps.forEach((step) => {
+      const current = stepsByTransactionId.get(step.transactionId) ?? []
+      current.push(step)
+      stepsByTransactionId.set(step.transactionId, current)
+    })
+
+    return relatedSystems.map(({ relation, system: relatedSystem }) => {
+      const relationSteps = systemTransactionSteps
+        .filter((step) => step.relationId === relation.id)
+        .sort((left, right) => left.stepOrder - right.stepOrder)
+
+      const transactions = [...new Set(relationSteps.map((step) => step.transactionId))]
+        .map((transactionId) => {
+          const transaction = transactionById.get(transactionId)
+
+          if (!transaction) {
+            return null
+          }
+
+          const fullPath = (stepsByTransactionId.get(transactionId) ?? [])
+            .slice()
+            .sort((left, right) => left.stepOrder - right.stepOrder)
+
+          const orderedSystemIds = fullPath.reduce<string[]>((ids, step) => {
+            if (ids.length === 0) {
+              return [step.sourceSystemId, step.targetSystemId]
+            }
+
+            return ids.at(-1) === step.sourceSystemId ? [...ids, step.targetSystemId] : [...ids, step.sourceSystemId, step.targetSystemId]
+          }, [])
+
+          const pathLabel = orderedSystemIds
+            .map((systemId) => systemById.get(systemId)?.name ?? systemId)
+            .join(' → ')
+
+          return {
+            transaction,
+            pathLabel,
+            relationSteps: relationSteps.filter((step) => step.transactionId === transactionId),
+          }
+        })
+        .filter(
+          (
+            item,
+          ): item is {
+            transaction: (typeof systemTransactions)[number]
+            pathLabel: string
+            relationSteps: typeof systemTransactionSteps
+          } => Boolean(item),
+        )
+
+      return {
+        relation,
+        system: relatedSystem,
+        transactions,
+      }
+    })
+  }, [relatedSystems, system, systemById, systemTransactionSteps, systemTransactions])
+
+  const transactionEntries = useMemo(() => {
+    if (!system) {
+      return []
+    }
+
+    const relevantTransactionIds = [
+      ...new Set(
+        systemTransactionSteps
+          .filter((step) => step.sourceSystemId === system.id || step.targetSystemId === system.id)
+          .map((step) => step.transactionId),
+      ),
+    ]
+
+    return relevantTransactionIds
+      .map((transactionId) => {
+        const transaction = systemTransactions.find((item) => item.id === transactionId)
+
+        if (!transaction) {
+          return null
+        }
+
+        const steps = systemTransactionSteps
+          .filter((step) => step.transactionId === transactionId)
+          .sort((left, right) => left.stepOrder - right.stepOrder)
+
+        const orderedSystemIds = steps.reduce<string[]>((ids, step) => {
+          if (ids.length === 0) {
+            return [step.sourceSystemId, step.targetSystemId]
+          }
+
+          return ids.at(-1) === step.sourceSystemId ? [...ids, step.targetSystemId] : [...ids, step.sourceSystemId, step.targetSystemId]
+        }, [])
+
+        return {
+          transaction,
+          pathLabel: orderedSystemIds.map((systemId) => systemById.get(systemId)?.name ?? systemId).join(' → '),
+          steps,
+        }
+      })
+      .filter(
+        (
+          item,
+        ): item is {
+          transaction: (typeof systemTransactions)[number]
+          pathLabel: string
+          steps: typeof systemTransactionSteps
+        } => Boolean(item),
+      )
+  }, [system, systemById, systemTransactionSteps, systemTransactions])
+
+  const relationOptions = useMemo(
+    () =>
+      systemRelations
+        .map((relation) => ({
+          value: relation.id,
+          label: `${systemById.get(relation.sourceSystemId)?.name ?? relation.sourceSystemId} → ${
+            systemById.get(relation.targetSystemId)?.name ?? relation.targetSystemId
+          }`,
+          sourceSystemId: relation.sourceSystemId,
+          targetSystemId: relation.targetSystemId,
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label, 'ja')),
+    [systemById, systemRelations],
+  )
 
   const structureRootId =
     system?.ownerMemberId ??
@@ -378,6 +524,22 @@ export function SystemDetailPage() {
     await deleteSystemRelation(relationId)
   }
 
+  async function handleUpdateRelation(relationId: string, input: UpdateSystemRelationInput) {
+    await updateSystemRelation(relationId, input)
+  }
+
+  async function handleCreateTransaction(input: CreateSystemTransactionInput) {
+    await createSystemTransaction(input)
+  }
+
+  async function handleUpdateTransaction(transactionId: string, input: UpdateSystemTransactionInput) {
+    await updateSystemTransaction(transactionId, input)
+  }
+
+  async function handleDeleteTransaction(transactionId: string) {
+    await deleteSystemTransaction(transactionId)
+  }
+
   if (isLoading) {
     return (
       <Panel>
@@ -467,6 +629,16 @@ export function SystemDetailPage() {
       />
 
       <SystemLinksSection onSave={handleSaveLinks} system={system} />
+
+      <SystemTransactionsSection
+        currentSystemId={system.id}
+        groups={transactionGroups}
+        onCreate={handleCreateTransaction}
+        onDelete={handleDeleteTransaction}
+        onUpdate={handleUpdateTransaction}
+        relationOptions={relationOptions}
+        transactions={transactionEntries}
+      />
 
       <Panel className={styles.section}>
         <div className={pageStyles.sectionHeader}>
@@ -582,6 +754,7 @@ export function SystemDetailPage() {
         <SystemRelationsSection
           onCreateRelation={handleCreateRelation}
           onDeleteRelation={handleDeleteRelation}
+          onUpdateRelation={handleUpdateRelation}
           relatedSystems={relatedSystems}
           relationTargetOptions={relationTargetOptions}
           system={system}

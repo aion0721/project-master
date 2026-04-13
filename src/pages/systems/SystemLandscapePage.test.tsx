@@ -17,6 +17,31 @@ describe('SystemLandscapePage', () => {
     expect(screen.getAllByText('仕向け → 被仕向け').length).toBeGreaterThan(0)
   })
 
+  it('データ流れ図に切り替えて経路を表示できる', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<SystemLandscapePage />, {
+      initialEntries: ['/systems/diagram'],
+    })
+
+    await screen.findByRole('heading', { name: 'システム関連図' })
+
+    fireEvent.click(screen.getByTestId('diagram-mode-transaction'))
+
+    expect(screen.getByTestId('transaction-select')).toBeInTheDocument()
+    expect(screen.getByTestId('system-transaction-flow')).toBeInTheDocument()
+    expect(screen.getByTestId('transaction-path-label')).toHaveTextContent('社内ポータル → 会計基盤')
+
+    fireEvent.change(screen.getByTestId('transaction-select'), {
+      target: { value: 'tx-004' },
+    })
+
+    expect(screen.getByTestId('transaction-path-label')).toHaveTextContent(
+      '社内ポータル → 会計基盤 → 営業管理BI',
+    )
+    expect(screen.getByText('申請集計データ')).toBeInTheDocument()
+  })
+
   it('矢印にホバーするとメモを表示する', async () => {
     mockProjectApi()
 
@@ -54,7 +79,7 @@ describe('SystemLandscapePage', () => {
     expect(screen.getByTestId('focused-system-center')).toHaveTextContent('会計基盤')
     expect(within(screen.getByTestId('focused-system-upstream')).getByText('物流ダッシュボード')).toBeInTheDocument()
     expect(within(screen.getByTestId('focused-system-upstream')).getByText('社内ポータル')).toBeInTheDocument()
-    expect(within(screen.getByTestId('focused-system-downstream')).getByText('このシステムからデータを渡す下流システムはありません。')).toBeInTheDocument()
+    expect(within(screen.getByTestId('focused-system-downstream')).getByText('営業管理BI')).toBeInTheDocument()
   })
 
   it('フォーカスビューのコネクタでも連携メモを確認できる', async () => {

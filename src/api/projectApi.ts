@@ -2,6 +2,7 @@ import type {
   CreateMemberInput,
   CreateProjectInput,
   CreateSystemRelationInput,
+  CreateSystemTransactionInput,
   CreateSystemInput,
   ManagedSystem,
   Member,
@@ -12,6 +13,8 @@ import type {
   ProjectStatusEntry,
   SystemAssignment,
   SystemRelation,
+  SystemTransaction,
+  SystemTransactionStep,
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
@@ -25,7 +28,9 @@ import type {
   UpdateProjectScheduleInput,
   UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
+  UpdateSystemRelationInput,
   UpdateSystemStructureInput,
+  UpdateSystemTransactionInput,
   UpdateSystemInput,
 } from '../types/project'
 import { getPhaseActualRange, getProjectCurrentPhase, getProjectPm } from '../utils/projectUtils'
@@ -62,6 +67,14 @@ interface ApiSystemListResponse {
 
 interface ApiSystemRelationListResponse {
   items: SystemRelation[]
+}
+
+interface ApiSystemTransactionListResponse {
+  items: SystemTransaction[]
+}
+
+interface ApiSystemTransactionStepListResponse {
+  items: SystemTransactionStep[]
 }
 
 interface ApiProjectDetailResponse {
@@ -101,6 +114,8 @@ export interface ProjectDataPayload {
   members: Member[]
   systems: ManagedSystem[]
   systemRelations: SystemRelation[]
+  systemTransactions: SystemTransaction[]
+  systemTransactionSteps: SystemTransactionStep[]
   assignments: ProjectAssignment[]
   systemAssignments: SystemAssignment[]
 }
@@ -150,6 +165,28 @@ function normalizeSystemRelation(relation: SystemRelation): SystemRelation {
     targetSystemId: relation.targetSystemId,
     protocol: relation.protocol ?? null,
     note: relation.note ?? null,
+  }
+}
+
+function normalizeSystemTransaction(transaction: SystemTransaction): SystemTransaction {
+  return {
+    id: transaction.id,
+    name: transaction.name,
+    dataLabel: transaction.dataLabel,
+    note: transaction.note ?? null,
+  }
+}
+
+function normalizeSystemTransactionStep(step: SystemTransactionStep): SystemTransactionStep {
+  return {
+    id: step.id,
+    transactionId: step.transactionId,
+    relationId: step.relationId,
+    sourceSystemId: step.sourceSystemId,
+    targetSystemId: step.targetSystemId,
+    stepOrder: step.stepOrder,
+    actionLabel: step.actionLabel ?? null,
+    note: step.note ?? null,
   }
 }
 
@@ -247,6 +284,22 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T
 }
 
+async function fetchJsonOrDefault<T>(
+  path: string,
+  fallback: T,
+  signal?: AbortSignal,
+): Promise<T> {
+  try {
+    return await fetchJson<T>(path, signal)
+  } catch (caughtError) {
+    if (caughtError instanceof Error && /API request failed: 404/.test(caughtError.message)) {
+      return fallback
+    }
+
+    throw caughtError
+  }
+}
+
 async function sendJson<TResponse, TRequest>(
   path: string,
   method: 'POST' | 'PATCH' | 'DELETE',
@@ -311,6 +364,8 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
     members: [...memberMap.values()],
     systems: [],
     systemRelations: [],
+    systemTransactions: [],
+    systemTransactionSteps: [],
     systemAssignments: [],
   }
 }
@@ -321,12 +376,24 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     memberResponse,
     systemResponse,
     systemRelationResponse,
+    systemTransactionResponse,
+    systemTransactionStepResponse,
     systemAssignmentResponse,
   ] = await Promise.all([
     fetchJson<ApiProjectListResponse>('/api/projects', signal),
     fetchJson<ApiMemberListResponse>('/api/members', signal),
     fetchJson<ApiSystemListResponse>('/api/systems', signal),
     fetchJson<ApiSystemRelationListResponse>('/api/system-relations', signal),
+    fetchJsonOrDefault<ApiSystemTransactionListResponse>(
+      '/api/system-transactions',
+      { items: [] },
+      signal,
+    ),
+    fetchJsonOrDefault<ApiSystemTransactionStepListResponse>(
+      '/api/system-transaction-steps',
+      { items: [] },
+      signal,
+    ),
     fetchJson<{ items: SystemAssignment[] }>('/api/system-assignments', signal),
   ])
 
@@ -384,6 +451,8 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     members: [...memberMap.values()],
     systems: systemResponse.items.map(normalizeSystem),
     systemRelations: systemRelationResponse.items.map(normalizeSystemRelation),
+    systemTransactions: systemTransactionResponse.items.map(normalizeSystemTransaction),
+    systemTransactionSteps: systemTransactionStepResponse.items.map(normalizeSystemTransactionStep),
     assignments: [...assignmentMap.values()],
     systemAssignments: systemAssignmentResponse.items.map(normalizeSystemAssignment),
   }
@@ -494,6 +563,36 @@ export async function createSystemRelationRequest(
   return normalizeSystemRelation(response.relation)
 }
 
+export async function updateSystemRelationRequest(
+  relationId: string,
+  input: UpdateSystemRelationInput,
+  signal?: AbortSignal,
+): Promise<SystemRelation> {
+  const response = await sendJson<{ relation: SystemRelation }, UpdateSystemRelationInput>(
+    `/api/system-relations/${relationId}`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return normalizeSystemRelation(response.relation)
+}
+
+export async function createSystemTransactionRequest(
+  input: CreateSystemTransactionInput,
+  signal?: AbortSignal,
+): Promise<{ transaction: SystemTransaction; steps: SystemTransactionStep[] }> {
+  const response = await sendJson<
+    { transaction: SystemTransaction; steps: SystemTransactionStep[] },
+    CreateSystemTransactionInput
+  >('/api/system-transactions', 'POST', input, signal)
+
+  return {
+    transaction: normalizeSystemTransaction(response.transaction),
+    steps: response.steps.map(normalizeSystemTransactionStep),
+  }
+}
+
 export async function updateSystemRequest(
   systemId: string,
   input: UpdateSystemInput,
@@ -525,6 +624,22 @@ export async function updateSystemStructureRequest(
   }
 }
 
+export async function updateSystemTransactionRequest(
+  transactionId: string,
+  input: UpdateSystemTransactionInput,
+  signal?: AbortSignal,
+): Promise<{ transaction: SystemTransaction; steps: SystemTransactionStep[] }> {
+  const response = await sendJson<
+    { transaction: SystemTransaction; steps: SystemTransactionStep[] },
+    UpdateSystemTransactionInput
+  >(`/api/system-transactions/${transactionId}`, 'PATCH', input, signal)
+
+  return {
+    transaction: normalizeSystemTransaction(response.transaction),
+    steps: response.steps.map(normalizeSystemTransactionStep),
+  }
+}
+
 export async function deleteSystemRequest(
   systemId: string,
   signal?: AbortSignal,
@@ -543,6 +658,18 @@ export async function deleteSystemRelationRequest(
 ): Promise<{ relationId: string }> {
   return sendJson<{ relationId: string }, Record<string, never>>(
     `/api/system-relations/${relationId}`,
+    'DELETE',
+    {},
+    signal,
+  )
+}
+
+export async function deleteSystemTransactionRequest(
+  transactionId: string,
+  signal?: AbortSignal,
+): Promise<{ transactionId: string }> {
+  return sendJson<{ transactionId: string }, Record<string, never>>(
+    `/api/system-transactions/${transactionId}`,
     'DELETE',
     {},
     signal,

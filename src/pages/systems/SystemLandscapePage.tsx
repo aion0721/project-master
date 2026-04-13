@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { SystemFocusFlow } from '../../components/SystemFocusFlow'
 import { SystemLandscapeFlow } from '../../components/SystemLandscapeFlow'
+import { SystemTransactionFlow } from '../../components/SystemTransactionFlow'
 import { ListPageHero } from '../../components/ListPageHero'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -17,10 +18,22 @@ interface HoveredEdgeTooltip {
   note: string | null
 }
 
+type DiagramMode = 'relation' | 'transaction'
+
 export function SystemLandscapePage() {
-  const { systems, systemRelations, projects, isLoading, error } = useProjectData()
+  const {
+    systems,
+    systemRelations,
+    systemTransactions,
+    systemTransactionSteps,
+    projects,
+    isLoading,
+    error,
+  } = useProjectData()
   const [selectedSystemId, setSelectedSystemId] = useState<string>('')
   const [hoveredEdge, setHoveredEdge] = useState<HoveredEdgeTooltip | null>(null)
+  const [diagramMode, setDiagramMode] = useState<DiagramMode>('relation')
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string>('')
 
   const sortedSystems = useMemo(
     () => [...systems].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
@@ -95,10 +108,62 @@ export function SystemLandscapePage() {
     () => ({
       systems: sortedSystems.length,
       relations: systemRelations.length,
+      transactions: systemTransactions.length,
       projects: projects.filter((project) => project.relatedSystemIds?.[0]).length,
     }),
-    [projects, sortedSystems.length, systemRelations.length],
+    [projects, sortedSystems.length, systemRelations.length, systemTransactions.length],
   )
+
+  const relationById = useMemo(
+    () => new Map(systemRelations.map((relation) => [relation.id, relation])),
+    [systemRelations],
+  )
+
+  const selectedTransaction = useMemo(() => {
+    const defaultTransactionId = selectedTransactionId || systemTransactions[0]?.id || ''
+    return systemTransactions.find((transaction) => transaction.id === defaultTransactionId) ?? null
+  }, [selectedTransactionId, systemTransactions])
+
+  const selectedTransactionSteps = useMemo(() => {
+    if (!selectedTransaction) {
+      return []
+    }
+
+    return systemTransactionSteps
+      .filter((step) => step.transactionId === selectedTransaction.id)
+      .sort((left, right) => left.stepOrder - right.stepOrder)
+  }, [selectedTransaction, systemTransactionSteps])
+
+  const selectedTransactionSummary = useMemo(() => {
+    if (!selectedTransaction || selectedTransactionSteps.length === 0) {
+      return null
+    }
+
+    const pathSystemIds = selectedTransactionSteps.reduce<string[]>((ids, step) => {
+      if (ids.length === 0) {
+        return [step.sourceSystemId, step.targetSystemId]
+      }
+
+      return ids.at(-1) === step.sourceSystemId ? [...ids, step.targetSystemId] : [...ids, step.sourceSystemId, step.targetSystemId]
+    }, [])
+
+    const systemNames = pathSystemIds.map((systemId) => systemById.get(systemId)?.name ?? systemId)
+    const protocolSummary = [
+      ...new Set(
+        selectedTransactionSteps
+          .map((step) => relationById.get(step.relationId)?.protocol?.trim())
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ]
+
+    return {
+      pathLabel: systemNames.join(' → '),
+      startName: systemNames[0] ?? '-',
+      endName: systemNames.at(-1) ?? '-',
+      stepCount: selectedTransactionSteps.length,
+      protocolSummary,
+    }
+  }, [relationById, selectedTransaction, selectedTransactionSteps, systemById])
 
   if (isLoading) {
     return (
@@ -151,6 +216,7 @@ export function SystemLandscapePage() {
         stats={[
           { label: '登録システム', value: summary.systems },
           { label: '関連線', value: summary.relations },
+          { label: 'データ流れ', value: summary.transactions },
           { label: '関連案件あり', value: summary.projects },
         ]}
         title="システム関連図"
@@ -281,14 +347,45 @@ export function SystemLandscapePage() {
       <Panel>
         <div className={pageStyles.sectionHeader}>
           <div>
-            <h2 className={pageStyles.sectionTitle}>接続ネットワーク</h2>
+            <h2 className={pageStyles.sectionTitle}>可視化ネットワーク</h2>
             <p className={pageStyles.sectionDescription}>
-              接続元から接続先へ向かう線で表現します。ノードには関連案件数を表示しています。
+              通信線の全体像と、データ流れ単位の経路を切り替えて表示します。
             </p>
           </div>
         </div>
 
-        {sortedSystems.length > 0 && systemRelations.length > 0 ? (
+        <div className={styles.viewToggleRow}>
+          <button
+            aria-pressed={diagramMode === 'relation'}
+            className={[
+              styles.viewToggleButton,
+              diagramMode === 'relation' ? styles.viewToggleButtonActive : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            data-testid="diagram-mode-relation"
+            onClick={() => setDiagramMode('relation')}
+            type="button"
+          >
+            通信図
+          </button>
+          <button
+            aria-pressed={diagramMode === 'transaction'}
+            className={[
+              styles.viewToggleButton,
+              diagramMode === 'transaction' ? styles.viewToggleButtonActive : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            data-testid="diagram-mode-transaction"
+            onClick={() => setDiagramMode('transaction')}
+            type="button"
+          >
+            データ流れ図
+          </button>
+        </div>
+
+        {diagramMode === 'relation' && sortedSystems.length > 0 && systemRelations.length > 0 ? (
           <div className={styles.diagramWrap}>
             <SystemLandscapeFlow
               activeEdgeId={hoveredEdge?.id ?? null}
@@ -330,9 +427,79 @@ export function SystemLandscapePage() {
               </div>
             ) : null}
           </div>
-        ) : (
+        ) : null}
+
+        {diagramMode === 'transaction' && systemTransactions.length > 0 && selectedTransaction ? (
+          <div className={styles.transactionDiagramSection}>
+            <label className={styles.selectorField}>
+              <span className={styles.selectorLabel}>表示対象データ流れ</span>
+              <select
+                className={styles.selectorInput}
+                data-testid="transaction-select"
+                onChange={(event) => setSelectedTransactionId(event.target.value)}
+                value={selectedTransaction.id}
+              >
+                {systemTransactions.map((transaction) => (
+                  <option key={transaction.id} value={transaction.id}>
+                    {transaction.name} / {transaction.dataLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {selectedTransactionSummary ? (
+              <div className={styles.transactionSummaryGrid}>
+                <div className={styles.transactionSummaryCard}>
+                  <span className={styles.transactionSummaryLabel}>対象データ</span>
+                  <strong className={styles.transactionSummaryValue}>{selectedTransaction.dataLabel}</strong>
+                </div>
+                <div className={styles.transactionSummaryCard}>
+                  <span className={styles.transactionSummaryLabel}>起点 → 終点</span>
+                  <strong className={styles.transactionSummaryValue}>
+                    {selectedTransactionSummary.startName} → {selectedTransactionSummary.endName}
+                  </strong>
+                </div>
+                <div className={styles.transactionSummaryCard}>
+                  <span className={styles.transactionSummaryLabel}>ステップ数</span>
+                  <strong className={styles.transactionSummaryValue}>
+                    {selectedTransactionSummary.stepCount} 件
+                  </strong>
+                </div>
+                <div className={styles.transactionSummaryCard}>
+                  <span className={styles.transactionSummaryLabel}>プロトコル</span>
+                  <strong className={styles.transactionSummaryValue}>
+                    {selectedTransactionSummary.protocolSummary.join(' / ') || '未設定'}
+                  </strong>
+                </div>
+              </div>
+            ) : null}
+
+            <div className={styles.transactionMetaCard}>
+              <p className={styles.transactionPathText} data-testid="transaction-path-label">
+                {selectedTransactionSummary?.pathLabel ?? '経路を表示できません。'}
+              </p>
+              <p className={styles.transactionNoteText}>
+                {selectedTransaction.note?.trim() || 'トランザクションの説明は未設定です。'}
+              </p>
+            </div>
+
+            <SystemTransactionFlow
+              projectCountBySystemId={projectCountBySystemId}
+              relationById={relationById}
+              steps={selectedTransactionSteps}
+              systemById={systemById}
+              transaction={selectedTransaction}
+            />
+          </div>
+        ) : null}
+
+        {diagramMode === 'relation' && !(sortedSystems.length > 0 && systemRelations.length > 0) ? (
           <p className={styles.emptyText}>関連システムを登録すると、ここに全体の関連図を表示します。</p>
-        )}
+        ) : null}
+
+        {diagramMode === 'transaction' && !(systemTransactions.length > 0 && selectedTransaction) ? (
+          <p className={styles.emptyText}>データ流れを登録すると、ここに経路を表示します。</p>
+        ) : null}
       </Panel>
     </div>
   )

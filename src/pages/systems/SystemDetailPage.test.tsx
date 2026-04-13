@@ -26,7 +26,9 @@ describe('SystemDetailPage', () => {
     )
     expect(screen.getByText('業務窓口')).toBeInTheDocument()
     expect(screen.getByText('基盤担当')).toBeInTheDocument()
-    expect(screen.getByText(/プロトコル:\s*HTTPS/)).toBeInTheDocument()
+    expect(screen.getAllByText(/プロトコル:\s*HTTPS/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('申請データ分析連携').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('社内ポータル → 会計基盤 → 営業管理BI').length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: '関連図を開く' })).toHaveAttribute('href', '/systems/diagram')
   })
 
@@ -46,7 +48,7 @@ describe('SystemDetailPage', () => {
     fireEvent.change(screen.getByTestId('system-link-url-0'), {
       target: { value: 'https://example.com/systems/sys-accounting/runbook' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+    fireEvent.click(within(linksSection!).getByRole('button', { name: '追加' }))
     fireEvent.change(await screen.findByTestId('system-link-label-1'), {
       target: { value: '障害対応メモ' },
     })
@@ -85,7 +87,7 @@ describe('SystemDetailPage', () => {
     const overviewSection = screen.getByRole('heading', { name: '概要' }).closest('section')
     expect(overviewSection).not.toBeNull()
     fireEvent.click(within(overviewSection!).getByRole('button', { name: '編集' }))
-    fireEvent.change(screen.getByTestId('system-detail-name-input'), {
+    fireEvent.change(await screen.findByTestId('system-detail-name-input'), {
       target: { value: '会計基盤統合' },
     })
     fireEvent.change(screen.getByTestId('system-detail-category-input'), {
@@ -169,10 +171,12 @@ describe('SystemDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('system-structure-owner-select')).toBeInTheDocument()
     })
+    const structureSection = screen.getByRole('heading', { name: 'システム体制' }).closest('section')
+    expect(structureSection).not.toBeNull()
     fireEvent.change(screen.getByTestId('system-structure-owner-select'), {
       target: { value: 'm6' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+    fireEvent.click(within(structureSection!).getByRole('button', { name: '追加' }))
     fireEvent.change(screen.getByTestId('system-structure-responsibility-4'), {
       target: { value: '監視担当' },
     })
@@ -210,20 +214,22 @@ describe('SystemDetailPage', () => {
     renderPage()
 
     await screen.findByRole('heading', { name: '会計基盤' })
+    const relationsSection = screen.getByRole('heading', { name: '関連システム' }).closest('section')
+    expect(relationsSection).not.toBeNull()
 
-    fireEvent.change(screen.getByRole('combobox', { name: '向き' }), {
+    fireEvent.change(within(relationsSection!).getByRole('combobox', { name: '向き' }), {
       target: { value: 'outgoing' },
     })
-    fireEvent.change(screen.getByRole('combobox', { name: '連携先システム' }), {
+    fireEvent.change(within(relationsSection!).getByRole('combobox', { name: '連携先システム' }), {
       target: { value: 'sys-sales-bi' },
     })
-    fireEvent.change(screen.getByPlaceholderText('例: SSH / HTTPS / SFTP'), {
+    fireEvent.change(within(relationsSection!).getByPlaceholderText('例: SSH / HTTPS / SFTP'), {
       target: { value: 'SSH' },
     })
-    fireEvent.change(screen.getByRole('textbox', { name: 'メモ' }), {
+    fireEvent.change(within(relationsSection!).getByRole('textbox', { name: 'メモ' }), {
       target: { value: '夜間バッチ接続' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '関連システムを追加' }))
+    fireEvent.click(within(relationsSection!).getByRole('button', { name: '関連システムを追加' }))
 
     await waitFor(() => {
       const relationCall = fetchSpy.mock.calls.find(([url, init]) => {
@@ -240,8 +246,8 @@ describe('SystemDetailPage', () => {
       })
     })
 
-    expect(await screen.findByRole('link', { name: 'sys-sales-bi / 営業管理BI' })).toBeInTheDocument()
-    expect(screen.getByText(/プロトコル:\s*SSH/)).toBeInTheDocument()
+    expect((await screen.findAllByRole('link', { name: 'sys-sales-bi / 営業管理BI' })).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/プロトコル:\s*SSH/).length).toBeGreaterThan(0)
   })
 
   it('関連システムを削除できる', async () => {
@@ -264,6 +270,121 @@ describe('SystemDetailPage', () => {
 
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: 'sys-portal / 社内ポータル' })).not.toBeInTheDocument()
+    })
+
+    confirmSpy.mockRestore()
+  })
+
+  it('関連システムを編集できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: '会計基盤' })
+
+    fireEvent.click(screen.getByTestId('system-detail-edit-relation-rel-001'))
+    fireEvent.change(await screen.findByTestId('system-detail-relation-protocol-rel-001'), {
+      target: { value: 'SFTP' },
+    })
+    fireEvent.change(screen.getByTestId('system-detail-relation-note-rel-001'), {
+      target: { value: '日次ファイル連携に変更' },
+    })
+    fireEvent.click(screen.getByTestId('system-detail-save-relation-rel-001'))
+
+    await waitFor(() => {
+      const relationCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/system-relations/rel-001') && init?.method === 'PATCH'
+      })
+
+      expect(relationCall).toBeDefined()
+      const body = JSON.parse(String(relationCall?.[1]?.body))
+      expect(body).toEqual(
+        expect.objectContaining({
+          sourceSystemId: 'sys-portal',
+          targetSystemId: 'sys-accounting',
+          protocol: 'SFTP',
+          note: '日次ファイル連携に変更',
+        }),
+      )
+    })
+
+    expect(await screen.findAllByText(/プロトコル:\s*SFTP/)).not.toHaveLength(0)
+  })
+
+  it('データ流れを追加・更新・削除できる', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: '会計基盤' })
+
+    fireEvent.change(screen.getByTestId('system-transaction-name-input'), {
+      target: { value: '請求反映フロー' },
+    })
+    fireEvent.change(screen.getByTestId('system-transaction-data-label-input'), {
+      target: { value: '請求番号' },
+    })
+    fireEvent.change(screen.getByTestId('system-transaction-note-input'), {
+      target: { value: '請求データをBIまで引き渡す。' },
+    })
+    fireEvent.change(screen.getByTestId('system-transaction-step-relation-0'), {
+      target: { value: 'rel-001' },
+    })
+    fireEvent.change(screen.getByTestId('system-transaction-step-action-0'), {
+      target: { value: '申請受領' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '追加' }))
+    fireEvent.change(screen.getByTestId('system-transaction-step-relation-1'), {
+      target: { value: 'rel-004' },
+    })
+    fireEvent.change(screen.getByTestId('system-transaction-step-action-1'), {
+      target: { value: 'BI連携' },
+    })
+    fireEvent.click(screen.getByTestId('system-transaction-save-button'))
+
+    await waitFor(() => {
+      const transactionCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/system-transactions') && init?.method === 'POST'
+      })
+
+      expect(transactionCall).toBeDefined()
+      const body = JSON.parse(String(transactionCall?.[1]?.body))
+      expect(body).toEqual(
+        expect.objectContaining({
+          name: '請求反映フロー',
+          dataLabel: '請求番号',
+        }),
+      )
+      expect(body.steps).toHaveLength(2)
+    })
+
+    expect((await screen.findAllByText('請求反映フロー')).length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByTestId('system-transaction-edit-tx-005'))
+    fireEvent.change(await screen.findByTestId('system-transaction-name-input'), {
+      target: { value: '請求反映フロー改' },
+    })
+    fireEvent.click(screen.getByTestId('system-transaction-save-button'))
+
+    await waitFor(() => {
+      const transactionCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/system-transactions/tx-005') && init?.method === 'PATCH'
+      })
+
+      expect(transactionCall).toBeDefined()
+      const body = JSON.parse(String(transactionCall?.[1]?.body))
+      expect(body.name).toBe('請求反映フロー改')
+    })
+
+    fireEvent.click(screen.getByTestId('system-transaction-delete-tx-005'))
+
+    await waitFor(() => {
+      const transactionCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/system-transactions/tx-005') && init?.method === 'DELETE'
+      })
+
+      expect(transactionCall).toBeDefined()
     })
 
     confirmSpy.mockRestore()

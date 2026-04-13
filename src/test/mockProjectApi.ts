@@ -8,12 +8,15 @@ import {
   projects,
   systemAssignments,
   systemRelations,
+  systemTransactions,
+  systemTransactionSteps,
   systems,
 } from '../data/mockData'
 import type {
   CreateMemberInput,
   CreateProjectInput,
   CreateSystemRelationInput,
+  CreateSystemTransactionInput,
   Phase,
   Project,
   ProjectEvent,
@@ -27,7 +30,9 @@ import type {
   UpdateProjectScheduleInput,
   UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
+  UpdateSystemRelationInput,
   UpdateSystemStructureInput,
+  UpdateSystemTransactionInput,
 } from '../types/project'
 
 const allWorkStatuses = ['未着手', '進行中', '遅延', '完了'] as const
@@ -55,6 +60,8 @@ function cloneFixtures() {
       systemLinks: (system.systemLinks ?? []).map((link) => ({ ...link })),
     })),
     systemRelations: systemRelations.map((relation) => ({ ...relation })),
+    systemTransactions: systemTransactions.map((transaction) => ({ ...transaction })),
+    systemTransactionSteps: systemTransactionSteps.map((step) => ({ ...step })),
     assignments: assignments.map((assignment) => ({ ...assignment })),
     systemAssignments: systemAssignments.map((assignment) => ({ ...assignment })),
   }
@@ -298,6 +305,14 @@ export function mockProjectApi() {
       return buildJsonResponse({ items: fixtureData.systemRelations }, 200)
     }
 
+    if (requestUrl.endsWith('/api/system-transactions') && method === 'GET') {
+      return buildJsonResponse({ items: fixtureData.systemTransactions }, 200)
+    }
+
+    if (requestUrl.endsWith('/api/system-transaction-steps') && method === 'GET') {
+      return buildJsonResponse({ items: fixtureData.systemTransactionSteps }, 200)
+    }
+
     if (requestUrl.endsWith('/api/system-assignments') && method === 'GET') {
       return buildJsonResponse({ items: fixtureData.systemAssignments }, 200)
     }
@@ -391,6 +406,105 @@ export function mockProjectApi() {
 
       fixtureData.systemRelations.push(relation)
       return buildJsonResponse({ relation }, 201)
+    }
+
+    const systemRelationMatch = requestUrl.match(/\/api\/system-relations\/([^/]+)$/)
+    if (systemRelationMatch && method === 'PATCH') {
+      const relationId = systemRelationMatch[1]
+      const relation = fixtureData.systemRelations.find((item) => item.id === relationId)
+
+      if (!relation) {
+        return buildJsonResponse({ message: 'System relation not found' }, 404)
+      }
+
+      const body = JSON.parse(String(init?.body)) as UpdateSystemRelationInput
+      const sourceSystemId = body.sourceSystemId.trim()
+      const targetSystemId = body.targetSystemId.trim()
+
+      if (!sourceSystemId || !targetSystemId) {
+        return buildJsonResponse({ message: 'System relation fields are required' }, 400)
+      }
+
+      if (sourceSystemId === targetSystemId) {
+        return buildJsonResponse({ message: 'System relation cannot point to the same system' }, 400)
+      }
+
+      if (
+        !fixtureData.systems.some((system) => system.id === sourceSystemId) ||
+        !fixtureData.systems.some((system) => system.id === targetSystemId)
+      ) {
+        return buildJsonResponse({ message: 'System in relation does not exist' }, 400)
+      }
+
+      if (
+        fixtureData.systemRelations.some(
+          (item) =>
+            item.id !== relationId &&
+            item.sourceSystemId === sourceSystemId &&
+            item.targetSystemId === targetSystemId,
+        )
+      ) {
+        return buildJsonResponse({ message: 'System relation already exists' }, 400)
+      }
+
+      const directionChanged =
+        relation.sourceSystemId !== sourceSystemId || relation.targetSystemId !== targetSystemId
+
+      if (
+        directionChanged &&
+        fixtureData.systemTransactionSteps.some((step) => step.relationId === relationId)
+      ) {
+        return buildJsonResponse(
+          {
+            message: 'System relation source/target cannot be changed while linked to a system transaction',
+          },
+          400,
+        )
+      }
+
+      relation.sourceSystemId = sourceSystemId
+      relation.targetSystemId = targetSystemId
+      relation.protocol = body.protocol?.trim() || null
+      relation.note = body.note?.trim() || null
+
+      return buildJsonResponse({ relation }, 200)
+    }
+
+    if (requestUrl.endsWith('/api/system-transactions') && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as CreateSystemTransactionInput
+      const existingTransactionIds = fixtureData.systemTransactions
+        .map((transaction) => Number(transaction.id.replace('tx-', '')))
+        .filter((value) => Number.isFinite(value))
+      const nextTransactionId = `tx-${String((existingTransactionIds.length > 0 ? Math.max(...existingTransactionIds) : 0) + 1).padStart(3, '0')}`
+      const existingStepIds = fixtureData.systemTransactionSteps
+        .map((step) => Number(step.id.replace('tx-step-', '')))
+        .filter((value) => Number.isFinite(value))
+      let nextStepNumber = (existingStepIds.length > 0 ? Math.max(...existingStepIds) : 0) + 1
+
+      const transaction = {
+        id: nextTransactionId,
+        name: body.name.trim(),
+        dataLabel: body.dataLabel.trim(),
+        note: body.note?.trim() || null,
+      }
+      const steps = body.steps
+        .slice()
+        .sort((left, right) => left.stepOrder - right.stepOrder)
+        .map((step) => ({
+          id: `tx-step-${String(nextStepNumber++).padStart(3, '0')}`,
+          transactionId: nextTransactionId,
+          relationId: step.relationId,
+          sourceSystemId: step.sourceSystemId,
+          targetSystemId: step.targetSystemId,
+          stepOrder: step.stepOrder,
+          actionLabel: step.actionLabel?.trim() || null,
+          note: step.note?.trim() || null,
+        }))
+
+      fixtureData.systemTransactions.push(transaction)
+      fixtureData.systemTransactionSteps.push(...steps)
+
+      return buildJsonResponse({ transaction, steps }, 201)
     }
 
     if (requestUrl.endsWith('/api/members/login') && method === 'POST') {
@@ -584,6 +698,68 @@ export function mockProjectApi() {
 
       fixtureData.systemRelations = fixtureData.systemRelations.filter((item) => item.id !== relation.id)
       return buildJsonResponse({ relationId: relation.id }, 200)
+    }
+
+    const transactionMatch = requestUrl.match(/\/api\/system-transactions\/([^/]+)$/)
+    if (transactionMatch && method === 'PATCH') {
+      const transactionId = transactionMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateSystemTransactionInput
+      const transaction = fixtureData.systemTransactions.find((item) => item.id === transactionId)
+
+      if (!transaction) {
+        return buildJsonResponse({ message: 'System transaction not found' }, 404)
+      }
+
+      const currentSteps = fixtureData.systemTransactionSteps.filter((step) => step.transactionId === transactionId)
+      const existingStepIds = fixtureData.systemTransactionSteps
+        .map((step) => Number(step.id.replace('tx-step-', '')))
+        .filter((value) => Number.isFinite(value))
+      let nextStepNumber = (existingStepIds.length > 0 ? Math.max(...existingStepIds) : 0) + 1
+
+      transaction.name = body.name.trim()
+      transaction.dataLabel = body.dataLabel.trim()
+      transaction.note = body.note?.trim() || null
+
+      const steps = body.steps
+        .slice()
+        .sort((left, right) => left.stepOrder - right.stepOrder)
+        .map((step) => ({
+          id:
+            step.id && currentSteps.some((currentStep) => currentStep.id === step.id)
+              ? step.id
+              : `tx-step-${String(nextStepNumber++).padStart(3, '0')}`,
+          transactionId,
+          relationId: step.relationId,
+          sourceSystemId: step.sourceSystemId,
+          targetSystemId: step.targetSystemId,
+          stepOrder: step.stepOrder,
+          actionLabel: step.actionLabel?.trim() || null,
+          note: step.note?.trim() || null,
+        }))
+
+      fixtureData.systemTransactionSteps = fixtureData.systemTransactionSteps
+        .filter((step) => step.transactionId !== transactionId)
+        .concat(steps)
+
+      return buildJsonResponse({ transaction, steps }, 200)
+    }
+
+    if (transactionMatch && method === 'DELETE') {
+      const transactionId = transactionMatch[1]
+      const transaction = fixtureData.systemTransactions.find((item) => item.id === transactionId)
+
+      if (!transaction) {
+        return buildJsonResponse({ message: 'System transaction not found' }, 404)
+      }
+
+      fixtureData.systemTransactions = fixtureData.systemTransactions.filter(
+        (item) => item.id !== transactionId,
+      )
+      fixtureData.systemTransactionSteps = fixtureData.systemTransactionSteps.filter(
+        (step) => step.transactionId !== transactionId,
+      )
+
+      return buildJsonResponse({ transactionId }, 200)
     }
 
     if (requestUrl.endsWith('/api/projects') && method === 'GET') {

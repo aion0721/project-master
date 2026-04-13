@@ -3,9 +3,11 @@ import {
   createMemberRequest,
   createProjectRequest,
   createSystemRelationRequest,
+  createSystemTransactionRequest,
   createSystemRequest,
   deleteMemberRequest,
   deleteSystemRelationRequest,
+  deleteSystemTransactionRequest,
   deleteSystemRequest,
   loadProjectData,
   updateMemberRequest,
@@ -22,14 +24,17 @@ import {
   updateProjectScheduleRequest,
   updateProjectSummaryRequest,
   updateProjectStructureRequest,
+  updateSystemRelationRequest,
   updateSystemRequest,
   updateSystemStructureRequest,
+  updateSystemTransactionRequest,
   type ProjectDataPayload,
 } from '../api/projectApi'
 import type {
   CreateMemberInput,
   CreateProjectInput,
   CreateSystemRelationInput,
+  CreateSystemTransactionInput,
   CreateSystemInput,
   ManagedSystem,
   Member,
@@ -39,6 +44,8 @@ import type {
   ProjectEvent,
   SystemAssignment,
   SystemRelation,
+  SystemTransaction,
+  SystemTransactionStep,
   UpdateMemberInput,
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
@@ -52,7 +59,9 @@ import type {
   UpdateProjectScheduleInput,
   UpdateProjectSummaryInput,
   UpdateProjectStructureInput,
+  UpdateSystemRelationInput,
   UpdateSystemStructureInput,
+  UpdateSystemTransactionInput,
   UpdateSystemInput,
 } from '../types/project'
 import type { ProjectDataContextValue } from './projectDataContext'
@@ -107,6 +116,8 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Member[]>([])
   const [systems, setSystems] = useState<ManagedSystem[]>([])
   const [systemRelations, setSystemRelations] = useState<SystemRelation[]>([])
+  const [systemTransactions, setSystemTransactions] = useState<SystemTransaction[]>([])
+  const [systemTransactionSteps, setSystemTransactionSteps] = useState<SystemTransactionStep[]>([])
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([])
   const [systemAssignments, setSystemAssignments] = useState<SystemAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -151,6 +162,10 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     setMembers((current) => mergeByKey(current, payload.members, (item) => item.id))
     setSystems((current) => mergeByKey(current, payload.systems, (item) => item.id))
     setSystemRelations((current) => mergeByKey(current, payload.systemRelations, (item) => item.id))
+    setSystemTransactions((current) => mergeByKey(current, payload.systemTransactions, (item) => item.id))
+    setSystemTransactionSteps((current) =>
+      mergeByKey(current, payload.systemTransactionSteps, (item) => item.id),
+    )
 
     if (assignmentMode === 'replaceByProject') {
       setAssignments((current) => replaceAssignmentsForProject(current, projectId, payload.assignments))
@@ -189,6 +204,8 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         setMembers(payload.members)
         setSystems(payload.systems)
         setSystemRelations(payload.systemRelations)
+        setSystemTransactions(payload.systemTransactions)
+        setSystemTransactionSteps(payload.systemTransactionSteps)
         setAssignments(payload.assignments)
         setSystemAssignments(payload.systemAssignments)
       } catch (caughtError) {
@@ -218,6 +235,8 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     members,
     systems,
     systemRelations,
+    systemTransactions,
+    systemTransactionSteps,
     assignments,
     systemAssignments,
     isLoading,
@@ -262,6 +281,16 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setSystemRelations((current) => mergeByKey(current, [relation], (item) => item.id))
       return relation
     },
+    createSystemTransaction: async (input: CreateSystemTransactionInput) => {
+      const payload = await createSystemTransactionRequest(input)
+      setSystemTransactions((current) =>
+        mergeByKey(current, [payload.transaction], (item) => item.id),
+      )
+      setSystemTransactionSteps((current) =>
+        mergeByKey(current, payload.steps, (item) => item.id),
+      )
+      return payload
+    },
     updateMember: async (memberId: string, input: UpdateMemberInput) => {
       const member = await updateMemberRequest(memberId, input)
       setMembers((current) => mergeByKey(current, [member], (item) => item.id))
@@ -272,11 +301,26 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       setSystems((current) => mergeByKey(current, [system], (item) => item.id))
       return system
     },
+    updateSystemRelation: async (relationId: string, input: UpdateSystemRelationInput) => {
+      const relation = await updateSystemRelationRequest(relationId, input)
+      setSystemRelations((current) => mergeByKey(current, [relation], (item) => item.id))
+      return relation
+    },
     updateSystemStructure: async (systemId: string, input: UpdateSystemStructureInput) => {
       const payload = await updateSystemStructureRequest(systemId, input)
       setSystems((current) => mergeByKey(current, [payload.system], (item) => item.id))
       setSystemAssignments((current) =>
         current.filter((assignment) => assignment.systemId !== systemId).concat(payload.assignments),
+      )
+      return payload
+    },
+    updateSystemTransaction: async (transactionId: string, input: UpdateSystemTransactionInput) => {
+      const payload = await updateSystemTransactionRequest(transactionId, input)
+      setSystemTransactions((current) =>
+        mergeByKey(current, [payload.transaction], (item) => item.id),
+      )
+      setSystemTransactionSteps((current) =>
+        current.filter((step) => step.transactionId !== transactionId).concat(payload.steps),
       )
       return payload
     },
@@ -294,6 +338,15 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     deleteSystemRelation: async (relationId: string) => {
       await deleteSystemRelationRequest(relationId)
       setSystemRelations((current) => current.filter((relation) => relation.id !== relationId))
+    },
+    deleteSystemTransaction: async (transactionId: string) => {
+      await deleteSystemTransactionRequest(transactionId)
+      setSystemTransactions((current) =>
+        current.filter((transaction) => transaction.id !== transactionId),
+      )
+      setSystemTransactionSteps((current) =>
+        current.filter((step) => step.transactionId !== transactionId),
+      )
     },
     updatePhase: async (phaseId: string, input: UpdatePhaseInput) => {
       const payload = await updatePhaseRequest(phaseId, input)

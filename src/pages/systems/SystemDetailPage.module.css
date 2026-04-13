@@ -306,13 +306,163 @@
   color: var(--danger);
 }
 
+.transactionGroupList,
+.transactionList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transactionEditor,
+.transactionCatalogList,
+.transactionDraftList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transactionGroupCard,
+.transactionItem,
+.transactionCatalogCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.transactionGroupHeader,
+.transactionItemHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.transactionGroupHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transactionGroupDirection,
+.transactionGroupMeta,
+.transactionDataLabel,
+.transactionDescription,
+.transactionGroupNote,
+.transactionStepNote {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.transactionGroupDirection {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f4c5c;
+}
+
+.transactionGroupMeta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.transactionGroupNote,
+.transactionDescription,
+.transactionStepNote {
+  color: var(--text-subtle);
+}
+
+.transactionTitle {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-strong);
+}
+
+.transactionDataLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.transactionPathChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(180, 83, 9, 0.12);
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.transactionStepList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transactionDraftRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.transactionDraftOrder {
+  min-width: 62px;
+  padding-bottom: 10px;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.transactionDraftRelation {
+  padding-bottom: 10px;
+  color: var(--text-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.transactionStepItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 0.9fr) minmax(0, 1.6fr);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.transactionStepOrder,
+.transactionStepAction {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.transactionStepOrder {
+  color: #0f766e;
+}
+
+.transactionStepAction {
+  color: var(--text-strong);
+}
+
 @media (max-width: 1100px) {
   .metaGrid,
   .contentGrid,
   .linkEditorRow,
   .assignmentRow,
   .relationFormGrid,
-  .systemFormGrid {
+  .systemFormGrid,
+  .transactionDraftRow,
+  .transactionStepItem {
     grid-template-columns: 1fr;
   }
 }

@@ -1,4 +1,4 @@
-import type { ManagedSystem } from '../../types/project'
+import type { ManagedSystem, SystemRelation } from '../../types/project'
 
 export interface SystemFormState {
   id: string
@@ -44,6 +44,16 @@ export function buildEditSystemForm(system: ManagedSystem): SystemFormState {
     ownerMemberId: system.ownerMemberId ?? '',
     departmentNames: [...(system.departmentNames ?? [])],
     note: system.note ?? '',
+  }
+}
+
+export function buildEditSystemRelationForm(relation: SystemRelation, currentSystemId: string) {
+  return {
+    sourceSystemId: relation.sourceSystemId,
+    targetSystemId:
+      relation.sourceSystemId === currentSystemId ? relation.targetSystemId : relation.sourceSystemId,
+    protocol: relation.protocol ?? '',
+    note: relation.note ?? '',
   }
 }
 

@@ -37,6 +37,31 @@
   display: block;
 }
 
+.viewToggleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.viewToggleButton {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-subtle);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.viewToggleButtonActive {
+  border-color: rgba(15, 76, 92, 0.18);
+  background: rgba(14, 116, 144, 0.1);
+  color: #0f4c5c;
+}
+
 .selectorField {
   display: flex;
   flex-direction: column;
@@ -55,6 +80,64 @@
 
 .selectorInput {
   composes: control from '../../styles/form.module.css';
+}
+
+.transactionDiagramSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transactionSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.transactionSummaryCard,
+.transactionMetaCard {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.transactionSummaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transactionSummaryLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.transactionSummaryValue {
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.transactionMetaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transactionPathText,
+.transactionNoteText {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.transactionPathText {
+  color: #0f4c5c;
+  font-weight: 700;
+}
+
+.transactionNoteText {
+  color: var(--text-subtle);
 }
 
 .focusGrid {
@@ -362,6 +445,7 @@
 }
 
 @media (max-width: 1100px) {
+  .transactionSummaryGrid,
   .focusHeadingRow,
   .focusGrid {
     grid-template-columns: 1fr;
