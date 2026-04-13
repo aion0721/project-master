@@ -10,6 +10,7 @@ import {
   ReactFlow,
   getSmoothStepPath,
   type Edge,
+  type Connection,
   type EdgeProps,
   type EdgeTypes,
   type Node,
@@ -28,7 +29,7 @@ import styles from './SystemTransactionFlow.module.css'
 interface TransactionNodeData extends Record<string, unknown> {
   system: ManagedSystem
   projectCount: number
-  role: 'start' | 'middle' | 'end'
+  role: 'start' | 'middle' | 'end' | 'available'
 }
 
 type TransactionNode = Node<TransactionNodeData, 'transactionNode'>
@@ -46,6 +47,7 @@ function TransactionNodeView({ data }: NodeProps<TransactionNode>) {
     styles.nodeCard,
     data.role === 'start' ? styles.nodeStart : '',
     data.role === 'end' ? styles.nodeEnd : '',
+    data.role === 'available' ? styles.nodeAvailable : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -55,7 +57,13 @@ function TransactionNodeView({ data }: NodeProps<TransactionNode>) {
       <Handle className={styles.handleLeft} position={Position.Left} type="target" />
       <Handle className={styles.handleRight} position={Position.Right} type="source" />
       <div className={styles.nodeRole}>
-        {data.role === 'start' ? '起点' : data.role === 'end' ? '終点' : '経由'}
+        {data.role === 'start'
+          ? '起点'
+          : data.role === 'end'
+            ? '終点'
+            : data.role === 'available'
+              ? '候補'
+              : '経由'}
       </div>
       <div className={styles.nodeTitle}>{data.system.name}</div>
       <div className={styles.nodeMeta}>{data.system.category}</div>
@@ -112,6 +120,8 @@ const edgeTypes = {
 } satisfies EdgeTypes
 
 interface SystemTransactionFlowProps {
+  editable?: boolean
+  onConnectStep?: (connection: { sourceSystemId: string; targetSystemId: string }) => void
   projectCountBySystemId: Map<string, number>
   relationById: Map<string, SystemRelation>
   systemById: Map<string, ManagedSystem>
@@ -120,6 +130,8 @@ interface SystemTransactionFlowProps {
 }
 
 export function SystemTransactionFlow({
+  editable = false,
+  onConnectStep,
   projectCountBySystemId,
   relationById,
   systemById,
@@ -137,9 +149,15 @@ export function SystemTransactionFlow({
     }, [])
 
     const uniqueSystemIds = orderedSystemIds.filter((systemId, index) => orderedSystemIds.indexOf(systemId) === index)
+    const availableSystemIds = editable
+      ? [...systemById.values()]
+          .map((system) => system.id)
+          .filter((systemId) => !uniqueSystemIds.includes(systemId))
+      : []
     const columnWidth = 320
+    const rowHeight = 228
 
-    const nextNodes = uniqueSystemIds.flatMap((systemId, index) => {
+    const pathNodes: TransactionNode[] = uniqueSystemIds.flatMap((systemId, index) => {
         const system = systemById.get(systemId)
 
         if (!system) {
@@ -166,6 +184,31 @@ export function SystemTransactionFlow({
           } satisfies TransactionNode,
         ]
       })
+
+    const availableNodes: TransactionNode[] = availableSystemIds.flatMap((systemId, index) => {
+      const system = systemById.get(systemId)
+
+      if (!system) {
+        return []
+      }
+
+      return [
+        {
+          id: systemId,
+          type: 'transactionNode' as const,
+          position: { x: index * columnWidth, y: rowHeight },
+          data: {
+            system,
+            projectCount: projectCountBySystemId.get(systemId) ?? 0,
+            role: 'available' as const,
+          },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
+        } satisfies TransactionNode,
+      ]
+    })
+
+    const nextNodes = pathNodes.concat(availableNodes)
 
     const nextEdges = orderedSteps.map((step) => {
       const relation = relationById.get(step.relationId)
@@ -197,7 +240,18 @@ export function SystemTransactionFlow({
       nodes: nextNodes,
       edges: nextEdges,
     }
-  }, [projectCountBySystemId, relationById, steps, systemById, transaction.dataLabel])
+  }, [editable, projectCountBySystemId, relationById, steps, systemById, transaction.dataLabel])
+
+  function handleConnect(connection: Connection) {
+    if (!editable || !onConnectStep || !connection.source || !connection.target) {
+      return
+    }
+
+    onConnectStep({
+      sourceSystemId: connection.source,
+      targetSystemId: connection.target,
+    })
+  }
 
   if (nodes.length === 0 || edges.length === 0) {
     return <p className={styles.emptyText}>データ流れの経路を表示できませんでした。</p>
@@ -216,8 +270,9 @@ export function SystemTransactionFlow({
         minZoom={0.45}
         nodeTypes={nodeTypes}
         nodes={nodes}
-        nodesConnectable={false}
+        nodesConnectable={editable}
         nodesDraggable={false}
+        onConnect={handleConnect}
         panOnDrag
         proOptions={{ hideAttribution: true }}
       >

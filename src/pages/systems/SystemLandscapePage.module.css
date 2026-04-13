@@ -88,6 +88,98 @@
   gap: 16px;
 }
 
+.transactionToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 18px;
+}
+
+.transactionEditActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.transactionEditPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(14, 116, 144, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 28%),
+    rgba(248, 250, 252, 0.94);
+}
+
+.transactionEditLead,
+.transactionEditSubtle,
+.transactionEditError {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.transactionEditLead {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.transactionEditSubtle {
+  color: var(--text-subtle);
+}
+
+.transactionEditError {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.transactionManualGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.formFieldInline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transactionManualAction {
+  display: flex;
+  align-items: flex-end;
+}
+
+.transactionPendingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.transactionPendingHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.transactionPendingTitle {
+  color: var(--text-strong);
+}
+
+.transactionPendingOrder {
+  color: #0f4c5c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .transactionSummaryGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -445,10 +537,15 @@
 }
 
 @media (max-width: 1100px) {
+  .transactionManualGrid,
   .transactionSummaryGrid,
   .focusHeadingRow,
   .focusGrid {
     grid-template-columns: 1fr;
+  }
+
+  .transactionToolbar {
+    align-items: stretch;
   }
 
   .focusConnector {

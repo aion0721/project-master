@@ -1,24 +1,42 @@
-import { useMemo, useState } from 'react'
-import { SystemFocusFlow } from '../../components/SystemFocusFlow'
-import { SystemLandscapeFlow } from '../../components/SystemLandscapeFlow'
-import { SystemTransactionFlow } from '../../components/SystemTransactionFlow'
-import { ListPageHero } from '../../components/ListPageHero'
-import { Button } from '../../components/ui/Button'
-import { Panel } from '../../components/ui/Panel'
-import { useProjectData } from '../../store/useProjectData'
-import pageStyles from '../../styles/page.module.css'
-import { formatSystemOptionLabel } from './systemFormUtils'
-import styles from './SystemLandscapePage.module.css'
+import { useMemo, useState } from "react";
+import { SystemFocusFlow } from "../../components/SystemFocusFlow";
+import { SystemLandscapeFlow } from "../../components/SystemLandscapeFlow";
+import { SystemTransactionFlow } from "../../components/SystemTransactionFlow";
+import { ListPageHero } from "../../components/ListPageHero";
+import { Button } from "../../components/ui/Button";
+import { Panel } from "../../components/ui/Panel";
+import { useProjectData } from "../../store/useProjectData";
+import pageStyles from "../../styles/page.module.css";
+import type {
+  CreateSystemTransactionInput,
+  UpdateSystemTransactionInput,
+} from "../../types/project";
+import { formatSystemOptionLabel } from "./systemFormUtils";
+import styles from "./SystemLandscapePage.module.css";
 
 interface HoveredEdgeTooltip {
-  id: string
-  sourceName: string
-  targetName: string
-  protocol: string | null
-  note: string | null
+  id: string;
+  sourceName: string;
+  targetName: string;
+  protocol: string | null;
+  note: string | null;
 }
 
-type DiagramMode = 'relation' | 'transaction'
+type DiagramMode = "relation" | "transaction";
+
+interface PendingTransactionStepDraft {
+  sourceSystemId: string;
+  targetSystemId: string;
+  relationId: string;
+  actionLabel: string;
+  note: string;
+}
+
+interface TransactionDraftFormState {
+  name: string;
+  dataLabel: string;
+  note: string;
+}
 
 export function SystemLandscapePage() {
   const {
@@ -29,50 +47,78 @@ export function SystemLandscapePage() {
     projects,
     isLoading,
     error,
-  } = useProjectData()
-  const [selectedSystemId, setSelectedSystemId] = useState<string>('')
-  const [hoveredEdge, setHoveredEdge] = useState<HoveredEdgeTooltip | null>(null)
-  const [diagramMode, setDiagramMode] = useState<DiagramMode>('relation')
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string>('')
+    createSystemTransaction,
+    updateSystemTransaction,
+  } = useProjectData();
+  const [selectedSystemId, setSelectedSystemId] = useState<string>("");
+  const [hoveredEdge, setHoveredEdge] = useState<HoveredEdgeTooltip | null>(
+    null,
+  );
+  const [diagramMode, setDiagramMode] = useState<DiagramMode>("transaction");
+  const [selectedTransactionId, setSelectedTransactionId] =
+    useState<string>("");
+  const [isTransactionEditing, setIsTransactionEditing] = useState(false);
+  const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
+  const [transactionDraft, setTransactionDraft] =
+    useState<TransactionDraftFormState>({
+      name: "",
+      dataLabel: "",
+      note: "",
+    });
+  const [pendingTransactionStep, setPendingTransactionStep] =
+    useState<PendingTransactionStepDraft | null>(null);
+  const [transactionEditError, setTransactionEditError] = useState<
+    string | null
+  >(null);
+  const [isSavingTransactionStep, setIsSavingTransactionStep] = useState(false);
+  const [manualSourceSystemId, setManualSourceSystemId] = useState<string>("");
+  const [manualTargetSystemId, setManualTargetSystemId] = useState<string>("");
 
   const sortedSystems = useMemo(
-    () => [...systems].sort((left, right) => left.name.localeCompare(right.name, 'ja')),
+    () =>
+      [...systems].sort((left, right) =>
+        left.name.localeCompare(right.name, "ja"),
+      ),
     [systems],
-  )
+  );
 
   const projectCountBySystemId = useMemo(() => {
-    const counts = new Map<string, number>()
+    const counts = new Map<string, number>();
 
     projects.forEach((project) => {
-      const systemId = project.relatedSystemIds?.[0]
+      const systemId = project.relatedSystemIds?.[0];
 
       if (!systemId) {
-        return
+        return;
       }
 
-      counts.set(systemId, (counts.get(systemId) ?? 0) + 1)
-    })
+      counts.set(systemId, (counts.get(systemId) ?? 0) + 1);
+    });
 
-    return counts
-  }, [projects])
+    return counts;
+  }, [projects]);
 
   const systemById = useMemo(
     () => new Map(sortedSystems.map((system) => [system.id, system])),
     [sortedSystems],
-  )
+  );
 
   const selectedSystem = useMemo(() => {
-    const defaultSystemId = selectedSystemId || sortedSystems[0]?.id || ''
-    return systemById.get(defaultSystemId) ?? null
-  }, [selectedSystemId, sortedSystems, systemById])
+    const defaultSystemId = selectedSystemId || sortedSystems[0]?.id || "";
+    return systemById.get(defaultSystemId) ?? null;
+  }, [selectedSystemId, sortedSystems, systemById]);
 
   const focusedView = useMemo(() => {
     if (!selectedSystem) {
-      return null
+      return null;
     }
 
-    const upstreamRelations = systemRelations.filter((relation) => relation.targetSystemId === selectedSystem.id)
-    const downstreamRelations = systemRelations.filter((relation) => relation.sourceSystemId === selectedSystem.id)
+    const upstreamRelations = systemRelations.filter(
+      (relation) => relation.targetSystemId === selectedSystem.id,
+    );
+    const downstreamRelations = systemRelations.filter(
+      (relation) => relation.sourceSystemId === selectedSystem.id,
+    );
 
     return {
       upstream: upstreamRelations
@@ -84,8 +130,8 @@ export function SystemLandscapePage() {
           (
             item,
           ): item is {
-            relation: (typeof upstreamRelations)[number]
-            system: NonNullable<typeof selectedSystem>
+            relation: (typeof upstreamRelations)[number];
+            system: NonNullable<typeof selectedSystem>;
           } => Boolean(item.system),
         ),
       downstream: downstreamRelations
@@ -97,110 +143,325 @@ export function SystemLandscapePage() {
           (
             item,
           ): item is {
-            relation: (typeof downstreamRelations)[number]
-            system: NonNullable<typeof selectedSystem>
+            relation: (typeof downstreamRelations)[number];
+            system: NonNullable<typeof selectedSystem>;
           } => Boolean(item.system),
         ),
-    }
-  }, [selectedSystem, systemById, systemRelations])
+    };
+  }, [selectedSystem, systemById, systemRelations]);
 
   const summary = useMemo(
     () => ({
       systems: sortedSystems.length,
       relations: systemRelations.length,
       transactions: systemTransactions.length,
-      projects: projects.filter((project) => project.relatedSystemIds?.[0]).length,
+      projects: projects.filter((project) => project.relatedSystemIds?.[0])
+        .length,
     }),
-    [projects, sortedSystems.length, systemRelations.length, systemTransactions.length],
-  )
+    [
+      projects,
+      sortedSystems.length,
+      systemRelations.length,
+      systemTransactions.length,
+    ],
+  );
 
   const relationById = useMemo(
     () => new Map(systemRelations.map((relation) => [relation.id, relation])),
     [systemRelations],
-  )
+  );
 
   const selectedTransaction = useMemo(() => {
-    const defaultTransactionId = selectedTransactionId || systemTransactions[0]?.id || ''
-    return systemTransactions.find((transaction) => transaction.id === defaultTransactionId) ?? null
-  }, [selectedTransactionId, systemTransactions])
+    const defaultTransactionId =
+      selectedTransactionId || systemTransactions[0]?.id || "";
+    return (
+      systemTransactions.find(
+        (transaction) => transaction.id === defaultTransactionId,
+      ) ?? null
+    );
+  }, [selectedTransactionId, systemTransactions]);
 
   const selectedTransactionSteps = useMemo(() => {
     if (!selectedTransaction) {
-      return []
+      return [];
     }
 
     return systemTransactionSteps
       .filter((step) => step.transactionId === selectedTransaction.id)
-      .sort((left, right) => left.stepOrder - right.stepOrder)
-  }, [selectedTransaction, systemTransactionSteps])
+      .sort((left, right) => left.stepOrder - right.stepOrder);
+  }, [selectedTransaction, systemTransactionSteps]);
 
   const selectedTransactionSummary = useMemo(() => {
     if (!selectedTransaction || selectedTransactionSteps.length === 0) {
-      return null
+      return null;
     }
 
-    const pathSystemIds = selectedTransactionSteps.reduce<string[]>((ids, step) => {
-      if (ids.length === 0) {
-        return [step.sourceSystemId, step.targetSystemId]
-      }
+    const pathSystemIds = selectedTransactionSteps.reduce<string[]>(
+      (ids, step) => {
+        if (ids.length === 0) {
+          return [step.sourceSystemId, step.targetSystemId];
+        }
 
-      return ids.at(-1) === step.sourceSystemId ? [...ids, step.targetSystemId] : [...ids, step.sourceSystemId, step.targetSystemId]
-    }, [])
+        return ids.at(-1) === step.sourceSystemId
+          ? [...ids, step.targetSystemId]
+          : [...ids, step.sourceSystemId, step.targetSystemId];
+      },
+      [],
+    );
 
-    const systemNames = pathSystemIds.map((systemId) => systemById.get(systemId)?.name ?? systemId)
+    const systemNames = pathSystemIds.map(
+      (systemId) => systemById.get(systemId)?.name ?? systemId,
+    );
     const protocolSummary = [
       ...new Set(
         selectedTransactionSteps
           .map((step) => relationById.get(step.relationId)?.protocol?.trim())
           .filter((value): value is string => Boolean(value)),
       ),
-    ]
+    ];
 
     return {
-      pathLabel: systemNames.join(' → '),
-      startName: systemNames[0] ?? '-',
-      endName: systemNames.at(-1) ?? '-',
+      pathLabel: systemNames.join(" → "),
+      startName: systemNames[0] ?? "-",
+      endName: systemNames.at(-1) ?? "-",
       stepCount: selectedTransactionSteps.length,
       protocolSummary,
+    };
+  }, [relationById, selectedTransaction, selectedTransactionSteps, systemById]);
+
+  const pendingRelationOptions = useMemo(() => {
+    if (!pendingTransactionStep) {
+      return [];
     }
-  }, [relationById, selectedTransaction, selectedTransactionSteps, systemById])
+
+    return systemRelations.filter(
+      (relation) =>
+        relation.sourceSystemId === pendingTransactionStep.sourceSystemId &&
+        relation.targetSystemId === pendingTransactionStep.targetSystemId,
+    );
+  }, [pendingTransactionStep, systemRelations]);
+
+  function resetTransactionStepEditor() {
+    setPendingTransactionStep(null);
+    setTransactionEditError(null);
+    setIsSavingTransactionStep(false);
+    setManualSourceSystemId("");
+    setManualTargetSystemId("");
+  }
+
+  function resetCreateTransactionEditor() {
+    setIsCreatingTransaction(false);
+    setTransactionDraft({
+      name: "",
+      dataLabel: "",
+      note: "",
+    });
+    resetTransactionStepEditor();
+  }
+
+  function buildUpdatedTransactionInput(
+    stepDraft: PendingTransactionStepDraft,
+  ): UpdateSystemTransactionInput | null {
+    if (!selectedTransaction) {
+      return null;
+    }
+
+    const relation = relationById.get(stepDraft.relationId);
+
+    if (!relation) {
+      throw new Error("通信線を選択してください。");
+    }
+
+    return {
+      name: selectedTransaction.name,
+      dataLabel: selectedTransaction.dataLabel,
+      note: selectedTransaction.note ?? null,
+      steps: [
+        ...selectedTransactionSteps.map((step) => ({
+          id: step.id,
+          relationId: step.relationId,
+          sourceSystemId: step.sourceSystemId,
+          targetSystemId: step.targetSystemId,
+          stepOrder: step.stepOrder,
+          actionLabel: step.actionLabel ?? null,
+          note: step.note ?? null,
+        })),
+        {
+          relationId: relation.id,
+          sourceSystemId: relation.sourceSystemId,
+          targetSystemId: relation.targetSystemId,
+          stepOrder: selectedTransactionSteps.length + 1,
+          actionLabel: stepDraft.actionLabel.trim() || null,
+          note: stepDraft.note.trim() || null,
+        },
+      ],
+    };
+  }
+
+  function startPendingTransactionStep(
+    sourceSystemId: string,
+    targetSystemId: string,
+  ) {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    if (sourceSystemId === targetSystemId) {
+      setTransactionEditError("同じシステム同士は接続できません。");
+      return;
+    }
+
+    const matchedRelations = systemRelations.filter(
+      (relation) =>
+        relation.sourceSystemId === sourceSystemId &&
+        relation.targetSystemId === targetSystemId,
+    );
+
+    if (matchedRelations.length === 0) {
+      setTransactionEditError(
+        "該当する通信線がありません。先に通信図で接続を登録してください。",
+      );
+      return;
+    }
+
+    setPendingTransactionStep({
+      sourceSystemId,
+      targetSystemId,
+      relationId: matchedRelations[0]!.id,
+      actionLabel: "",
+      note: "",
+    });
+    setTransactionEditError(null);
+  }
+
+  async function handleSaveTransactionStep() {
+    if (!selectedTransaction || !pendingTransactionStep) {
+      return;
+    }
+
+    setTransactionEditError(null);
+    setIsSavingTransactionStep(true);
+
+    try {
+      const nextInput = buildUpdatedTransactionInput(pendingTransactionStep);
+
+      if (!nextInput) {
+        throw new Error("更新対象のトランザクションが見つかりません。");
+      }
+
+      await updateSystemTransaction(selectedTransaction.id, nextInput);
+      resetTransactionStepEditor();
+    } catch (caughtError) {
+      setTransactionEditError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "データ流れステップの追加に失敗しました。",
+      );
+    } finally {
+      setIsSavingTransactionStep(false);
+    }
+  }
+
+  async function handleCreateTransactionFromFlow() {
+    if (!pendingTransactionStep) {
+      setTransactionEditError("最初のステップを1件追加してください。");
+      return;
+    }
+
+    const name = transactionDraft.name.trim();
+    const dataLabel = transactionDraft.dataLabel.trim();
+
+    if (!name || !dataLabel) {
+      setTransactionEditError("トランザクション名と対象データは必須です。");
+      return;
+    }
+
+    const relation = relationById.get(pendingTransactionStep.relationId);
+
+    if (!relation) {
+      setTransactionEditError("通信線を選択してください。");
+      return;
+    }
+
+    const input: CreateSystemTransactionInput = {
+      name,
+      dataLabel,
+      note: transactionDraft.note.trim() || null,
+      steps: [
+        {
+          relationId: relation.id,
+          sourceSystemId: relation.sourceSystemId,
+          targetSystemId: relation.targetSystemId,
+          stepOrder: 1,
+          actionLabel: pendingTransactionStep.actionLabel.trim() || null,
+          note: pendingTransactionStep.note.trim() || null,
+        },
+      ],
+    };
+
+    setTransactionEditError(null);
+    setIsSavingTransactionStep(true);
+
+    try {
+      const result = await createSystemTransaction(input);
+      setSelectedTransactionId(result.transaction.id);
+      setIsTransactionEditing(false);
+      resetCreateTransactionEditor();
+    } catch (caughtError) {
+      setTransactionEditError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "データ流れの作成に失敗しました。",
+      );
+    } finally {
+      setIsSavingTransactionStep(false);
+    }
+  }
 
   if (isLoading) {
     return (
       <Panel>
         <h1 className={pageStyles.emptyStateTitle}>関連図を読み込み中です</h1>
-        <p className={pageStyles.emptyStateText}>システム関連を取得しています。</p>
+        <p className={pageStyles.emptyStateText}>
+          システム関連を取得しています。
+        </p>
       </Panel>
-    )
+    );
   }
 
   if (error) {
     return (
       <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>関連図を表示できませんでした</h1>
+        <h1 className={pageStyles.emptyStateTitle}>
+          関連図を表示できませんでした
+        </h1>
         <p className={pageStyles.emptyStateText}>{error}</p>
       </Panel>
-    )
+    );
   }
 
   function handleEdgeHover(edgeId: string) {
-    const relation = systemRelations.find((item) => item.id === edgeId)
+    const relation = systemRelations.find((item) => item.id === edgeId);
 
     if (!relation) {
-      return
+      return;
     }
 
     setHoveredEdge({
       id: relation.id,
-      sourceName: systemById.get(relation.sourceSystemId)?.name ?? relation.sourceSystemId,
-      targetName: systemById.get(relation.targetSystemId)?.name ?? relation.targetSystemId,
+      sourceName:
+        systemById.get(relation.sourceSystemId)?.name ??
+        relation.sourceSystemId,
+      targetName:
+        systemById.get(relation.targetSystemId)?.name ??
+        relation.targetSystemId,
       protocol: relation.protocol ?? null,
       note: relation.note ?? null,
-    })
+    });
   }
 
   function handleEdgeLeave(edgeId: string) {
-    setHoveredEdge((current) => (current?.id === edgeId ? null : current))
+    setHoveredEdge((current) => (current?.id === edgeId ? null : current));
   }
 
   return (
@@ -214,10 +475,10 @@ export function SystemLandscapePage() {
         iconKind="system"
         storageKey="project-master:hero-collapsed:system-landscape"
         stats={[
-          { label: '登録システム', value: summary.systems },
-          { label: '関連線', value: summary.relations },
-          { label: 'データ流れ', value: summary.transactions },
-          { label: '関連案件あり', value: summary.projects },
+          { label: "登録システム", value: summary.systems },
+          { label: "関連線", value: summary.relations },
+          { label: "データ流れ", value: summary.transactions },
+          { label: "関連案件あり", value: summary.projects },
         ]}
         title="システム関連図"
       />
@@ -225,7 +486,9 @@ export function SystemLandscapePage() {
       <Panel>
         <div className={pageStyles.sectionHeader}>
           <div>
-            <h2 className={pageStyles.sectionTitle}>システム別フォーカスビュー</h2>
+            <h2 className={pageStyles.sectionTitle}>
+              システム別フォーカスビュー
+            </h2>
             <p className={pageStyles.sectionDescription}>
               対象システムを1つ選ぶと、上流に受けるシステムと下流へ渡すシステムを並べて表示します。
             </p>
@@ -238,7 +501,7 @@ export function SystemLandscapePage() {
             className={styles.selectorInput}
             data-testid="focused-system-select"
             onChange={(event) => setSelectedSystemId(event.target.value)}
-            value={selectedSystem?.id ?? ''}
+            value={selectedSystem?.id ?? ""}
           >
             {sortedSystems.map((system) => (
               <option key={system.id} value={system.id}>
@@ -251,7 +514,10 @@ export function SystemLandscapePage() {
         {selectedSystem && focusedView ? (
           <div className={styles.focusSection}>
             <div className={styles.focusHeadingRow}>
-              <section className={styles.focusColumn} data-testid="focused-system-upstream">
+              <section
+                className={styles.focusColumn}
+                data-testid="focused-system-upstream"
+              >
                 <header className={styles.focusHeader}>
                   <span className={styles.focusEyebrow}>上流</span>
                   <h3 className={styles.focusTitle}>データをもらう元</h3>
@@ -271,17 +537,25 @@ export function SystemLandscapePage() {
                 )}
               </section>
 
-              <section className={`${styles.focusColumn} ${styles.focusColumnPrimary}`}>
+              <section
+                className={`${styles.focusColumn} ${styles.focusColumnPrimary}`}
+              >
                 <header className={styles.focusHeader}>
                   <span className={styles.focusEyebrow}>中心</span>
                   <h3 className={styles.focusTitle}>選択中のシステム</h3>
                 </header>
-                <div className={styles.focusListText} data-testid="focused-system-center">
+                <div
+                  className={styles.focusListText}
+                  data-testid="focused-system-center"
+                >
                   {selectedSystem.name}
                 </div>
               </section>
 
-              <section className={styles.focusColumn} data-testid="focused-system-downstream">
+              <section
+                className={styles.focusColumn}
+                data-testid="focused-system-downstream"
+              >
                 <header className={styles.focusHeader}>
                   <span className={styles.focusEyebrow}>下流</span>
                   <h3 className={styles.focusTitle}>データを渡す先</h3>
@@ -304,7 +578,7 @@ export function SystemLandscapePage() {
 
             <div
               aria-label={`${selectedSystem.name} の上流接続メモ`}
-              className={`${styles.focusConnectorAssist} ${focusedView.upstream.length > 0 ? '' : styles.focusConnectorIdle}`}
+              className={`${styles.focusConnectorAssist} ${focusedView.upstream.length > 0 ? "" : styles.focusConnectorIdle}`}
               data-testid="focused-connector-upstream"
               tabIndex={focusedView.upstream.length > 0 ? 0 : -1}
             >
@@ -315,9 +589,16 @@ export function SystemLandscapePage() {
                   </strong>
                   <ul className={styles.focusConnectorTooltipList}>
                     {focusedView.upstream.map(({ relation, system }) => (
-                      <li className={styles.focusConnectorTooltipItem} key={relation.id}>
-                        <span className={styles.focusConnectorTooltipItemName}>{system.name}</span>
-                        <span className={styles.focusConnectorTooltipItemText}>{relation.note ?? 'メモは未設定です。'}</span>
+                      <li
+                        className={styles.focusConnectorTooltipItem}
+                        key={relation.id}
+                      >
+                        <span className={styles.focusConnectorTooltipItemName}>
+                          {system.name}
+                        </span>
+                        <span className={styles.focusConnectorTooltipItemText}>
+                          {relation.note ?? "メモは未設定です。"}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -327,7 +608,7 @@ export function SystemLandscapePage() {
 
             <div
               aria-label={`${selectedSystem.name} の下流接続メモ`}
-              className={`${styles.focusConnectorAssist} ${focusedView.downstream.length > 0 ? '' : styles.focusConnectorIdle}`}
+              className={`${styles.focusConnectorAssist} ${focusedView.downstream.length > 0 ? "" : styles.focusConnectorIdle}`}
               data-testid="focused-connector-downstream"
               tabIndex={focusedView.downstream.length > 0 ? 0 : -1}
             />
@@ -356,36 +637,48 @@ export function SystemLandscapePage() {
 
         <div className={styles.viewToggleRow}>
           <button
-            aria-pressed={diagramMode === 'relation'}
+            aria-pressed={diagramMode === "relation"}
             className={[
               styles.viewToggleButton,
-              diagramMode === 'relation' ? styles.viewToggleButtonActive : '',
+              diagramMode === "relation" ? styles.viewToggleButtonActive : "",
             ]
               .filter(Boolean)
-              .join(' ')}
+              .join(" ")}
             data-testid="diagram-mode-relation"
-            onClick={() => setDiagramMode('relation')}
+            onClick={() => {
+              setDiagramMode("relation");
+              resetTransactionStepEditor();
+              setIsTransactionEditing(false);
+            }}
             type="button"
           >
             通信図
           </button>
           <button
-            aria-pressed={diagramMode === 'transaction'}
+            aria-pressed={diagramMode === "transaction"}
             className={[
               styles.viewToggleButton,
-              diagramMode === 'transaction' ? styles.viewToggleButtonActive : '',
+              diagramMode === "transaction"
+                ? styles.viewToggleButtonActive
+                : "",
             ]
               .filter(Boolean)
-              .join(' ')}
+              .join(" ")}
             data-testid="diagram-mode-transaction"
-            onClick={() => setDiagramMode('transaction')}
+            onClick={() => {
+              setDiagramMode("transaction");
+              resetTransactionStepEditor();
+              setIsTransactionEditing(false);
+            }}
             type="button"
           >
             データ流れ図
           </button>
         </div>
 
-        {diagramMode === 'relation' && sortedSystems.length > 0 && systemRelations.length > 0 ? (
+        {diagramMode === "relation" &&
+        sortedSystems.length > 0 &&
+        systemRelations.length > 0 ? (
           <div className={styles.diagramWrap}>
             <SystemLandscapeFlow
               activeEdgeId={hoveredEdge?.id ?? null}
@@ -397,8 +690,12 @@ export function SystemLandscapePage() {
             />
             <div className={styles.edgeAssistList}>
               {systemRelations.map((relation) => {
-                const sourceName = systemById.get(relation.sourceSystemId)?.name ?? relation.sourceSystemId
-                const targetName = systemById.get(relation.targetSystemId)?.name ?? relation.targetSystemId
+                const sourceName =
+                  systemById.get(relation.sourceSystemId)?.name ??
+                  relation.sourceSystemId;
+                const targetName =
+                  systemById.get(relation.targetSystemId)?.name ??
+                  relation.targetSystemId;
 
                 return (
                   <button
@@ -414,7 +711,7 @@ export function SystemLandscapePage() {
                   >
                     仕向け → 被仕向け
                   </button>
-                )
+                );
               })}
             </div>
             {hoveredEdge ? (
@@ -422,68 +719,399 @@ export function SystemLandscapePage() {
                 <strong className={styles.edgeTooltipTitle}>
                   {hoveredEdge.sourceName} → {hoveredEdge.targetName}
                 </strong>
-                <p className={styles.edgeTooltipText}>プロトコル: {hoveredEdge.protocol?.trim() || '未設定'}</p>
-                <p className={styles.edgeTooltipText}>{hoveredEdge.note ?? 'メモは未設定です。'}</p>
+                <p className={styles.edgeTooltipText}>
+                  プロトコル: {hoveredEdge.protocol?.trim() || "未設定"}
+                </p>
+                <p className={styles.edgeTooltipText}>
+                  {hoveredEdge.note ?? "メモは未設定です。"}
+                </p>
               </div>
             ) : null}
           </div>
         ) : null}
 
-        {diagramMode === 'transaction' && systemTransactions.length > 0 && selectedTransaction ? (
+        {diagramMode === "transaction" &&
+        systemTransactions.length > 0 &&
+        selectedTransaction ? (
           <div className={styles.transactionDiagramSection}>
-            <label className={styles.selectorField}>
-              <span className={styles.selectorLabel}>表示対象データ流れ</span>
-              <select
-                className={styles.selectorInput}
-                data-testid="transaction-select"
-                onChange={(event) => setSelectedTransactionId(event.target.value)}
-                value={selectedTransaction.id}
-              >
-                {systemTransactions.map((transaction) => (
-                  <option key={transaction.id} value={transaction.id}>
-                    {transaction.name} / {transaction.dataLabel}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className={styles.transactionToolbar}>
+              <label className={styles.selectorField}>
+                <span className={styles.selectorLabel}>表示対象データ流れ</span>
+                <select
+                  className={styles.selectorInput}
+                  data-testid="transaction-select"
+                  onChange={(event) => {
+                    setSelectedTransactionId(event.target.value);
+                    resetTransactionStepEditor();
+                    setIsTransactionEditing(false);
+                  }}
+                  value={selectedTransaction.id}
+                >
+                  {systemTransactions.map((transaction) => (
+                    <option key={transaction.id} value={transaction.id}>
+                      {transaction.name} / {transaction.dataLabel}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            {selectedTransactionSummary ? (
+              <div className={styles.transactionEditActions}>
+                <Button
+                  data-testid="transaction-flow-create-toggle"
+                  onClick={() => {
+                    if (isCreatingTransaction) {
+                      resetCreateTransactionEditor();
+                      return;
+                    }
+
+                    setIsCreatingTransaction(true);
+                    setIsTransactionEditing(true);
+                    setTransactionEditError(null);
+                    setPendingTransactionStep(null);
+                  }}
+                  size="small"
+                  variant={isCreatingTransaction ? "secondary" : "primary"}
+                >
+                  {isCreatingTransaction
+                    ? "新規作成を閉じる"
+                    : "新しいデータ流れを作成"}
+                </Button>
+                <Button
+                  data-testid="transaction-flow-edit-toggle"
+                  disabled={isCreatingTransaction}
+                  onClick={() => {
+                    setIsTransactionEditing((current) => {
+                      const next = !current;
+                      if (!next) {
+                        resetTransactionStepEditor();
+                      }
+                      return next;
+                    });
+                  }}
+                  size="small"
+                  variant={isTransactionEditing ? "secondary" : "primary"}
+                >
+                  {isTransactionEditing
+                    ? "編集を閉じる"
+                    : "React Flow でステップ追加"}
+                </Button>
+              </div>
+            </div>
+
+            {isCreatingTransaction ? (
+              <div
+                className={styles.transactionEditPanel}
+                data-testid="transaction-flow-create-panel"
+              >
+                <div className={styles.transactionManualGrid}>
+                  <label className={styles.formFieldInline}>
+                    <span className={styles.selectorLabel}>
+                      トランザクション名
+                    </span>
+                    <input
+                      className={styles.selectorInput}
+                      data-testid="transaction-flow-create-name"
+                      onChange={(event) =>
+                        setTransactionDraft((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
+                      }
+                      value={transactionDraft.name}
+                    />
+                  </label>
+                  <label className={styles.formFieldInline}>
+                    <span className={styles.selectorLabel}>対象データ</span>
+                    <input
+                      className={styles.selectorInput}
+                      data-testid="transaction-flow-create-data-label"
+                      onChange={(event) =>
+                        setTransactionDraft((current) => ({
+                          ...current,
+                          dataLabel: event.target.value,
+                        }))
+                      }
+                      value={transactionDraft.dataLabel}
+                    />
+                  </label>
+                  <label className={styles.formFieldInline}>
+                    <span className={styles.selectorLabel}>説明</span>
+                    <input
+                      className={styles.selectorInput}
+                      data-testid="transaction-flow-create-note"
+                      onChange={(event) =>
+                        setTransactionDraft((current) => ({
+                          ...current,
+                          note: event.target.value,
+                        }))
+                      }
+                      value={transactionDraft.note}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedTransactionSummary && !isCreatingTransaction ? (
               <div className={styles.transactionSummaryGrid}>
                 <div className={styles.transactionSummaryCard}>
-                  <span className={styles.transactionSummaryLabel}>対象データ</span>
-                  <strong className={styles.transactionSummaryValue}>{selectedTransaction.dataLabel}</strong>
-                </div>
-                <div className={styles.transactionSummaryCard}>
-                  <span className={styles.transactionSummaryLabel}>起点 → 終点</span>
+                  <span className={styles.transactionSummaryLabel}>
+                    対象データ
+                  </span>
                   <strong className={styles.transactionSummaryValue}>
-                    {selectedTransactionSummary.startName} → {selectedTransactionSummary.endName}
+                    {selectedTransaction.dataLabel}
                   </strong>
                 </div>
                 <div className={styles.transactionSummaryCard}>
-                  <span className={styles.transactionSummaryLabel}>ステップ数</span>
+                  <span className={styles.transactionSummaryLabel}>
+                    起点 → 終点
+                  </span>
+                  <strong className={styles.transactionSummaryValue}>
+                    {selectedTransactionSummary.startName} →{" "}
+                    {selectedTransactionSummary.endName}
+                  </strong>
+                </div>
+                <div className={styles.transactionSummaryCard}>
+                  <span className={styles.transactionSummaryLabel}>
+                    ステップ数
+                  </span>
                   <strong className={styles.transactionSummaryValue}>
                     {selectedTransactionSummary.stepCount} 件
                   </strong>
                 </div>
                 <div className={styles.transactionSummaryCard}>
-                  <span className={styles.transactionSummaryLabel}>プロトコル</span>
+                  <span className={styles.transactionSummaryLabel}>
+                    プロトコル
+                  </span>
                   <strong className={styles.transactionSummaryValue}>
-                    {selectedTransactionSummary.protocolSummary.join(' / ') || '未設定'}
+                    {selectedTransactionSummary.protocolSummary.join(" / ") ||
+                      "未設定"}
                   </strong>
                 </div>
               </div>
             ) : null}
 
-            <div className={styles.transactionMetaCard}>
-              <p className={styles.transactionPathText} data-testid="transaction-path-label">
-                {selectedTransactionSummary?.pathLabel ?? '経路を表示できません。'}
-              </p>
-              <p className={styles.transactionNoteText}>
-                {selectedTransaction.note?.trim() || 'トランザクションの説明は未設定です。'}
-              </p>
-            </div>
+            {!isCreatingTransaction ? (
+              <div className={styles.transactionMetaCard}>
+                <p
+                  className={styles.transactionPathText}
+                  data-testid="transaction-path-label"
+                >
+                  {selectedTransactionSummary?.pathLabel ??
+                    "経路を表示できません。"}
+                </p>
+                <p className={styles.transactionNoteText}>
+                  {selectedTransaction.note?.trim() ||
+                    "トランザクションの説明は未設定です。"}
+                </p>
+              </div>
+            ) : null}
+
+            {isTransactionEditing ? (
+              <div className={styles.transactionEditPanel}>
+                <p className={styles.transactionEditLead}>
+                  ノードの右側から左側へドラッグして、追加するステップ候補を作成します。
+                </p>
+                <p className={styles.transactionEditSubtle}>
+                  既存の通信線がある組み合わせだけ追加できます。ドラッグしづらい場合は下の選択欄からも指定できます。
+                </p>
+
+                <div className={styles.transactionManualGrid}>
+                  <label className={styles.formFieldInline}>
+                    <span className={styles.selectorLabel}>接続元</span>
+                    <select
+                      className={styles.selectorInput}
+                      data-testid="transaction-flow-source-select"
+                      onChange={(event) =>
+                        setManualSourceSystemId(event.target.value)
+                      }
+                      value={manualSourceSystemId}
+                    >
+                      <option value="">選択してください</option>
+                      {sortedSystems.map((system) => (
+                        <option key={system.id} value={system.id}>
+                          {formatSystemOptionLabel(system)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={styles.formFieldInline}>
+                    <span className={styles.selectorLabel}>接続先</span>
+                    <select
+                      className={styles.selectorInput}
+                      data-testid="transaction-flow-target-select"
+                      onChange={(event) =>
+                        setManualTargetSystemId(event.target.value)
+                      }
+                      value={manualTargetSystemId}
+                    >
+                      <option value="">選択してください</option>
+                      {sortedSystems.map((system) => (
+                        <option key={system.id} value={system.id}>
+                          {formatSystemOptionLabel(system)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className={styles.transactionManualAction}>
+                    <Button
+                      data-testid="transaction-flow-start-step"
+                      disabled={
+                        !manualSourceSystemId ||
+                        !manualTargetSystemId ||
+                        isSavingTransactionStep
+                      }
+                      onClick={() =>
+                        startPendingTransactionStep(
+                          manualSourceSystemId,
+                          manualTargetSystemId,
+                        )
+                      }
+                      size="small"
+                      type="button"
+                      variant="secondary"
+                    >
+                      ステップ候補を作成
+                    </Button>
+                  </div>
+                </div>
+
+                {pendingTransactionStep ? (
+                  <div
+                    className={styles.transactionPendingCard}
+                    data-testid="transaction-flow-pending-step"
+                  >
+                    <div className={styles.transactionPendingHeader}>
+                      <strong className={styles.transactionPendingTitle}>
+                        {systemById.get(pendingTransactionStep.sourceSystemId)
+                          ?.name ?? pendingTransactionStep.sourceSystemId}
+                        {" → "}
+                        {systemById.get(pendingTransactionStep.targetSystemId)
+                          ?.name ?? pendingTransactionStep.targetSystemId}
+                      </strong>
+                      <span className={styles.transactionPendingOrder}>
+                        Step {selectedTransactionSteps.length + 1}
+                      </span>
+                    </div>
+
+                    <div className={styles.transactionManualGrid}>
+                      <label className={styles.formFieldInline}>
+                        <span className={styles.selectorLabel}>通信線</span>
+                        <select
+                          className={styles.selectorInput}
+                          data-testid="transaction-flow-relation-select"
+                          onChange={(event) =>
+                            setPendingTransactionStep((current) =>
+                              current
+                                ? { ...current, relationId: event.target.value }
+                                : current,
+                            )
+                          }
+                          value={pendingTransactionStep.relationId}
+                        >
+                          {pendingRelationOptions.map((relation) => (
+                            <option key={relation.id} value={relation.id}>
+                              {relation.id} /{" "}
+                              {relation.protocol?.trim() || "未設定"}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className={styles.formFieldInline}>
+                        <span className={styles.selectorLabel}>処理ラベル</span>
+                        <input
+                          className={styles.selectorInput}
+                          data-testid="transaction-flow-action-input"
+                          onChange={(event) =>
+                            setPendingTransactionStep((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    actionLabel: event.target.value,
+                                  }
+                                : current,
+                            )
+                          }
+                          value={pendingTransactionStep.actionLabel}
+                        />
+                      </label>
+
+                      <label className={styles.formFieldInline}>
+                        <span className={styles.selectorLabel}>メモ</span>
+                        <input
+                          className={styles.selectorInput}
+                          data-testid="transaction-flow-note-input"
+                          onChange={(event) =>
+                            setPendingTransactionStep((current) =>
+                              current
+                                ? { ...current, note: event.target.value }
+                                : current,
+                            )
+                          }
+                          value={pendingTransactionStep.note}
+                        />
+                      </label>
+                    </div>
+
+                    <div className={styles.transactionEditActions}>
+                      {isCreatingTransaction ? (
+                        <Button
+                          data-testid="transaction-flow-create-save"
+                          disabled={isSavingTransactionStep}
+                          onClick={() => void handleCreateTransactionFromFlow()}
+                          size="small"
+                          type="button"
+                        >
+                          {isSavingTransactionStep
+                            ? "保存中..."
+                            : "この流れを作成"}
+                        </Button>
+                      ) : (
+                        <Button
+                          data-testid="transaction-flow-save-step"
+                          disabled={isSavingTransactionStep}
+                          onClick={() => void handleSaveTransactionStep()}
+                          size="small"
+                          type="button"
+                        >
+                          {isSavingTransactionStep
+                            ? "保存中..."
+                            : "このステップを追加"}
+                        </Button>
+                      )}
+                      <Button
+                        disabled={isSavingTransactionStep}
+                        onClick={
+                          isCreatingTransaction
+                            ? resetCreateTransactionEditor
+                            : resetTransactionStepEditor
+                        }
+                        size="small"
+                        type="button"
+                        variant="secondary"
+                      >
+                        キャンセル
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {transactionEditError ? (
+                  <p className={styles.transactionEditError}>
+                    {transactionEditError}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <SystemTransactionFlow
+              editable={isTransactionEditing && !isSavingTransactionStep}
+              onConnectStep={({ sourceSystemId, targetSystemId }) =>
+                startPendingTransactionStep(sourceSystemId, targetSystemId)
+              }
               projectCountBySystemId={projectCountBySystemId}
               relationById={relationById}
               steps={selectedTransactionSteps}
@@ -493,14 +1121,282 @@ export function SystemLandscapePage() {
           </div>
         ) : null}
 
-        {diagramMode === 'relation' && !(sortedSystems.length > 0 && systemRelations.length > 0) ? (
-          <p className={styles.emptyText}>関連システムを登録すると、ここに全体の関連図を表示します。</p>
+        {diagramMode === "relation" &&
+        !(sortedSystems.length > 0 && systemRelations.length > 0) ? (
+          <p className={styles.emptyText}>
+            関連システムを登録すると、ここに全体の関連図を表示します。
+          </p>
         ) : null}
 
-        {diagramMode === 'transaction' && !(systemTransactions.length > 0 && selectedTransaction) ? (
-          <p className={styles.emptyText}>データ流れを登録すると、ここに経路を表示します。</p>
+        {diagramMode === "transaction" &&
+        !(systemTransactions.length > 0 && selectedTransaction) ? (
+          <div className={styles.transactionDiagramSection}>
+            <div className={styles.transactionToolbar}>
+              <p className={styles.emptyText}>
+                データ流れがまだありません。最初の1件をここから作成できます。
+              </p>
+              <div className={styles.transactionEditActions}>
+                <Button
+                  data-testid="transaction-flow-create-toggle-empty"
+                  onClick={() => {
+                    setIsCreatingTransaction((current) => {
+                      const next = !current;
+                      if (!next) {
+                        resetCreateTransactionEditor();
+                      } else {
+                        setIsTransactionEditing(true);
+                      }
+                      return next;
+                    });
+                  }}
+                  size="small"
+                >
+                  {isCreatingTransaction
+                    ? "新規作成を閉じる"
+                    : "新しいデータ流れを作成"}
+                </Button>
+              </div>
+            </div>
+
+            {isCreatingTransaction ? (
+              <>
+                <div
+                  className={styles.transactionEditPanel}
+                  data-testid="transaction-flow-create-panel"
+                >
+                  <div className={styles.transactionManualGrid}>
+                    <label className={styles.formFieldInline}>
+                      <span className={styles.selectorLabel}>
+                        トランザクション名
+                      </span>
+                      <input
+                        className={styles.selectorInput}
+                        data-testid="transaction-flow-create-name"
+                        onChange={(event) =>
+                          setTransactionDraft((current) => ({
+                            ...current,
+                            name: event.target.value,
+                          }))
+                        }
+                        value={transactionDraft.name}
+                      />
+                    </label>
+                    <label className={styles.formFieldInline}>
+                      <span className={styles.selectorLabel}>対象データ</span>
+                      <input
+                        className={styles.selectorInput}
+                        data-testid="transaction-flow-create-data-label"
+                        onChange={(event) =>
+                          setTransactionDraft((current) => ({
+                            ...current,
+                            dataLabel: event.target.value,
+                          }))
+                        }
+                        value={transactionDraft.dataLabel}
+                      />
+                    </label>
+                    <label className={styles.formFieldInline}>
+                      <span className={styles.selectorLabel}>説明</span>
+                      <input
+                        className={styles.selectorInput}
+                        data-testid="transaction-flow-create-note"
+                        onChange={(event) =>
+                          setTransactionDraft((current) => ({
+                            ...current,
+                            note: event.target.value,
+                          }))
+                        }
+                        value={transactionDraft.note}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className={styles.transactionEditPanel}>
+                  <p className={styles.transactionEditLead}>
+                    最初の1ステップを選んでから保存します。
+                  </p>
+                  <div className={styles.transactionManualGrid}>
+                    <label className={styles.formFieldInline}>
+                      <span className={styles.selectorLabel}>接続元</span>
+                      <select
+                        className={styles.selectorInput}
+                        data-testid="transaction-flow-source-select"
+                        onChange={(event) =>
+                          setManualSourceSystemId(event.target.value)
+                        }
+                        value={manualSourceSystemId}
+                      >
+                        <option value="">選択してください</option>
+                        {sortedSystems.map((system) => (
+                          <option key={system.id} value={system.id}>
+                            {formatSystemOptionLabel(system)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className={styles.formFieldInline}>
+                      <span className={styles.selectorLabel}>接続先</span>
+                      <select
+                        className={styles.selectorInput}
+                        data-testid="transaction-flow-target-select"
+                        onChange={(event) =>
+                          setManualTargetSystemId(event.target.value)
+                        }
+                        value={manualTargetSystemId}
+                      >
+                        <option value="">選択してください</option>
+                        {sortedSystems.map((system) => (
+                          <option key={system.id} value={system.id}>
+                            {formatSystemOptionLabel(system)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className={styles.transactionManualAction}>
+                      <Button
+                        data-testid="transaction-flow-start-step"
+                        disabled={
+                          !manualSourceSystemId ||
+                          !manualTargetSystemId ||
+                          isSavingTransactionStep
+                        }
+                        onClick={() =>
+                          startPendingTransactionStep(
+                            manualSourceSystemId,
+                            manualTargetSystemId,
+                          )
+                        }
+                        size="small"
+                        type="button"
+                        variant="secondary"
+                      >
+                        ステップ候補を作成
+                      </Button>
+                    </div>
+                  </div>
+
+                  {pendingTransactionStep ? (
+                    <div
+                      className={styles.transactionPendingCard}
+                      data-testid="transaction-flow-pending-step"
+                    >
+                      <div className={styles.transactionPendingHeader}>
+                        <strong className={styles.transactionPendingTitle}>
+                          {systemById.get(pendingTransactionStep.sourceSystemId)
+                            ?.name ?? pendingTransactionStep.sourceSystemId}
+                          {" → "}
+                          {systemById.get(pendingTransactionStep.targetSystemId)
+                            ?.name ?? pendingTransactionStep.targetSystemId}
+                        </strong>
+                        <span className={styles.transactionPendingOrder}>
+                          Step 1
+                        </span>
+                      </div>
+
+                      <div className={styles.transactionManualGrid}>
+                        <label className={styles.formFieldInline}>
+                          <span className={styles.selectorLabel}>通信線</span>
+                          <select
+                            className={styles.selectorInput}
+                            data-testid="transaction-flow-relation-select"
+                            onChange={(event) =>
+                              setPendingTransactionStep((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      relationId: event.target.value,
+                                    }
+                                  : current,
+                              )
+                            }
+                            value={pendingTransactionStep.relationId}
+                          >
+                            {pendingRelationOptions.map((relation) => (
+                              <option key={relation.id} value={relation.id}>
+                                {relation.id} /{" "}
+                                {relation.protocol?.trim() || "未設定"}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className={styles.formFieldInline}>
+                          <span className={styles.selectorLabel}>
+                            処理ラベル
+                          </span>
+                          <input
+                            className={styles.selectorInput}
+                            data-testid="transaction-flow-action-input"
+                            onChange={(event) =>
+                              setPendingTransactionStep((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      actionLabel: event.target.value,
+                                    }
+                                  : current,
+                              )
+                            }
+                            value={pendingTransactionStep.actionLabel}
+                          />
+                        </label>
+
+                        <label className={styles.formFieldInline}>
+                          <span className={styles.selectorLabel}>メモ</span>
+                          <input
+                            className={styles.selectorInput}
+                            data-testid="transaction-flow-note-input"
+                            onChange={(event) =>
+                              setPendingTransactionStep((current) =>
+                                current
+                                  ? { ...current, note: event.target.value }
+                                  : current,
+                              )
+                            }
+                            value={pendingTransactionStep.note}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.transactionEditActions}>
+                        <Button
+                          data-testid="transaction-flow-create-save"
+                          disabled={isSavingTransactionStep}
+                          onClick={() => void handleCreateTransactionFromFlow()}
+                          size="small"
+                          type="button"
+                        >
+                          {isSavingTransactionStep
+                            ? "保存中..."
+                            : "この流れを作成"}
+                        </Button>
+                        <Button
+                          disabled={isSavingTransactionStep}
+                          onClick={resetCreateTransactionEditor}
+                          size="small"
+                          type="button"
+                          variant="secondary"
+                        >
+                          キャンセル
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {transactionEditError ? (
+                    <p className={styles.transactionEditError}>
+                      {transactionEditError}
+                    </p>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </div>
         ) : null}
       </Panel>
     </div>
-  )
+  );
 }
