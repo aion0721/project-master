@@ -10,6 +10,7 @@ interface ProjectTableRow {
   project: Project
   currentPhaseName: string
   pmName: string
+  departmentNames: string[]
   primarySystemName?: string
 }
 
@@ -29,7 +30,7 @@ export function ProjectTable({
   const { startIndex, endIndex, paddingTop, paddingBottom } = useVirtualWindow({
     containerRef: wrapperRef,
     itemCount: rows.length,
-    getItemSize: () => 98,
+    getItemSize: () => 124,
     overscan: 8,
   })
   const visibleRows = endIndex >= startIndex ? rows.slice(startIndex, endIndex + 1) : []
@@ -56,7 +57,7 @@ export function ProjectTable({
               <td colSpan={columnCount} style={{ height: `${paddingTop}px`, padding: 0 }} />
             </tr>
           ) : null}
-          {visibleRows.map(({ project, currentPhaseName, pmName, primarySystemName }) => {
+          {visibleRows.map(({ project, currentPhaseName, pmName, primarySystemName, departmentNames }) => {
             const isBookmarked = bookmarkedSet.has(project.projectNumber)
 
             return (
@@ -70,6 +71,18 @@ export function ProjectTable({
                         <span className={styles.systemChip} key={`${project.projectNumber}-${primarySystemName}`}>
                           主システム: {primarySystemName}
                         </span>
+                      </div>
+                    ) : null}
+                    {departmentNames.length > 0 ? (
+                      <div className={styles.systemChipList}>
+                        {departmentNames.map((departmentName) => (
+                          <span
+                            className={`${styles.systemChip} ${styles.departmentChip}`}
+                            key={`${project.projectNumber}-${departmentName}`}
+                          >
+                            部署: {departmentName}
+                          </span>
+                        ))}
                       </div>
                     ) : null}
                   </div>

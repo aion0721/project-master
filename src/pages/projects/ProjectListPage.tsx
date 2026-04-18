@@ -17,12 +17,21 @@ import styles from "./ProjectListPage.module.css";
 type ViewMode = "all" | "bookmarks";
 
 export function ProjectListPage() {
-  const { projects, members, systems, getProjectPhases, isLoading, error } =
+  const {
+    projects,
+    members,
+    projectDepartments,
+    systems,
+    getProjectPhases,
+    isLoading,
+    error,
+  } =
     useProjectData();
   const { currentUser, saveDefaultProjectStatusFilters, toggleBookmark } =
     useUserSession();
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [selectedDepartmentName, setSelectedDepartmentName] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Project["status"][]>(
     () => getMemberDefaultProjectStatusFilters(currentUser),
   );
@@ -43,6 +52,25 @@ export function ProjectListPage() {
     () => new Map(systems.map((system) => [system.id, system.name])),
     [systems],
   );
+  const departmentNamesByProjectId = useMemo(() => {
+    const map = new Map<string, string[]>();
+
+    projectDepartments.forEach((projectDepartment) => {
+      const current = map.get(projectDepartment.projectId) ?? [];
+
+      if (!current.includes(projectDepartment.departmentName)) {
+        map.set(projectDepartment.projectId, [...current, projectDepartment.departmentName]);
+      }
+    });
+
+    return map;
+  }, [projectDepartments]);
+  const departmentOptions = useMemo(
+    () =>
+      [...new Set(projectDepartments.map((projectDepartment) => projectDepartment.departmentName))]
+        .sort((left, right) => left.localeCompare(right, "ja")),
+    [projectDepartments],
+  );
 
   const bookmarkFilteredProjects = useMemo(() => {
     if (viewMode !== "bookmarks" || !currentUser) {
@@ -57,10 +85,23 @@ export function ProjectListPage() {
 
   const filteredProjects = useMemo(
     () =>
-      bookmarkFilteredProjects.filter((project) =>
-        selectedStatuses.includes(project.status),
-      ),
-    [bookmarkFilteredProjects, selectedStatuses],
+      bookmarkFilteredProjects.filter((project) => {
+        if (!selectedStatuses.includes(project.status)) {
+          return false;
+        }
+
+        if (!selectedDepartmentName) {
+          return true;
+        }
+
+        const projectDepartmentNames =
+          departmentNamesByProjectId.get(project.projectNumber) ?? [];
+
+        return selectedDepartmentName === "__unassigned__"
+          ? projectDepartmentNames.length === 0
+          : projectDepartmentNames.includes(selectedDepartmentName);
+      }),
+    [bookmarkFilteredProjects, departmentNamesByProjectId, selectedDepartmentName, selectedStatuses],
   );
 
   const rows = useMemo(
@@ -74,12 +115,14 @@ export function ProjectListPage() {
           project,
           currentPhaseName: currentPhase?.name ?? "未設定",
           pmName: pm?.name ?? "未設定",
+          departmentNames:
+            departmentNamesByProjectId.get(project.projectNumber) ?? [],
           primarySystemName: systemNameById.get(
             project.relatedSystemIds?.[0] ?? "",
           ),
         };
       }),
-    [filteredProjects, getProjectPhases, members, systemNameById],
+    [departmentNamesByProjectId, filteredProjects, getProjectPhases, members, systemNameById],
   );
 
   const summary = useMemo(
@@ -123,7 +166,7 @@ export function ProjectListPage() {
           : rows.length === 0
             ? {
                 title: "条件に一致する案件はありません",
-                description: "状態フィルターや表示モードを調整してください。",
+                description: "状態フィルター、部署条件、表示モードを調整してください。",
               }
             : null;
 
@@ -195,6 +238,22 @@ export function ProjectListPage() {
       filterProps={{
         body: (
           <div className={styles.statusFilters}>
+            <label className={styles.filterField}>
+              <span className={styles.filterFieldLabel}>関与部署</span>
+              <select
+                className={styles.filterSelect}
+                onChange={(event) => setSelectedDepartmentName(event.target.value)}
+                value={selectedDepartmentName}
+              >
+                <option value="">すべての部署</option>
+                <option value="__unassigned__">部署未設定</option>
+                {departmentOptions.map((departmentName) => (
+                  <option key={departmentName} value={departmentName}>
+                    {departmentName}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className={styles.statusCheckboxGroup}>
               {allWorkStatuses.map((status) => (
                 <label className={styles.statusCheckbox} key={status}>
@@ -215,7 +274,7 @@ export function ProjectListPage() {
             <div className={styles.filterSummaryHeading}>
               <p className={styles.statusFilterTitle}>状態フィルター</p>
               <p className={styles.statusFilterHint}>
-                複数選択できます。完了だけ外す使い方を想定しています。
+                複数選択できます。部署で絞ると、関連案件だけを一覧化できます。
               </p>
             </div>
             <div className={styles.statusFilterActions}>

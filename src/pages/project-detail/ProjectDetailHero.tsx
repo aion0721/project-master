@@ -5,6 +5,7 @@ import type {
   ManagedSystem,
   Phase,
   Project,
+  ProjectDepartmentAssignment,
   ProjectLink,
   ProjectStatusEntry,
   ProjectStatusOverride,
@@ -45,6 +46,23 @@ interface ProjectDetailHeroProps {
   currentPhase?: Phase
   projectPhases: Phase[]
   relatedSystems: ManagedSystem[]
+  projectDepartments: ProjectDepartmentAssignment[]
+  availableDepartments: Array<{
+    departmentCode: string
+    departmentName: string
+  }>
+  isProjectDepartmentsEditing: boolean
+  projectDepartmentDrafts: Array<{
+    key: string
+    id?: string
+    departmentCode: string
+    departmentName: string
+    role: ProjectDepartmentAssignment['role']
+    note: string
+  }>
+  projectDepartmentsChanged: boolean
+  projectDepartmentsError: string | null
+  isSavingProjectDepartments: boolean
   availableSystems: ManagedSystem[]
   isCurrentPhaseEditing: boolean
   currentPhaseDraftId: string
@@ -114,6 +132,21 @@ interface ProjectDetailHeroProps {
   onProjectSystemsCancel: () => void
   onProjectSystemsSave: () => void
   onProjectSystemChange: (systemId: string) => void
+  onAddProjectDepartment: () => void
+  onProjectDepartmentDraftChange: (
+    key: string,
+    patch: Partial<{
+      id?: string
+      departmentCode: string
+      departmentName: string
+      role: ProjectDepartmentAssignment['role']
+      note: string
+    }>,
+  ) => void
+  onProjectDepartmentsEdit: () => void
+  onProjectDepartmentsCancel: () => void
+  onProjectDepartmentsSave: () => void
+  onRemoveProjectDepartment: (key: string) => void
   onRemoveProjectLink: (index: number) => void
   onRemoveProjectStatusEntry: (index: number) => void
 }
@@ -145,6 +178,13 @@ export function ProjectDetailHero({
   currentPhase,
   projectPhases,
   relatedSystems,
+  projectDepartments,
+  availableDepartments,
+  isProjectDepartmentsEditing,
+  projectDepartmentDrafts,
+  projectDepartmentsChanged,
+  projectDepartmentsError,
+  isSavingProjectDepartments,
   availableSystems,
   isCurrentPhaseEditing,
   currentPhaseDraftId,
@@ -214,6 +254,12 @@ export function ProjectDetailHero({
   onProjectSystemsCancel,
   onProjectSystemsSave,
   onProjectSystemChange,
+  onAddProjectDepartment,
+  onProjectDepartmentDraftChange,
+  onProjectDepartmentsEdit,
+  onProjectDepartmentsCancel,
+  onProjectDepartmentsSave,
+  onRemoveProjectDepartment,
   onRemoveProjectLink,
   onRemoveProjectStatusEntry,
 }: ProjectDetailHeroProps) {
@@ -255,6 +301,21 @@ export function ProjectDetailHero({
       onSave: onProjectSystemsSave,
       onSystemChange: onProjectSystemChange,
       project,
+    },
+    projectDepartmentsProps: {
+      availableDepartments,
+      changed: projectDepartmentsChanged,
+      draft: projectDepartmentDrafts,
+      error: projectDepartmentsError,
+      isEditing: isProjectDepartmentsEditing,
+      isSaving: isSavingProjectDepartments,
+      onAdd: onAddProjectDepartment,
+      onDraftChange: onProjectDepartmentDraftChange,
+      onEdit: onProjectDepartmentsEdit,
+      onCancel: onProjectDepartmentsCancel,
+      onSave: onProjectDepartmentsSave,
+      onRemove: onRemoveProjectDepartment,
+      projectDepartments,
     },
     currentPhaseProps: {
       changed: currentPhaseChanged,

@@ -62,6 +62,7 @@ describe('MemberCreatePage', () => {
 
   it('env のプレースホルダーを使う', async () => {
     vi.stubEnv('VITE_MEMBER_ID_EXAMPLE', 'EMP0001')
+    mockProjectApi()
 
     renderWithProviders(<MemberCreatePage />, {
       initialEntries: ['/members/new'],

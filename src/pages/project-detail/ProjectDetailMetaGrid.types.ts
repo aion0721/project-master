@@ -2,6 +2,7 @@ import type {
   ManagedSystem,
   Phase,
   Project,
+  ProjectDepartmentAssignment,
   ProjectLink,
   ProjectStatusEntry,
   ProjectStatusOverride,
@@ -144,10 +145,46 @@ export interface ProjectReportStatusCardProps {
   onCancel: () => void
 }
 
+export interface ProjectDepartmentsCardProps {
+  isEditing: boolean
+  isSaving: boolean
+  changed: boolean
+  error: string | null
+  availableDepartments: Array<{
+    departmentCode: string
+    departmentName: string
+  }>
+  projectDepartments: ProjectDepartmentAssignment[]
+  draft: Array<{
+    key: string
+    id?: string
+    departmentCode: string
+    departmentName: string
+    role: ProjectDepartmentAssignment['role']
+    note: string
+  }>
+  onAdd: () => void
+  onDraftChange: (
+    key: string,
+    patch: Partial<{
+      id?: string
+      departmentCode: string
+      departmentName: string
+      role: ProjectDepartmentAssignment['role']
+      note: string
+    }>,
+  ) => void
+  onEdit: () => void
+  onSave: () => void
+  onCancel: () => void
+  onRemove: (key: string) => void
+}
+
 export interface ProjectDetailMetaGridProps {
   projectSummaryProps: ProjectSummaryCardProps
   scheduleProps: ScheduleCardProps
   projectSystemProps: ProjectSystemCardProps
+  projectDepartmentsProps: ProjectDepartmentsCardProps
   currentPhaseProps: CurrentPhaseCardProps
   projectStatusProps: ProjectStatusCardProps
   projectNoteProps: ProjectNoteCardProps

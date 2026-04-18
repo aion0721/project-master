@@ -108,9 +108,9 @@ function CrossProjectProjectRowComponent({
           >
             {project.name}
           </Link>
-          <div className={styles.metaLine}>{project.projectNumber}</div>
           {!isCompactMode ? (
             <>
+              <div className={styles.metaLine}>{project.projectNumber}</div>
               <div className={styles.metaLine}>
                 {`PM: ${pm?.name ?? "未設定"}`}
               </div>

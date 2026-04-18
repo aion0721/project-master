@@ -16,6 +16,7 @@ import { ProjectStructureSection } from '../project-detail/ProjectStructureSecti
 import { useProjectDetailData } from '../project-detail/useProjectDetailData'
 import { useProjectEventEditor } from '../project-detail/useProjectEventEditor'
 import { useProjectPhaseEditor } from '../project-detail/useProjectPhaseEditor'
+import { useProjectDepartmentEditor } from '../project-detail/useProjectDepartmentEditor'
 import { useProjectStructureEditor } from '../project-detail/useProjectStructureEditor'
 import { useProjectSummaryEditor } from '../project-detail/useProjectSummaryEditor'
 import styles from './ProjectDetailPage.module.css'
@@ -26,6 +27,7 @@ export function ProjectDetailPage() {
   const {
     assignments,
     members,
+    projectDepartments,
     systems,
     getSystemAssignments,
     getProjectById,
@@ -44,6 +46,7 @@ export function ProjectDetailPage() {
     updateProjectStatusOverride,
     updatePhase,
     updateProjectSystems,
+    updateProjectDepartments,
     updateProjectPhases,
     updateProjectSchedule,
     updateProjectStructure,
@@ -137,6 +140,41 @@ export function ProjectDetailPage() {
   }, [project, systems])
 
   const primarySystem = relatedSystems[0] ?? null
+  const currentProjectDepartments = useMemo(
+    () =>
+      project
+        ? projectDepartments.filter(
+            (projectDepartment) => projectDepartment.projectId === project.projectNumber,
+          )
+        : [],
+    [project, projectDepartments],
+  )
+  const availableDepartments = useMemo(() => {
+    const departmentMap = new Map<string, { departmentCode: string; departmentName: string }>()
+
+    members.forEach((member) => {
+      const departmentName = member.departmentName.trim()
+      const departmentCode = member.departmentCode.trim()
+
+      if (!departmentName || !departmentCode || departmentMap.has(departmentName)) {
+        return
+      }
+
+      departmentMap.set(departmentName, {
+        departmentCode,
+        departmentName,
+      })
+    })
+
+    return [...departmentMap.values()].sort((left, right) =>
+      left.departmentName.localeCompare(right.departmentName, 'ja'),
+    )
+  }, [members])
+  const departmentEditor = useProjectDepartmentEditor(
+    project,
+    currentProjectDepartments,
+    updateProjectDepartments,
+  )
   const primarySystemAssignments = useMemo(
     () => (primarySystem ? getSystemAssignments(primarySystem.id) : []),
     [getSystemAssignments, primarySystem],
@@ -475,6 +513,14 @@ export function ProjectDetailPage() {
           void summaryEditor.saveProjectSystems()
         }}
         onProjectSystemChange={summaryEditor.setProjectSystemDraft}
+        onAddProjectDepartment={departmentEditor.addProjectDepartmentDraft}
+        onProjectDepartmentDraftChange={departmentEditor.updateProjectDepartmentDraft}
+        onProjectDepartmentsEdit={departmentEditor.openProjectDepartmentsEditor}
+        onProjectDepartmentsCancel={departmentEditor.closeProjectDepartmentsEditor}
+        onProjectDepartmentsSave={() => {
+          void departmentEditor.saveProjectDepartments()
+        }}
+        onRemoveProjectDepartment={departmentEditor.removeProjectDepartmentDraft}
         onRemoveProjectLink={summaryEditor.removeProjectLinkDraft}
         onRemoveProjectStatusEntry={summaryEditor.removeProjectStatusEntryDraft}
         onScheduleCancel={summaryEditor.closeScheduleEditor}
@@ -490,6 +536,13 @@ export function ProjectDetailPage() {
         }}
         pmName={pm?.name}
         project={project}
+        projectDepartments={currentProjectDepartments}
+        availableDepartments={availableDepartments}
+        isProjectDepartmentsEditing={departmentEditor.isProjectDepartmentsEditing}
+        projectDepartmentDrafts={departmentEditor.projectDepartmentDrafts}
+        projectDepartmentsChanged={departmentEditor.projectDepartmentsChanged}
+        projectDepartmentsError={departmentEditor.projectDepartmentsError}
+        isSavingProjectDepartments={departmentEditor.isSavingProjectDepartments}
         projectSummaryChanged={summaryEditor.projectSummaryChanged}
         projectSummaryDraft={summaryEditor.projectSummaryDraft}
         projectSummaryError={summaryEditor.projectSummaryError}

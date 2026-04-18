@@ -18,7 +18,9 @@ interface UseCrossProjectViewParams {
   currentUser: Member | null
   getProjectPhases: (projectId: string) => Phase[]
   getProjectEvents: (projectId: string) => ProjectEvent[]
+  projectDepartmentNamesByProjectId: Map<string, string[]>
   projects: Project[]
+  selectedDepartmentName: string
   selectedStatuses: Project['status'][]
 }
 
@@ -26,7 +28,9 @@ export function useCrossProjectView({
   currentUser,
   getProjectPhases,
   getProjectEvents,
+  projectDepartmentNamesByProjectId,
   projects,
+  selectedDepartmentName,
   selectedStatuses,
 }: UseCrossProjectViewParams) {
   const [viewMode, setViewMode] = useState<CrossProjectViewMode>('all')
@@ -47,18 +51,33 @@ export function useCrossProjectView({
     [modeFilteredProjects, selectedStatuses],
   )
 
-  const normalizedKeyword = keyword.trim().toLowerCase()
-
-  const filteredProjects = useMemo(() => {
-    if (!normalizedKeyword) {
+  const departmentFilteredProjects = useMemo(() => {
+    if (!selectedDepartmentName) {
       return statusFilteredProjects
     }
 
     return statusFilteredProjects.filter((project) => {
+      const projectDepartmentNames =
+        projectDepartmentNamesByProjectId.get(project.projectNumber) ?? []
+
+      return selectedDepartmentName === '__unassigned__'
+        ? projectDepartmentNames.length === 0
+        : projectDepartmentNames.includes(selectedDepartmentName)
+    })
+  }, [projectDepartmentNamesByProjectId, selectedDepartmentName, statusFilteredProjects])
+
+  const normalizedKeyword = keyword.trim().toLowerCase()
+
+  const filteredProjects = useMemo(() => {
+    if (!normalizedKeyword) {
+      return departmentFilteredProjects
+    }
+
+    return departmentFilteredProjects.filter((project) => {
       const searchableText = `${project.projectNumber} ${project.name}`.toLowerCase()
       return searchableText.includes(normalizedKeyword)
     })
-  }, [normalizedKeyword, statusFilteredProjects])
+  }, [departmentFilteredProjects, normalizedKeyword])
 
   const globalWeekSlots = useMemo(() => getGlobalWeekSlots(filteredProjects), [filteredProjects])
   const globalMonthSlots = useMemo(() => getGlobalMonthSlots(filteredProjects), [filteredProjects])
@@ -106,7 +125,11 @@ export function useCrossProjectView({
     globalMonthSlots,
     globalWeekSlots,
     hasNoProjectsInMode: modeFilteredProjects.length === 0,
-    hasNoSearchResults: statusFilteredProjects.length > 0 && filteredProjects.length === 0,
+    hasNoDepartmentMatches:
+      statusFilteredProjects.length > 0 &&
+      selectedDepartmentName.length > 0 &&
+      departmentFilteredProjects.length === 0,
+    hasNoSearchResults: departmentFilteredProjects.length > 0 && filteredProjects.length === 0,
     hasNoStatusMatches: modeFilteredProjects.length > 0 && selectedStatuses.length > 0 && statusFilteredProjects.length === 0,
     hasNoStatusesSelected: selectedStatuses.length === 0,
     isBookmarkMode: viewMode === 'bookmarks',

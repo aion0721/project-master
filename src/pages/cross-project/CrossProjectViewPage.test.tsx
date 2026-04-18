@@ -29,6 +29,7 @@ describe("CrossProjectViewPage", () => {
     expect(
       screen.getByTestId("cross-project-event-PRJ-001-ev-p1-1"),
     ).toHaveTextContent("環境提供");
+    expect(screen.queryByText("PRJ-001")).not.toBeInTheDocument();
   });
 
   it("ブックマーク表示と検索で案件を絞り込める", async () => {
@@ -293,5 +294,22 @@ describe("CrossProjectViewPage", () => {
     expect(
       screen.getByTestId("cross-project-event-PRJ-001-ev-p1-1"),
     ).toHaveTextContent("環境提供");
+  });
+
+  it("詳細表示ONのときだけプロジェクト番号を表示する", async () => {
+    mockProjectApi();
+
+    renderWithProviders(<CrossProjectViewPage />, {
+      initialEntries: ["/cross-project"],
+    });
+
+    await screen.findByRole("heading", { name: "横断案件ビュー" });
+    expect(screen.queryByText("PRJ-001")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "詳細表示: OFF" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("PRJ-001")).toBeInTheDocument();
+    });
   });
 });

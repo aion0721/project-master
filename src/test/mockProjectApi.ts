@@ -6,6 +6,7 @@ import {
   members,
   phases,
   projects,
+  projectDepartments,
   systemAssignments,
   systemRelations,
   systemTransactions,
@@ -19,8 +20,10 @@ import type {
   CreateSystemTransactionInput,
   Phase,
   Project,
+  ProjectDepartmentAssignment,
   ProjectEvent,
   SystemAssignment,
+  UpdateProjectDepartmentsInput,
   UpdateProjectEventsInput,
   UpdateMemberInput,
   UpdatePhaseInput,
@@ -54,6 +57,7 @@ function cloneFixtures() {
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
     })),
+    projectDepartments: projectDepartments.map((projectDepartment) => ({ ...projectDepartment })),
     systems: systems.map((system) => ({
       ...system,
       departmentNames: [...(system.departmentNames ?? [])],
@@ -240,6 +244,12 @@ function renameProjectReferences(
       assignment.projectId = nextProjectNumber
     }
   })
+
+  fixtureData.projectDepartments.forEach((projectDepartment) => {
+    if (projectDepartment.projectId === previousProjectNumber) {
+      projectDepartment.projectId = nextProjectNumber
+    }
+  })
 }
 
 function updateCurrentPhaseState(fixtureData: FixtureData, projectNumber: string, phaseId: string) {
@@ -295,6 +305,10 @@ export function mockProjectApi() {
 
     if (requestUrl.endsWith('/api/members') && method === 'GET') {
       return buildJsonResponse({ items: fixtureData.members }, 200)
+    }
+
+    if (requestUrl.endsWith('/api/project-departments') && method === 'GET') {
+      return buildJsonResponse({ items: fixtureData.projectDepartments }, 200)
     }
 
     if (requestUrl.endsWith('/api/systems') && method === 'GET') {
@@ -955,6 +969,42 @@ export function mockProjectApi() {
       const detail = buildProjectDetailResponse(fixtureData, projectNumber)
 
       return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+
+    const projectDepartmentsMatch = requestUrl.match(/\/api\/projects\/([^/]+)\/departments$/)
+    if (projectDepartmentsMatch && method === 'PATCH') {
+      const projectNumber = projectDepartmentsMatch[1]
+      const body = JSON.parse(String(init?.body)) as UpdateProjectDepartmentsInput
+      const project = fixtureData.projects.find((item) => item.projectNumber === projectNumber)
+
+      if (!project) {
+        return new Response(JSON.stringify({ message: 'Project not found' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      const nextDepartments: ProjectDepartmentAssignment[] = body.departments.map((department, index) => ({
+        id: department.id ?? `proj-dept-${projectNumber}-${index + 1}`,
+        projectId: projectNumber,
+        departmentCode: department.departmentCode.trim(),
+        departmentName: department.departmentName.trim(),
+        role: department.role,
+        note: department.note?.trim() || null,
+      }))
+
+      fixtureData.projectDepartments = fixtureData.projectDepartments
+        .filter((projectDepartment) => projectDepartment.projectId !== projectNumber)
+        .concat(nextDepartments)
+
+      return new Response(JSON.stringify({ projectDepartments: nextDepartments }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',

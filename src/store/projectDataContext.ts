@@ -10,6 +10,7 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
+  ProjectDepartmentAssignment,
   ProjectEvent,
   SystemAssignment,
   SystemRelation,
@@ -17,6 +18,7 @@ import type {
   SystemTransactionStep,
   UpdateMemberInput,
   UpdateProjectEventsInput,
+  UpdateProjectDepartmentsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
   UpdateProjectStatusEntriesInput,
@@ -39,6 +41,7 @@ export interface ProjectDataContextValue {
   phases: Phase[]
   events: ProjectEvent[]
   members: Member[]
+  projectDepartments: ProjectDepartmentAssignment[]
   systems: ManagedSystem[]
   systemRelations: SystemRelation[]
   systemTransactions: SystemTransaction[]
@@ -85,6 +88,10 @@ export interface ProjectDataContextValue {
     input: UpdateProjectStatusOverrideInput,
   ) => Promise<Project>
   updateProjectSystems: (projectId: string, input: UpdateProjectSystemsInput) => Promise<Project>
+  updateProjectDepartments: (
+    projectId: string,
+    input: UpdateProjectDepartmentsInput,
+  ) => Promise<ProjectDepartmentAssignment[]>
   updateProjectEvents: (projectId: string, input: UpdateProjectEventsInput) => Promise<Project>
   updateProjectPhases: (projectId: string, input: UpdateProjectPhasesInput) => Promise<Project>
   updateProjectCurrentPhase: (projectId: string, phaseId: string) => Promise<Project>
@@ -93,6 +100,7 @@ export interface ProjectDataContextValue {
   getProjectPhases: (projectId: string) => Phase[]
   getProjectAssignments: (projectId: string) => ProjectAssignment[]
   getProjectEvents: (projectId: string) => ProjectEvent[]
+  getProjectDepartments: (projectId: string) => ProjectDepartmentAssignment[]
   getMemberById: (memberId: string) => Member | undefined
   getSystemById: (systemId: string) => ManagedSystem | undefined
   getSystemAssignments: (systemId: string) => SystemAssignment[]

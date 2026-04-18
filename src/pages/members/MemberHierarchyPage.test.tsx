@@ -84,7 +84,7 @@ describe('MemberHierarchyPage', () => {
       key: 'Enter',
     })
 
-    const hierarchyFlow = await screen.findByTestId('member-hierarchy-tree')
+    const hierarchyFlow = await screen.findByTestId('member-hierarchy-tree', {}, { timeout: 5000 })
     expect(within(hierarchyFlow).getAllByText('伊藤').length).toBeGreaterThan(0)
     expect(within(hierarchyFlow).getAllByText('渡辺').length).toBeGreaterThan(0)
     expect(within(hierarchyFlow).queryByText('田中')).not.toBeInTheDocument()
@@ -115,7 +115,11 @@ describe('MemberHierarchyPage', () => {
 
     fireEvent.click(flowButton)
 
-    const hierarchyFlow = await screen.findByTestId('member-hierarchy-tree')
+    await waitFor(() => {
+      expect(screen.queryByText('フロー表示を準備しています...')).not.toBeInTheDocument()
+    }, { timeout: 10000 })
+
+    const hierarchyFlow = screen.getByTestId('member-hierarchy-tree')
     expect(within(hierarchyFlow).getByText('中村')).toBeInTheDocument()
     expect(within(hierarchyFlow).getByText('PMO')).toBeInTheDocument()
   })

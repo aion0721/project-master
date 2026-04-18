@@ -11,6 +11,7 @@ type CssModuleClasses = Record<string, string>;
 
 interface EmptyStateParams {
   hasNoProjectsInMode: boolean;
+  hasNoDepartmentMatches: boolean;
   hasNoSearchResults: boolean;
   hasNoStatusMatches: boolean;
   hasNoStatusesSelected: boolean;
@@ -140,6 +141,7 @@ export function getScopedProjects(
 
 export function getEmptyState({
   hasNoProjectsInMode,
+  hasNoDepartmentMatches,
   hasNoSearchResults,
   hasNoStatusMatches,
   hasNoStatusesSelected,
@@ -168,6 +170,13 @@ export function getEmptyState({
     return {
       title: "条件に一致する案件はありません",
       description: "状態フィルターや表示モードの条件を見直してください。",
+    };
+  }
+
+  if (hasNoDepartmentMatches) {
+    return {
+      title: "部署条件に一致する案件はありません",
+      description: "部署フィルターまたは状態条件を見直してください。",
     };
   }
 

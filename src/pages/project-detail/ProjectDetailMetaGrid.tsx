@@ -1,4 +1,5 @@
 import { CurrentPhaseCard } from './CurrentPhaseCard'
+import { ProjectDepartmentsCard } from './ProjectDepartmentsCard'
 import { ProjectLinksCard } from './ProjectLinksCard'
 import { ProjectNoteCard } from './ProjectNoteCard'
 import { ProjectReportStatusCard } from './ProjectReportStatusCard'
@@ -14,6 +15,7 @@ export function ProjectDetailMetaGrid({
   currentPhaseProps,
   projectLinksProps,
   projectNoteProps,
+  projectDepartmentsProps,
   projectReportStatusProps,
   projectStatusEntriesProps,
   projectStatusProps,
@@ -26,6 +28,7 @@ export function ProjectDetailMetaGrid({
       <ProjectSummaryCard {...projectSummaryProps} />
       <ScheduleCard {...scheduleProps} />
       <ProjectSystemCard {...projectSystemProps} />
+      <ProjectDepartmentsCard {...projectDepartmentsProps} />
       <CurrentPhaseCard {...currentPhaseProps} />
       <ProjectStatusCard {...projectStatusProps} />
       <ProjectNoteCard {...projectNoteProps} />

@@ -79,6 +79,11 @@
   font-weight: 700;
 }
 
+.departmentChip {
+  background: rgba(15, 118, 110, 0.1);
+  color: #0f766e;
+}
+
 .actionCell {
   white-space: nowrap;
 }

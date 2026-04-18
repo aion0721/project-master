@@ -13,6 +13,7 @@ import {
   updateMemberRequest,
   updatePhaseRequest,
   updateProjectCurrentPhaseRequest,
+  updateProjectDepartmentsRequest,
   updateProjectEventsRequest,
   updateProjectLinksRequest,
   updateProjectNoteRequest,
@@ -41,12 +42,14 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
+  ProjectDepartmentAssignment,
   ProjectEvent,
   SystemAssignment,
   SystemRelation,
   SystemTransaction,
   SystemTransactionStep,
   UpdateMemberInput,
+  UpdateProjectDepartmentsInput,
   UpdateProjectEventsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
@@ -114,6 +117,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [phases, setPhases] = useState<Phase[]>([])
   const [events, setEvents] = useState<ProjectEvent[]>([])
   const [members, setMembers] = useState<Member[]>([])
+  const [projectDepartments, setProjectDepartments] = useState<ProjectDepartmentAssignment[]>([])
   const [systems, setSystems] = useState<ManagedSystem[]>([])
   const [systemRelations, setSystemRelations] = useState<SystemRelation[]>([])
   const [systemTransactions, setSystemTransactions] = useState<SystemTransaction[]>([])
@@ -180,6 +184,22 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     () => new Map(members.map((member) => [member.id, member])),
     [members],
   )
+  const projectDepartmentsByProjectId = useMemo(() => {
+    const map = new Map<string, ProjectDepartmentAssignment[]>()
+
+    projectDepartments.forEach((projectDepartment) => {
+      const departmentsInProject = map.get(projectDepartment.projectId)
+
+      if (departmentsInProject) {
+        departmentsInProject.push(projectDepartment)
+        return
+      }
+
+      map.set(projectDepartment.projectId, [projectDepartment])
+    })
+
+    return map
+  }, [projectDepartments])
   const systemsById = useMemo(
     () => new Map(systems.map((system) => [system.id, system])),
     [systems],
@@ -223,6 +243,15 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
 
       return mergeByKey(current, payload.projects, (item) => item.projectNumber)
     })
+    if (projectId !== nextProjectId) {
+      setProjectDepartments((current) =>
+        current.map((projectDepartment) =>
+          projectDepartment.projectId === projectId
+            ? { ...projectDepartment, projectId: nextProjectId }
+            : projectDepartment,
+        ),
+      )
+    }
 
     if (phaseMode === 'replaceByProject') {
       setPhases((current) => current.filter((phase) => phase.projectId !== projectId).concat(payload.phases))
@@ -279,6 +308,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
         setPhases(payload.phases)
         setEvents(payload.events)
         setMembers(payload.members)
+        setProjectDepartments(payload.projectDepartments)
         setSystems(payload.systems)
         setSystemRelations(payload.systemRelations)
         setSystemTransactions(payload.systemTransactions)
@@ -326,6 +356,10 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     (memberId: string) => membersById.get(memberId),
     [membersById],
   )
+  const getProjectDepartments = useCallback(
+    (projectId: string) => projectDepartmentsByProjectId.get(projectId) ?? [],
+    [projectDepartmentsByProjectId],
+  )
   const getSystemById = useCallback(
     (systemId: string) => systemsById.get(systemId),
     [systemsById],
@@ -340,6 +374,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     phases,
     events,
     members,
+    projectDepartments,
     systems,
     systemRelations,
     systemTransactions,
@@ -503,6 +538,15 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       const payload = await updateProjectSystemsRequest(projectId, input)
       return applyAndGetUpdatedProject(projectId, payload)
     },
+    updateProjectDepartments: async (projectId: string, input: UpdateProjectDepartmentsInput) => {
+      const nextProjectDepartments = await updateProjectDepartmentsRequest(projectId, input)
+      setProjectDepartments((current) =>
+        current
+          .filter((projectDepartment) => projectDepartment.projectId !== projectId)
+          .concat(nextProjectDepartments),
+      )
+      return nextProjectDepartments
+    },
     updateProjectEvents: async (projectId: string, input: UpdateProjectEventsInput) => {
       const payload = await updateProjectEventsRequest(projectId, input)
       return applyAndGetUpdatedProject(projectId, payload)
@@ -523,6 +567,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     getProjectPhases,
     getProjectAssignments,
     getProjectEvents,
+    getProjectDepartments,
     getMemberById,
     getSystemById,
     getSystemAssignments,

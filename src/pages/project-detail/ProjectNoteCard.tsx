@@ -1,6 +1,6 @@
-import { EditableMetaCard } from './ProjectDetailMetaCard'
-import type { ProjectNoteCardProps } from './ProjectDetailMetaGrid.types'
-import styles from '../projects/ProjectDetailPage.module.css'
+import { EditableMetaCard } from "./ProjectDetailMetaCard";
+import type { ProjectNoteCardProps } from "./ProjectDetailMetaGrid.types";
+import styles from "../projects/ProjectDetailPage.module.css";
 
 export function ProjectNoteCard({
   changed,
@@ -16,12 +16,12 @@ export function ProjectNoteCard({
 }: ProjectNoteCardProps) {
   return (
     <EditableMetaCard
-      className={`${styles.metaCardTwoColumn} ${styles.metaCardSupport}`}
+      className={`${styles.metaCardStandard} ${styles.metaCardSupport}`}
       cancelButtonTestId="project-note-cancel-button"
       displayClassName={styles.projectNoteDisplay}
       displayContent={
         <strong className={styles.metaValue} data-testid="project-note-value">
-          {project.note?.trim() || '未設定'}
+          {project.note?.trim() || "未設定"}
         </strong>
       }
       editButtonTestId="project-note-edit-button"
@@ -48,5 +48,5 @@ export function ProjectNoteCard({
       onSave={onSave}
       saveButtonTestId="project-note-save-button"
     />
-  )
+  );
 }

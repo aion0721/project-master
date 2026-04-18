@@ -43,6 +43,7 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByTestId('project-status-card').className).toContain(styles.metaCardPhaseInProgress)
     expect(screen.getByTestId('project-note-value')).toHaveTextContent(project.note ?? '')
     expect(screen.getByTestId('project-report-status-value')).toHaveTextContent('あり')
+    expect(screen.getByTestId('project-department-事業推進部')).toBeInTheDocument()
     expect(screen.getByTestId('project-report-status-card').className).toContain(
       styles.metaCardReportActive,
     )
@@ -178,6 +179,28 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('案件リンクをクリップボードへコピーできる', async () => {
+    mockProjectApi()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    })
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-link-copy-0'))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(project.projectLinks[0]?.url)
+    })
+    expect(screen.getByTestId('project-link-copy-0')).toHaveTextContent('コピー済み')
+  })
+
   it('状況メモを更新できる', async () => {
     const fetchSpy = mockProjectApi()
 
@@ -253,6 +276,90 @@ describe('ProjectDetailPage', () => {
       expect(body).toEqual({
         relatedSystemIds: ['sys-sales-bi'],
       })
+    })
+  })
+
+  it('関与部署を更新できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-departments-edit-button'))
+    fireEvent.change(await screen.findByTestId('project-department-name-0'), {
+      target: { value: '品質保証部' },
+    })
+    fireEvent.change(await screen.findByTestId('project-department-role-0'), {
+      target: { value: '利用' },
+    })
+    fireEvent.click(screen.getByTestId('project-departments-add-button'))
+    fireEvent.change(await screen.findByTestId('project-department-name-3'), {
+      target: { value: 'アプリ開発部' },
+    })
+    fireEvent.change(await screen.findByTestId('project-department-role-3'), {
+      target: { value: '支援' },
+    })
+    fireEvent.change(await screen.findByTestId('project-department-note-3'), {
+      target: { value: '実装レビューを担当' },
+    })
+    fireEvent.click(screen.getByTestId('project-departments-save-button'))
+
+    await waitFor(() => {
+      const departmentsCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/departments') && init?.method === 'PATCH'
+      })
+
+      expect(departmentsCall).toBeDefined()
+      const body = JSON.parse(String(departmentsCall?.[1]?.body))
+      expect(body.departments).toEqual([
+        expect.objectContaining({
+          id: 'proj-dept-001',
+          departmentCode: 'DEP-QA',
+          departmentName: '品質保証部',
+          role: '利用',
+        }),
+        expect.objectContaining({
+          id: 'proj-dept-002',
+          departmentCode: 'DEP-SYS-DESIGN',
+          departmentName: 'システム設計部',
+          role: '実行',
+        }),
+        expect.objectContaining({
+          id: 'proj-dept-003',
+          departmentCode: 'DEP-INFRA',
+          departmentName: 'インフラ基盤部',
+          role: '支援',
+        }),
+        expect.objectContaining({
+          departmentCode: 'DEP-APP',
+          departmentName: 'アプリ開発部',
+          role: '支援',
+          note: '実装レビューを担当',
+        }),
+      ])
+    })
+
+    expect(await screen.findByTestId('project-department-品質保証部')).toBeInTheDocument()
+    expect(screen.getByTestId('project-department-アプリ開発部')).toBeInTheDocument()
+  })
+
+  it('既存メンバーの部署名を選ぶと部署コードを自動入力する', async () => {
+    mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-departments-edit-button'))
+    fireEvent.click(await screen.findByTestId('project-department-remove-2'))
+    fireEvent.click(screen.getByTestId('project-departments-add-button'))
+    fireEvent.change(await screen.findByTestId('project-department-name-2'), {
+      target: { value: 'アプリ開発部' },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('project-department-code-2')).toHaveTextContent('部署コード: DEP-APP')
     })
   })
 

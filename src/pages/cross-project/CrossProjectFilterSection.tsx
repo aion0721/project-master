@@ -9,12 +9,15 @@ import styles from "./CrossProjectViewPage.module.css";
 
 interface CrossProjectFilterSectionProps {
   currentUser: Member | null;
+  departmentOptions: string[];
   isFilterVisible: boolean;
   isSavingDefaults: boolean;
   keyword: string;
   saveFeedback: string | null;
+  selectedDepartmentName: string;
   selectedStatuses: Project["status"][];
   selectedSystemLabel: string | null;
+  setSelectedDepartmentName: (value: string) => void;
   setKeyword: (value: string) => void;
   setViewMode: (mode: CrossProjectViewMode) => void;
   handleSaveDefaults: () => Promise<void>;
@@ -24,12 +27,15 @@ interface CrossProjectFilterSectionProps {
 
 export function CrossProjectFilterSection({
   currentUser,
+  departmentOptions,
   isFilterVisible,
   isSavingDefaults,
   keyword,
   saveFeedback,
+  selectedDepartmentName,
   selectedStatuses,
   selectedSystemLabel,
+  setSelectedDepartmentName,
   setKeyword,
   setViewMode,
   handleSaveDefaults,
@@ -78,6 +84,24 @@ export function CrossProjectFilterSection({
               type="search"
               value={keyword}
             />
+          </label>
+
+          <label className={styles.searchField}>
+            <span className={styles.searchLabel}>{"関与部署"}</span>
+            <select
+              aria-label={"関与部署でフィルター"}
+              className={styles.searchInput}
+              onChange={(event) => setSelectedDepartmentName(event.target.value)}
+              value={selectedDepartmentName}
+            >
+              <option value="">すべての部署</option>
+              <option value="__unassigned__">部署未設定</option>
+              {departmentOptions.map((departmentName) => (
+                <option key={departmentName} value={departmentName}>
+                  {departmentName}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
       }

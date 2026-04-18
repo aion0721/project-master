@@ -21,6 +21,7 @@ export function CrossProjectViewPage() {
   const {
     projects,
     members,
+    projectDepartments,
     getProjectPhases,
     getProjectEvents,
     getProjectAssignments,
@@ -45,6 +46,7 @@ export function CrossProjectViewPage() {
   const [isCompactMode, setIsCompactMode] = useState(true);
   const [isGroupedByPrimarySystem, setIsGroupedByPrimarySystem] =
     useState(false);
+  const [selectedDepartmentName, setSelectedDepartmentName] = useState("");
 
   currentUserRef.current = currentUser;
 
@@ -55,17 +57,38 @@ export function CrossProjectViewPage() {
     setSaveFeedback(null);
   }, [currentUserId]);
 
-  const view = useCrossProjectView({
-    currentUser,
-    getProjectEvents,
-    getProjectPhases,
-    projects,
-    selectedStatuses,
-  });
   const systemNameById = useMemo(
     () => new Map(systems.map((system) => [system.id, system.name])),
     [systems],
   );
+  const projectDepartmentNamesByProjectId = useMemo(() => {
+    const map = new Map<string, string[]>();
+
+    projectDepartments.forEach((projectDepartment) => {
+      const current = map.get(projectDepartment.projectId) ?? [];
+
+      if (!current.includes(projectDepartment.departmentName)) {
+        map.set(projectDepartment.projectId, [...current, projectDepartment.departmentName]);
+      }
+    });
+
+    return map;
+  }, [projectDepartments]);
+  const departmentOptions = useMemo(
+    () =>
+      [...new Set(projectDepartments.map((projectDepartment) => projectDepartment.departmentName))]
+        .sort((left, right) => left.localeCompare(right, "ja")),
+    [projectDepartments],
+  );
+  const view = useCrossProjectView({
+    currentUser,
+    getProjectEvents,
+    getProjectPhases,
+    projectDepartmentNamesByProjectId,
+    projects,
+    selectedDepartmentName,
+    selectedStatuses,
+  });
   const selectedSystemLabel = getSelectedSystemLabel(
     selectedSystemId,
     systemNameById,
@@ -78,6 +101,7 @@ export function CrossProjectViewPage() {
   });
   const emptyState = getEmptyState({
     hasNoProjectsInMode: view.hasNoProjectsInMode,
+    hasNoDepartmentMatches: view.hasNoDepartmentMatches,
     hasNoSearchResults: view.hasNoSearchResults,
     hasNoStatusMatches: view.hasNoStatusMatches,
     hasNoStatusesSelected: view.hasNoStatusesSelected,
@@ -192,14 +216,17 @@ export function CrossProjectViewPage() {
       filterSection={
         <CrossProjectFilterSection
           currentUser={currentUser}
+          departmentOptions={departmentOptions}
           handleSaveDefaults={handleSaveDefaults}
           handleStatusToggle={handleStatusToggle}
           isFilterVisible={isFilterVisible}
           isSavingDefaults={isSavingDefaults}
           keyword={view.keyword}
           saveFeedback={saveFeedback}
+          selectedDepartmentName={selectedDepartmentName}
           selectedStatuses={selectedStatuses}
           selectedSystemLabel={selectedSystemLabel}
+          setSelectedDepartmentName={setSelectedDepartmentName}
           setKeyword={view.setKeyword}
           setViewMode={view.setViewMode}
           viewMode={view.viewMode}

@@ -9,6 +9,7 @@ import type {
   Phase,
   Project,
   ProjectAssignment,
+  ProjectDepartmentAssignment,
   ProjectEvent,
   ProjectStatusEntry,
   SystemAssignment,
@@ -17,6 +18,7 @@ import type {
   SystemTransactionStep,
   UpdateMemberInput,
   UpdateProjectEventsInput,
+  UpdateProjectDepartmentsInput,
   UpdateProjectNoteInput,
   UpdateProjectReportStatusInput,
   UpdateProjectStatusEntriesInput,
@@ -77,6 +79,14 @@ interface ApiSystemTransactionStepListResponse {
   items: SystemTransactionStep[]
 }
 
+interface ApiProjectDepartmentListResponse {
+  items: ProjectDepartmentAssignment[]
+}
+
+interface ApiProjectDepartmentUpdateResponse {
+  projectDepartments: ProjectDepartmentAssignment[]
+}
+
 interface ApiProjectDetailResponse {
   project: Project & {
     pm: ApiMember | null
@@ -112,6 +122,7 @@ export interface ProjectDataPayload {
   phases: Phase[]
   events: ProjectEvent[]
   members: Member[]
+  projectDepartments: ProjectDepartmentAssignment[]
   systems: ManagedSystem[]
   systemRelations: SystemRelation[]
   systemTransactions: SystemTransaction[]
@@ -210,6 +221,19 @@ function normalizeProject(project: Project): Project {
       label: link.label,
       url: link.url,
     })),
+  }
+}
+
+function normalizeProjectDepartment(
+  projectDepartment: ProjectDepartmentAssignment,
+): ProjectDepartmentAssignment {
+  return {
+    id: projectDepartment.id,
+    projectId: projectDepartment.projectId,
+    departmentCode: projectDepartment.departmentCode,
+    departmentName: projectDepartment.departmentName,
+    role: projectDepartment.role,
+    note: projectDepartment.note ?? null,
   }
 }
 
@@ -362,6 +386,7 @@ function normalizeProjectDetail(detail: ApiProjectDetailResponse): ProjectDataPa
     events: detail.events.map(normalizeEvent),
     assignments: detail.assignments.map(normalizeAssignment),
     members: [...memberMap.values()],
+    projectDepartments: [],
     systems: [],
     systemRelations: [],
     systemTransactions: [],
@@ -374,6 +399,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
   const [
     listResponse,
     memberResponse,
+    projectDepartmentResponse,
     systemResponse,
     systemRelationResponse,
     systemTransactionResponse,
@@ -382,6 +408,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
   ] = await Promise.all([
     fetchJson<ApiProjectListResponse>('/api/projects', signal),
     fetchJson<ApiMemberListResponse>('/api/members', signal),
+    fetchJson<ApiProjectDepartmentListResponse>('/api/project-departments', signal),
     fetchJson<ApiSystemListResponse>('/api/systems', signal),
     fetchJson<ApiSystemRelationListResponse>('/api/system-relations', signal),
     fetchJsonOrDefault<ApiSystemTransactionListResponse>(
@@ -449,6 +476,7 @@ export async function loadProjectData(signal?: AbortSignal): Promise<ProjectData
     phases: [...phaseMap.values()],
     events: [...eventMap.values()],
     members: [...memberMap.values()],
+    projectDepartments: projectDepartmentResponse.items.map(normalizeProjectDepartment),
     systems: systemResponse.items.map(normalizeSystem),
     systemRelations: systemRelationResponse.items.map(normalizeSystemRelation),
     systemTransactions: systemTransactionResponse.items.map(normalizeSystemTransaction),
@@ -782,6 +810,21 @@ export async function updateProjectSystemsRequest(
   )
 
   return normalizeProjectDetail(detail)
+}
+
+export async function updateProjectDepartmentsRequest(
+  projectId: string,
+  input: UpdateProjectDepartmentsInput,
+  signal?: AbortSignal,
+): Promise<ProjectDepartmentAssignment[]> {
+  const response = await sendJson<ApiProjectDepartmentUpdateResponse, UpdateProjectDepartmentsInput>(
+    `/api/projects/${projectId}/departments`,
+    'PATCH',
+    input,
+    signal,
+  )
+
+  return response.projectDepartments.map(normalizeProjectDepartment)
 }
 
 export async function updateProjectNoteRequest(
