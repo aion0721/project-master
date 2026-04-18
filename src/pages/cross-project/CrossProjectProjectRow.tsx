@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../../components/StatusBadge";
 import type {
@@ -64,7 +65,7 @@ function getStructureMembers(
     });
 }
 
-export function CrossProjectProjectRow({
+function CrossProjectProjectRowComponent({
   project,
   timelineSlots,
   timeScale,
@@ -153,3 +154,5 @@ export function CrossProjectProjectRow({
     </tr>
   );
 }
+
+export const CrossProjectProjectRow = memo(CrossProjectProjectRowComponent);

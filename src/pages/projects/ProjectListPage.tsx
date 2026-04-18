@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ListPageContentSection } from "../../components/ListPageContentSection";
-import { ListPageFilterSection } from "../../components/ListPageFilterSection";
-import { ListPageHero } from "../../components/ListPageHero";
+import { FilterVisibilityToggleButton } from "../../components/FilterVisibilityToggleButton";
+import { ListPageScaffold } from "../../components/ListPageScaffold";
+import { PageStatePanel } from "../../components/PageStatePanel";
 import { ProjectTable } from "../../components/ProjectTable";
 import { Button } from "../../components/ui/Button";
-import { Panel } from "../../components/ui/Panel";
 import { useProjectData } from "../../store/useProjectData";
 import { useUserSession } from "../../store/useUserSession";
 import type { Project } from "../../types/project";
@@ -157,46 +156,84 @@ export function ProjectListPage() {
 
   if (isLoading) {
     return (
-      <Panel className={styles.section}>
-        <h1 className={styles.sectionTitle}>案件一覧を読み込み中です</h1>
-        <p className={styles.sectionDescription}>
-          バックエンドから案件データを取得しています。
-        </p>
-      </Panel>
+      <PageStatePanel
+        className={styles.section}
+        description="バックエンドから案件データを取得しています。"
+        title="案件一覧を読み込み中です"
+      />
     );
   }
 
   if (error) {
     return (
-      <Panel className={styles.section}>
-        <h1 className={styles.sectionTitle}>案件一覧を表示できませんでした</h1>
-        <p className={styles.sectionDescription}>{error}</p>
-      </Panel>
+      <PageStatePanel
+        className={styles.section}
+        description={error}
+        title="案件一覧を表示できませんでした"
+      />
     );
   }
 
   return (
-    <div className={styles.page}>
-      <ListPageHero
-        action={<Button to="/projects/new">案件を追加</Button>}
-        className={styles.hero}
-        collapsible
-        description="進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。"
-        eyebrow="Project Portfolio"
-        iconKind="project"
-        storageKey="project-master:hero-collapsed:projects"
-        stats={[
-          { label: "総案件数", value: summary.total },
-          { label: "進行中", value: summary.inProgress },
-          { label: "遅延", value: summary.delayed },
-          { label: "完了", value: summary.completed },
-        ]}
-        title="案件一覧"
-      />
-
-      <ListPageFilterSection
-        className={styles.controls}
-        topRow={
+    <ListPageScaffold
+      className={styles.page}
+      contentProps={{
+        actions: (
+          <FilterVisibilityToggleButton
+            isVisible={isFilterVisible}
+            onToggle={() => setIsFilterVisible((current) => !current)}
+          />
+        ),
+        className: styles.section,
+        description: "案件番号、現在フェーズ、PM、主システムをまとめて確認できます。",
+        emptyState,
+        title:
+          viewMode === "bookmarks" && currentUser
+            ? "ブックマーク案件一覧"
+            : "案件ステータス一覧",
+      }}
+      filterProps={{
+        body: (
+          <div className={styles.statusFilters}>
+            <div className={styles.statusCheckboxGroup}>
+              {allWorkStatuses.map((status) => (
+                <label className={styles.statusCheckbox} key={status}>
+                  <input
+                    checked={selectedStatuses.includes(status)}
+                    onChange={() => handleStatusToggle(status)}
+                    type="checkbox"
+                  />
+                  <span>{status}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ),
+        className: styles.controls,
+        summary: (
+          <div className={styles.filterSummaryRow}>
+            <div className={styles.filterSummaryHeading}>
+              <p className={styles.statusFilterTitle}>状態フィルター</p>
+              <p className={styles.statusFilterHint}>
+                複数選択できます。完了だけ外す使い方を想定しています。
+              </p>
+            </div>
+            <div className={styles.statusFilterActions}>
+              <Button
+                disabled={!currentUser || isSavingDefaults}
+                onClick={() => void handleSaveDefaults()}
+                size="small"
+                variant="secondary"
+              >
+                {isSavingDefaults ? "保存中..." : "この状態を既定値に保存"}
+              </Button>
+              <p className={styles.statusFilterMeta}>
+                {saveFeedback ?? "利用メンバーを選ぶと既定値を保存できます。"}
+              </p>
+            </div>
+          </div>
+        ),
+        topRow: (
           <div className={styles.filterTopRow}>
             <div className={styles.toggleGroup}>
               <button
@@ -229,81 +266,38 @@ export function ProjectListPage() {
                 : "利用メンバーを選ぶと、ブックマーク案件だけに絞り込めます。"}
             </p>
           </div>
+        ),
+        visible: isFilterVisible,
+      }}
+      hero={{
+        action: <Button to="/projects/new">案件を追加</Button>,
+        className: styles.hero,
+        collapsible: true,
+        description:
+          "進捗、体制、主システムを一覧で確認できます。利用中メンバーのブックマーク案件だけに絞り込むこともできます。",
+        eyebrow: "Project Portfolio",
+        iconKind: "project",
+        storageKey: "project-master:hero-collapsed:projects",
+        stats: [
+          { label: "総案件数", value: summary.total },
+          { label: "進行中", value: summary.inProgress },
+          { label: "遅延", value: summary.delayed },
+          { label: "完了", value: summary.completed },
+        ],
+        title: "案件一覧",
+      }}
+    >
+      <ProjectTable
+        bookmarkedProjectIds={currentUser?.bookmarkedProjectIds ?? []}
+        onToggleBookmark={
+          currentUser
+            ? (projectId) => {
+                void toggleBookmark(projectId).catch(() => undefined);
+              }
+            : undefined
         }
-        summary={
-          <div className={styles.filterSummaryRow}>
-            <div className={styles.filterSummaryHeading}>
-              <p className={styles.statusFilterTitle}>状態フィルター</p>
-              <p className={styles.statusFilterHint}>
-                複数選択できます。完了だけ外す使い方を想定しています。
-              </p>
-            </div>
-            <div className={styles.statusFilterActions}>
-              <Button
-                disabled={!currentUser || isSavingDefaults}
-                onClick={() => void handleSaveDefaults()}
-                size="small"
-                variant="secondary"
-              >
-                {isSavingDefaults ? "保存中..." : "この状態を既定値に保存"}
-              </Button>
-              <p className={styles.statusFilterMeta}>
-                {saveFeedback ?? "利用メンバーを選ぶと既定値を保存できます。"}
-              </p>
-            </div>
-          </div>
-        }
-        body={
-          <div className={styles.statusFilters}>
-            <div className={styles.statusCheckboxGroup}>
-              {allWorkStatuses.map((status) => (
-                <label className={styles.statusCheckbox} key={status}>
-                  <input
-                    checked={selectedStatuses.includes(status)}
-                    onChange={() => handleStatusToggle(status)}
-                    type="checkbox"
-                  />
-                  <span>{status}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        }
-        visible={isFilterVisible}
+        rows={rows}
       />
-
-      <ListPageContentSection
-        actions={
-          <Button
-            aria-expanded={isFilterVisible}
-            onClick={() => setIsFilterVisible((current) => !current)}
-            size="small"
-            variant="secondary"
-          >
-            {isFilterVisible ? "絞り込みを非表示" : "絞り込みを表示"}
-          </Button>
-        }
-        className={styles.section}
-        description="案件番号、現在フェーズ、PM、主システムをまとめて確認できます。"
-        emptyState={emptyState}
-        title={
-          viewMode === "bookmarks" && currentUser
-            ? "ブックマーク案件一覧"
-            : "案件ステータス一覧"
-        }
-      >
-        <ProjectTable
-          bookmarkedProjectIds={currentUser?.bookmarkedProjectIds ?? []}
-          onToggleBookmark={
-            currentUser
-              ? (projectId) => {
-                  void toggleBookmark(projectId).catch(() => undefined);
-                }
-              : undefined
-          }
-          rows={rows}
-        />
-      </ListPageContentSection>
-    </div>
+    </ListPageScaffold>
   );
 }

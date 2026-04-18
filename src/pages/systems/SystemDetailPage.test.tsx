@@ -84,9 +84,7 @@ describe('SystemDetailPage', () => {
 
     await screen.findByRole('heading', { name: '会計基盤' })
 
-    const overviewSection = screen.getByRole('heading', { name: '概要' }).closest('section')
-    expect(overviewSection).not.toBeNull()
-    fireEvent.click(within(overviewSection!).getByRole('button', { name: '編集' }))
+    fireEvent.click(screen.getByTestId('system-overview-edit-button'))
     fireEvent.change(await screen.findByTestId('system-detail-name-input'), {
       target: { value: '会計基盤統合' },
     })
@@ -99,7 +97,7 @@ describe('SystemDetailPage', () => {
     fireEvent.change(screen.getByTestId('system-detail-note-input'), {
       target: { value: '月次締め処理と周辺IFを統合管理する。' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+    fireEvent.click(screen.getByTestId('system-overview-save-button'))
 
     await waitFor(() => {
       const systemCall = fetchSpy.mock.calls.find(([url, init]) => {

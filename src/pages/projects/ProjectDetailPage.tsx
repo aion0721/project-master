@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { PageStatePanel } from '../../components/PageStatePanel'
 import { PhaseTimeline } from '../../components/PhaseTimeline'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -359,38 +360,41 @@ export function ProjectDetailPage() {
 
   if (isLoading) {
     return (
-      <Panel className={styles.notFound}>
-        <h1 className={styles.notFoundTitle}>案件詳細を読み込み中です</h1>
-        <p className={styles.notFoundText}>
-          バックエンドから案件情報を取得しています。
-        </p>
-      </Panel>
+      <PageStatePanel
+        className={styles.notFound}
+        description="バックエンドから案件情報を取得しています。"
+        title="案件詳細を読み込み中です"
+      />
     )
   }
 
   if (error) {
     return (
-      <Panel className={styles.notFound}>
-        <h1 className={styles.notFoundTitle}>案件詳細を表示できませんでした</h1>
-        <p className={styles.notFoundText}>{error}</p>
-        <Button size="small" to="/projects" variant="secondary">
-          一覧へ戻る
-        </Button>
-      </Panel>
+      <PageStatePanel
+        action={
+          <Button size="small" to="/projects" variant="secondary">
+            一覧へ戻る
+          </Button>
+        }
+        className={styles.notFound}
+        description={error}
+        title="案件詳細を表示できませんでした"
+      />
     )
   }
 
   if (!project) {
     return (
-      <Panel className={styles.notFound}>
-        <h1 className={styles.notFoundTitle}>案件が見つかりません</h1>
-        <p className={styles.notFoundText}>
-          指定されたプロジェクト番号に該当する案件がありません。
-        </p>
-        <Button size="small" to="/projects" variant="secondary">
-          一覧へ戻る
-        </Button>
-      </Panel>
+      <PageStatePanel
+        action={
+          <Button size="small" to="/projects" variant="secondary">
+            一覧へ戻る
+          </Button>
+        }
+        className={styles.notFound}
+        description="指定されたプロジェクト番号に該当する案件がありません。"
+        title="案件が見つかりません"
+      />
     )
   }
 

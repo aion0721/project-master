@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   createMemberRequest,
   createProjectRequest,
@@ -124,6 +124,83 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  const projectsById = useMemo(
+    () => new Map(projects.map((project) => [project.projectNumber, project])),
+    [projects],
+  )
+  const phasesByProjectId = useMemo(() => {
+    const map = new Map<string, Phase[]>()
+
+    phases.forEach((phase) => {
+      const phasesInProject = map.get(phase.projectId)
+
+      if (phasesInProject) {
+        phasesInProject.push(phase)
+        return
+      }
+
+      map.set(phase.projectId, [phase])
+    })
+
+    return map
+  }, [phases])
+  const assignmentsByProjectId = useMemo(() => {
+    const map = new Map<string, ProjectAssignment[]>()
+
+    assignments.forEach((assignment) => {
+      const assignmentsInProject = map.get(assignment.projectId)
+
+      if (assignmentsInProject) {
+        assignmentsInProject.push(assignment)
+        return
+      }
+
+      map.set(assignment.projectId, [assignment])
+    })
+
+    return map
+  }, [assignments])
+  const eventsByProjectId = useMemo(() => {
+    const map = new Map<string, ProjectEvent[]>()
+
+    events.forEach((event) => {
+      const eventsInProject = map.get(event.projectId)
+
+      if (eventsInProject) {
+        eventsInProject.push(event)
+        return
+      }
+
+      map.set(event.projectId, [event])
+    })
+
+    return map
+  }, [events])
+  const membersById = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
+    [members],
+  )
+  const systemsById = useMemo(
+    () => new Map(systems.map((system) => [system.id, system])),
+    [systems],
+  )
+  const systemAssignmentsBySystemId = useMemo(() => {
+    const map = new Map<string, SystemAssignment[]>()
+
+    systemAssignments.forEach((assignment) => {
+      const assignmentsInSystem = map.get(assignment.systemId)
+
+      if (assignmentsInSystem) {
+        assignmentsInSystem.push(assignment)
+        return
+      }
+
+      map.set(assignment.systemId, [assignment])
+    })
+
+    return map
+  }, [systemAssignments])
+
   const applyProjectPayload = (
     projectId: string,
     payload: ProjectDataPayload,
@@ -228,6 +305,36 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshKey])
 
+  const refresh = useCallback(() => setRefreshKey((current) => current + 1), [])
+  const getProjectById = useCallback(
+    (projectId: string) => projectsById.get(projectId),
+    [projectsById],
+  )
+  const getProjectPhases = useCallback(
+    (projectId: string) => phasesByProjectId.get(projectId) ?? [],
+    [phasesByProjectId],
+  )
+  const getProjectAssignments = useCallback(
+    (projectId: string) => assignmentsByProjectId.get(projectId) ?? [],
+    [assignmentsByProjectId],
+  )
+  const getProjectEvents = useCallback(
+    (projectId: string) => eventsByProjectId.get(projectId) ?? [],
+    [eventsByProjectId],
+  )
+  const getMemberById = useCallback(
+    (memberId: string) => membersById.get(memberId),
+    [membersById],
+  )
+  const getSystemById = useCallback(
+    (systemId: string) => systemsById.get(systemId),
+    [systemsById],
+  )
+  const getSystemAssignments = useCallback(
+    (systemId: string) => systemAssignmentsBySystemId.get(systemId) ?? [],
+    [systemAssignmentsBySystemId],
+  )
+
   const value: ProjectDataContextValue = {
     projects,
     phases,
@@ -241,7 +348,7 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
     systemAssignments,
     isLoading,
     error,
-    refresh: () => setRefreshKey((current) => current + 1),
+    refresh,
     createMember: async (input: CreateMemberInput) => {
       const member = await createMemberRequest(input)
       setMembers((current) => mergeByKey(current, [member], (item) => item.id))
@@ -412,15 +519,13 @@ export function ProjectDataProvider({ children }: { children: ReactNode }) {
       const payload = await updateProjectStructureRequest(projectId, input)
       return applyAndGetUpdatedProject(projectId, payload)
     },
-    getProjectById: (projectId) => projects.find((project) => project.projectNumber === projectId),
-    getProjectPhases: (projectId) => phases.filter((phase) => phase.projectId === projectId),
-    getProjectAssignments: (projectId) =>
-      assignments.filter((assignment) => assignment.projectId === projectId),
-    getProjectEvents: (projectId) => events.filter((event) => event.projectId === projectId),
-    getMemberById: (memberId) => members.find((member) => member.id === memberId),
-    getSystemById: (systemId) => systems.find((system) => system.id === systemId),
-    getSystemAssignments: (systemId) =>
-      systemAssignments.filter((assignment) => assignment.systemId === systemId),
+    getProjectById,
+    getProjectPhases,
+    getProjectAssignments,
+    getProjectEvents,
+    getMemberById,
+    getSystemById,
+    getSystemAssignments,
   }
 
   return <ProjectDataContext.Provider value={value}>{children}</ProjectDataContext.Provider>

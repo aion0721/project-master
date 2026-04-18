@@ -3,8 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { MemberHierarchyFlow } from '../../components/MemberHierarchyFlow'
 import { ListPageContentSection } from '../../components/ListPageContentSection'
 import { ListPageHero } from '../../components/ListPageHero'
+import { PageStatePanel } from '../../components/PageStatePanel'
 import { Button } from '../../components/ui/Button'
-import { Panel } from '../../components/ui/Panel'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
 import formStyles from '../../styles/form.module.css'
@@ -226,35 +226,33 @@ export function MemberDetailPage() {
 
   if (isLoading) {
     return (
-      <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>メンバー詳細を読み込み中です</h1>
-        <p className={pageStyles.emptyStateText}>データ取得が完了するまで少し待ってください。</p>
-      </Panel>
+      <PageStatePanel
+        description="データ取得が完了するまで少し待ってください。"
+        title="メンバー詳細を読み込み中です"
+      />
     )
   }
 
   if (error) {
     return (
-      <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>メンバー詳細を表示できませんでした</h1>
-        <p className={pageStyles.emptyStateText}>{error}</p>
-      </Panel>
+      <PageStatePanel description={error} title="メンバー詳細を表示できませんでした" />
     )
   }
 
   if (!member) {
     return (
-      <Panel className={styles.notFound}>
-        <h1 className={styles.notFoundTitle}>該当メンバーが見つかりません</h1>
-        <p className={styles.notFoundText}>
-          指定したメンバーIDは存在しないか、まだ読み込みできていません。
-        </p>
-        <div className={styles.heroActions}>
-          <Button to="/members" variant="secondary">
-            メンバー一覧へ戻る
-          </Button>
-        </div>
-      </Panel>
+      <PageStatePanel
+        action={
+          <div className={styles.heroActions}>
+            <Button to="/members" variant="secondary">
+              メンバー一覧へ戻る
+            </Button>
+          </div>
+        }
+        className={styles.notFound}
+        description="指定したメンバーIDは存在しないか、まだ読み込みできていません。"
+        title="該当メンバーが見つかりません"
+      />
     )
   }
 

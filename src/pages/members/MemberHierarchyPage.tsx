@@ -8,6 +8,7 @@ import { Button } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { useProjectData } from "../../store/useProjectData";
 import type { Member, UpdateMemberInput } from "../../types/project";
+import { validateHierarchyConnection } from "../../utils/hierarchyConnectionUtils";
 import {
   buildMemberHierarchyLevels,
   createsMemberHierarchyCycle,
@@ -112,6 +113,10 @@ export function MemberHierarchyPage() {
     null,
   );
   const [isSavingRelation, setIsSavingRelation] = useState(false);
+  const memberById = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
+    [members],
+  );
 
   const sortedMembers = useMemo(
     () =>
@@ -193,50 +198,45 @@ export function MemberHierarchyPage() {
   }
 
   async function handleManagerConnect(connection: Connection) {
-    const nextManagerId = connection.source;
-    const memberId = connection.target;
+    const visibleMemberIds = new Set(visibleMembers.map((member) => member.id));
+    const validation = validateHierarchyConnection({
+      memberId: connection.target,
+      managerId: connection.source,
+      availableIds: visibleMemberIds,
+      entityExists: (id) => memberById.has(id),
+      getEntityLabel: (id) => memberById.get(id)?.name ?? id,
+      getCurrentManagerId: (memberId) => memberById.get(memberId)?.managerId,
+      createsCycle: (memberId, managerId) =>
+        createsMemberHierarchyCycle(members, memberId, managerId),
+      messages: {
+        missingConnection: "接続元と接続先を正しく指定してください。",
+        selfReference: "自分自身を上司には設定できません。",
+        unavailableConnection: "表示中の部署メンバー同士だけ接続できます。",
+        entityNotFound: "接続対象のメンバーが見つかりません。",
+        cycleDetected: "循環する上下関係になるため、この接続はできません。",
+        duplicateConnection: (memberLabel, managerLabel) =>
+          `${memberLabel} はすでに ${managerLabel} 配下です。`,
+      },
+    });
 
     setRelationshipMessage(null);
     setRelationshipError(null);
 
-    if (!nextManagerId || !memberId) {
-      setRelationshipError("接続元と接続先を正しく指定してください。");
+    if (validation.kind === "error") {
+      setRelationshipError(validation.message);
       return;
     }
 
-    if (nextManagerId === memberId) {
-      setRelationshipError("自分自身を上司には設定できません。");
+    if (validation.kind === "noop") {
+      setRelationshipMessage(validation.message);
       return;
     }
 
-    const visibleMemberIds = new Set(visibleMembers.map((member) => member.id));
-    if (
-      !visibleMemberIds.has(nextManagerId) ||
-      !visibleMemberIds.has(memberId)
-    ) {
-      setRelationshipError("表示中の部署メンバー同士だけ接続できます。");
-      return;
-    }
-
-    const member = members.find((item) => item.id === memberId);
-    const nextManager = members.find((item) => item.id === nextManagerId);
+    const member = memberById.get(validation.memberId);
+    const nextManager = memberById.get(validation.managerId);
 
     if (!member || !nextManager) {
       setRelationshipError("接続対象のメンバーが見つかりません。");
-      return;
-    }
-
-    if (member.managerId === nextManagerId) {
-      setRelationshipMessage(
-        `${member.name} はすでに ${nextManager.name} 配下です。`,
-      );
-      return;
-    }
-
-    if (createsMemberHierarchyCycle(members, memberId, nextManagerId)) {
-      setRelationshipError(
-        "循環する上下関係になるため、この接続はできません。",
-      );
       return;
     }
 
@@ -245,7 +245,7 @@ export function MemberHierarchyPage() {
     try {
       await updateMember(
         member.id,
-        buildUpdateMemberInput(member, nextManagerId),
+        buildUpdateMemberInput(member, validation.managerId),
       );
       setRelationshipMessage(
         `${member.name} の上司を ${nextManager.name} に更新しました。`,

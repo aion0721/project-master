@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ListPageHero } from "../../components/ListPageHero";
-import { Panel } from "../../components/ui/Panel";
+import { ListPageScaffold } from "../../components/ListPageScaffold";
+import { PageStatePanel } from "../../components/PageStatePanel";
 import { useProjectData } from "../../store/useProjectData";
 import { useUserSession } from "../../store/useUserSession";
 import type { Project } from "../../types/project";
@@ -145,81 +145,83 @@ export function CrossProjectViewPage() {
 
   if (isLoading) {
     return (
-      <Panel className={styles.section}>
-        <h1 className={styles.title}>{"案件ビューを読み込み中です"}</h1>
-        <p className={styles.description}>
-          {"案件表示に必要な情報を取得しています。"}
-        </p>
-      </Panel>
+      <PageStatePanel
+        className={styles.section}
+        description="案件表示に必要な情報を取得しています。"
+        title="案件ビューを読み込み中です"
+      />
     );
   }
 
   if (error) {
     return (
-      <Panel className={styles.section}>
-        <h1 className={styles.title}>{"案件ビューを表示できませんでした"}</h1>
-        <p className={styles.description}>{error}</p>
-      </Panel>
+      <PageStatePanel
+        className={styles.section}
+        description={error}
+        title="案件ビューを表示できませんでした"
+      />
     );
   }
 
   return (
-    <div className={styles.page}>
-      <ListPageHero
-        className={styles.hero}
-        collapsible
-        description={
-          "複数案件の進行や偏りを、週または月単位で比較できます。表示モードや絞り込みを切り替えながら、どこが詰まっているかを横断で確認します。"
-        }
-        eyebrow="Cross Project Timeline"
-        iconKind="project"
-        storageKey="project-master:hero-collapsed:cross-project"
-        stats={[
+    <ListPageScaffold
+      className={styles.page}
+      contentSection={
+        <CrossProjectTimelineSection
+          emptyState={emptyState}
+          getMemberById={getMemberById}
+          getProjectAssignments={getProjectAssignments}
+          getProjectEvents={getProjectEvents}
+          getProjectPhases={getProjectPhases}
+          isCompactMode={isCompactMode}
+          isFilterVisible={isFilterVisible}
+          isGroupedByPrimarySystem={isGroupedByPrimarySystem}
+          isStructureVisible={isStructureVisible}
+          members={members}
+          rows={rows}
+          setIsCompactMode={setIsCompactMode}
+          setIsFilterVisible={setIsFilterVisible}
+          setIsGroupedByPrimarySystem={setIsGroupedByPrimarySystem}
+          setIsStructureVisible={setIsStructureVisible}
+          setTimeScale={view.setTimeScale}
+          tableWrapRef={tableWrapRef}
+          timeScale={view.timeScale}
+          timelineSlots={view.timelineSlots}
+        />
+      }
+      filterSection={
+        <CrossProjectFilterSection
+          currentUser={currentUser}
+          handleSaveDefaults={handleSaveDefaults}
+          handleStatusToggle={handleStatusToggle}
+          isFilterVisible={isFilterVisible}
+          isSavingDefaults={isSavingDefaults}
+          keyword={view.keyword}
+          saveFeedback={saveFeedback}
+          selectedStatuses={selectedStatuses}
+          selectedSystemLabel={selectedSystemLabel}
+          setKeyword={view.setKeyword}
+          setViewMode={view.setViewMode}
+          viewMode={view.viewMode}
+        />
+      }
+      hero={{
+        className: styles.hero,
+        collapsible: true,
+        description:
+          "複数案件の進行や偏りを、週または月単位で比較できます。表示モードや絞り込みを切り替えながら、どこが詰まっているかを横断で確認します。",
+        eyebrow: "Cross Project Timeline",
+        iconKind: "project",
+        storageKey: "project-master:hero-collapsed:cross-project",
+        stats: [
           { label: "表示案件数", value: scopedProjects.length },
           {
             label: "最大同時稼働",
             value: `${view.peakBusy} Phase / ${view.timeScale === "month" ? "Month" : "Week"}`,
           },
-        ]}
-        title={"横断案件ビュー"}
-      />
-
-      <CrossProjectFilterSection
-        currentUser={currentUser}
-        handleSaveDefaults={handleSaveDefaults}
-        handleStatusToggle={handleStatusToggle}
-        isFilterVisible={isFilterVisible}
-        isSavingDefaults={isSavingDefaults}
-        keyword={view.keyword}
-        saveFeedback={saveFeedback}
-        selectedStatuses={selectedStatuses}
-        selectedSystemLabel={selectedSystemLabel}
-        setKeyword={view.setKeyword}
-        setViewMode={view.setViewMode}
-        viewMode={view.viewMode}
-      />
-
-      <CrossProjectTimelineSection
-        emptyState={emptyState}
-        getMemberById={getMemberById}
-        getProjectAssignments={getProjectAssignments}
-        getProjectEvents={getProjectEvents}
-        getProjectPhases={getProjectPhases}
-        isCompactMode={isCompactMode}
-        isFilterVisible={isFilterVisible}
-        isGroupedByPrimarySystem={isGroupedByPrimarySystem}
-        isStructureVisible={isStructureVisible}
-        members={members}
-        rows={rows}
-        setIsCompactMode={setIsCompactMode}
-        setIsFilterVisible={setIsFilterVisible}
-        setIsGroupedByPrimarySystem={setIsGroupedByPrimarySystem}
-        setIsStructureVisible={setIsStructureVisible}
-        setTimeScale={view.setTimeScale}
-        tableWrapRef={tableWrapRef}
-        timeScale={view.timeScale}
-        timelineSlots={view.timelineSlots}
-      />
-    </div>
+        ],
+        title: "横断案件ビュー",
+      }}
+    />
   );
 }

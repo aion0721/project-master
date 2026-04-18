@@ -1,5 +1,6 @@
 .wrapper {
-  overflow: hidden;
+  max-height: clamp(420px, 72vh, 960px);
+  overflow: auto;
   border: 1px solid var(--border-strong);
   border-radius: 20px;
   background: var(--surface);
@@ -20,6 +21,9 @@
 }
 
 .table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   font-size: 12px;
   color: var(--text-subtle);
   font-weight: 700;
@@ -34,6 +38,11 @@
 
 .table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.spacerRow td {
+  border-bottom: 0;
+  background: var(--surface);
 }
 
 .projectCell {

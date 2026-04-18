@@ -72,7 +72,12 @@ export function SystemOverviewSection({
         </div>
         {isSystemEditing ? (
           <div className={styles.headerActions}>
-            <Button disabled={isSavingSystem} onClick={() => void handleSaveSystem()} size="small">
+            <Button
+              data-testid="system-overview-save-button"
+              disabled={isSavingSystem}
+              onClick={() => void handleSaveSystem()}
+              size="small"
+            >
               {isSavingSystem ? '保存中...' : '保存'}
             </Button>
             <Button onClick={handleCancel} size="small" variant="secondary">
@@ -80,7 +85,12 @@ export function SystemOverviewSection({
             </Button>
           </div>
         ) : (
-          <Button onClick={() => setIsSystemEditing(true)} size="small" variant="secondary">
+          <Button
+            data-testid="system-overview-edit-button"
+            onClick={() => setIsSystemEditing(true)}
+            size="small"
+            variant="secondary"
+          >
             編集
           </Button>
         )}

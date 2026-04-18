@@ -215,6 +215,8 @@ describe('SystemLandscapePage', () => {
       ])
     })
 
-    expect(screen.getByTestId('transaction-select')).toHaveValue('tx-005')
+    await waitFor(() => {
+      expect(screen.getByTestId('transaction-select')).toHaveValue('tx-005')
+    })
   })
 })

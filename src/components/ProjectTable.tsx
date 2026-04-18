@@ -1,5 +1,7 @@
+import { useMemo, useRef } from "react"
 import type { Project } from '../types/project'
 import { formatDate } from '../utils/projectUtils'
+import { useVirtualWindow } from "./useVirtualWindow"
 import { StatusBadge } from './StatusBadge'
 import { Button } from './ui/Button'
 import styles from './ProjectTable.module.css'
@@ -22,10 +24,19 @@ export function ProjectTable({
   bookmarkedProjectIds = [],
   onToggleBookmark,
 }: ProjectTableProps) {
-  const bookmarkedSet = new Set(bookmarkedProjectIds)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const bookmarkedSet = useMemo(() => new Set(bookmarkedProjectIds), [bookmarkedProjectIds])
+  const { startIndex, endIndex, paddingTop, paddingBottom } = useVirtualWindow({
+    containerRef: wrapperRef,
+    itemCount: rows.length,
+    getItemSize: () => 98,
+    overscan: 8,
+  })
+  const visibleRows = endIndex >= startIndex ? rows.slice(startIndex, endIndex + 1) : []
+  const columnCount = onToggleBookmark ? 8 : 7
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} ref={wrapperRef}>
       <table className={styles.table}>
         <thead>
           <tr>
@@ -40,7 +51,12 @@ export function ProjectTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ project, currentPhaseName, pmName, primarySystemName }) => {
+          {paddingTop > 0 ? (
+            <tr className={styles.spacerRow} aria-hidden="true">
+              <td colSpan={columnCount} style={{ height: `${paddingTop}px`, padding: 0 }} />
+            </tr>
+          ) : null}
+          {visibleRows.map(({ project, currentPhaseName, pmName, primarySystemName }) => {
             const isBookmarked = bookmarkedSet.has(project.projectNumber)
 
             return (
@@ -84,6 +100,11 @@ export function ProjectTable({
               </tr>
             )
           })}
+          {paddingBottom > 0 ? (
+            <tr className={styles.spacerRow} aria-hidden="true">
+              <td colSpan={columnCount} style={{ height: `${paddingBottom}px`, padding: 0 }} />
+            </tr>
+          ) : null}
         </tbody>
       </table>
     </div>

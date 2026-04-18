@@ -18,6 +18,7 @@ interface ListPageHeroProps {
   description: ReactNode
   descriptionSupplement?: ReactNode
   eyebrow: string
+  iconAlt?: string
   iconKind: EntityIconKind
   leadingContent?: ReactNode
   storageKey?: string
@@ -34,6 +35,7 @@ export function ListPageHero({
   description,
   descriptionSupplement,
   eyebrow,
+  iconAlt,
   iconKind,
   leadingContent,
   storageKey,
@@ -66,7 +68,7 @@ export function ListPageHero({
 
         <div className={styles.header}>
           <div className={styles.heading}>
-            <EntityIcon className={styles.icon} kind={iconKind} />
+            <EntityIcon alt={iconAlt} className={styles.icon} kind={iconKind} />
             <div className={styles.headingBody}>
               <p className={styles.eyebrow}>{eyebrow}</p>
               <h1 className={styles.title}>{title}</h1>

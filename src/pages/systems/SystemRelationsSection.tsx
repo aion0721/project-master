@@ -18,12 +18,8 @@ import {
   validateRelationInput,
   type SystemRelationFormState,
 } from './systemFormUtils'
+import type { RelatedSystemItem } from './systemGraphUtils'
 import styles from './SystemDetailPage.module.css'
-
-interface RelatedSystemItem {
-  relation: SystemRelation
-  system: ManagedSystem | undefined
-}
 
 interface SystemRelationsSectionProps {
   onCreateRelation: (input: CreateSystemRelationInput) => Promise<void>

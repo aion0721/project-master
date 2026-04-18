@@ -5,36 +5,14 @@ import { Panel } from '../../components/ui/Panel'
 import pageStyles from '../../styles/page.module.css'
 import type {
   CreateSystemTransactionInput,
-  ManagedSystem,
-  SystemRelation,
-  SystemTransaction,
-  SystemTransactionStep,
   UpdateSystemTransactionInput,
 } from '../../types/project'
 import styles from './SystemDetailPage.module.css'
-
-interface TransactionEntry {
-  transaction: SystemTransaction
-  pathLabel: string
-  steps: SystemTransactionStep[]
-}
-
-interface RelationTransactionGroup {
-  relation: SystemRelation
-  system: ManagedSystem | undefined
-  transactions: Array<{
-    transaction: SystemTransaction
-    pathLabel: string
-    relationSteps: SystemTransactionStep[]
-  }>
-}
-
-interface RelationOption {
-  value: string
-  label: string
-  sourceSystemId: string
-  targetSystemId: string
-}
+import type {
+  RelationOption,
+  RelationTransactionGroup,
+  TransactionEntry,
+} from './systemGraphUtils'
 
 interface TransactionStepDraft {
   id?: string

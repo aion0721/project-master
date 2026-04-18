@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
+import { PageStatePanel } from '../../components/PageStatePanel'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -70,19 +71,21 @@ export function MemberCreatePage() {
 
   if (isLoading) {
     return (
-      <Panel className={styles.section}>
-        <h1 className={styles.title}>メンバー追加画面を読み込み中です</h1>
-        <p className={styles.description}>メンバー情報を読み込んでいます。</p>
-      </Panel>
+      <PageStatePanel
+        className={styles.section}
+        description="メンバー情報を読み込んでいます。"
+        title="メンバー追加画面を読み込み中です"
+      />
     )
   }
 
   if (error) {
     return (
-      <Panel className={styles.section}>
-        <h1 className={styles.title}>メンバー追加画面を表示できませんでした</h1>
-        <p className={styles.description}>{error}</p>
-      </Panel>
+      <PageStatePanel
+        className={styles.section}
+        description={error}
+        title="メンバー追加画面を表示できませんでした"
+      />
     )
   }
 

@@ -628,6 +628,12 @@
   line-height: 1.6;
 }
 
+.spacerRow td {
+  border-right: 0;
+  border-bottom: 0;
+  background: var(--surface);
+}
+
 @media (max-width: 1120px) {
   .filterTopRow {
     flex-direction: column;

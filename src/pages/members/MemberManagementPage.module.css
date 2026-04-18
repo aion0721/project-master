@@ -60,6 +60,8 @@
 }
 
 .tableWrap {
+  max-height: clamp(420px, 72vh, 960px);
+  overflow-y: auto;
   overflow-x: auto;
 }
 
@@ -78,6 +80,9 @@
 }
 
 .table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -117,6 +122,11 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.spacerRow td {
+  border-bottom: 0;
+  background: var(--surface);
 }
 
 @media (max-width: 1100px) {

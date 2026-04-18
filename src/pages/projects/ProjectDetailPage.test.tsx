@@ -443,7 +443,9 @@ describe('ProjectDetailPage', () => {
       expect(body.phases[2]?.id).toBe('ph-p1-2')
     })
 
-    expect(screen.queryByTestId('timeline-confirm-ph-p1-3')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByTestId('timeline-confirm-ph-p1-3')).not.toBeInTheDocument()
+    })
   })
 
   it('タイムライン上でフェーズ状態を変更して保存できる', async () => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Connection } from '@xyflow/react'
 import { Link, useParams } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
+import { PageStatePanel } from '../../components/PageStatePanel'
 import { SystemStructureFlow } from '../../components/SystemStructureFlow'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -13,6 +14,7 @@ import type {
   UpdateSystemRelationInput,
   UpdateSystemTransactionInput,
 } from '../../types/project'
+import { validateHierarchyConnection } from '../../utils/hierarchyConnectionUtils'
 import styles from './SystemDetailPage.module.css'
 import { SystemDepartmentSection } from './SystemDepartmentSection'
 import { SystemLinksSection } from './SystemLinksSection'
@@ -33,6 +35,14 @@ import {
   buildStructureAssignmentsForFlow,
   sanitizeStructureDrafts,
 } from './systemDetailUtils'
+import {
+  buildRelatedSystems,
+  buildRelationOptions,
+  buildRelationTargetOptions,
+  buildRelationTransactionGroups,
+  buildSystemById,
+  buildTransactionEntries,
+} from './systemGraphUtils'
 
 export function SystemDetailPage() {
   const { systemId } = useParams()
@@ -86,6 +96,10 @@ export function SystemDetailPage() {
     () => members.find((member) => member.id === system?.ownerMemberId),
     [members, system?.ownerMemberId],
   )
+  const memberById = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
+    [members],
+  )
 
   const departmentOptions = useMemo(
     () =>
@@ -103,103 +117,35 @@ export function SystemDetailPage() {
     return projects.filter((project) => project.relatedSystemIds?.[0] === system.id)
   }, [projects, system])
 
+  const systemById = useMemo(() => buildSystemById(systems), [systems])
+
   const relatedSystems = useMemo(() => {
     if (!system) {
       return []
     }
 
-    return systemRelations
-      .filter(
-        (relation) => relation.sourceSystemId === system.id || relation.targetSystemId === system.id,
-      )
-      .map((relation) => {
-        const targetId =
-          relation.sourceSystemId === system.id ? relation.targetSystemId : relation.sourceSystemId
-
-        return {
-          relation,
-          system: systems.find((item) => item.id === targetId),
-        }
-      })
-  }, [system, systemRelations, systems])
+    return buildRelatedSystems(system.id, systemRelations, systemById)
+  }, [system, systemById, systemRelations])
 
   const relationTargetOptions = useMemo(() => {
     if (!system) {
       return []
     }
 
-    return systems
-      .filter((item) => item.id !== system.id)
-      .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
+    return buildRelationTargetOptions(system.id, systems)
   }, [system, systems])
-
-  const systemById = useMemo(() => new Map(systems.map((item) => [item.id, item])), [systems])
 
   const transactionGroups = useMemo(() => {
     if (!system) {
       return []
     }
 
-    const transactionById = new Map(systemTransactions.map((transaction) => [transaction.id, transaction]))
-    const stepsByTransactionId = new Map<string, typeof systemTransactionSteps>()
-
-    systemTransactionSteps.forEach((step) => {
-      const current = stepsByTransactionId.get(step.transactionId) ?? []
-      current.push(step)
-      stepsByTransactionId.set(step.transactionId, current)
-    })
-
-    return relatedSystems.map(({ relation, system: relatedSystem }) => {
-      const relationSteps = systemTransactionSteps
-        .filter((step) => step.relationId === relation.id)
-        .sort((left, right) => left.stepOrder - right.stepOrder)
-
-      const transactions = [...new Set(relationSteps.map((step) => step.transactionId))]
-        .map((transactionId) => {
-          const transaction = transactionById.get(transactionId)
-
-          if (!transaction) {
-            return null
-          }
-
-          const fullPath = (stepsByTransactionId.get(transactionId) ?? [])
-            .slice()
-            .sort((left, right) => left.stepOrder - right.stepOrder)
-
-          const orderedSystemIds = fullPath.reduce<string[]>((ids, step) => {
-            if (ids.length === 0) {
-              return [step.sourceSystemId, step.targetSystemId]
-            }
-
-            return ids.at(-1) === step.sourceSystemId ? [...ids, step.targetSystemId] : [...ids, step.sourceSystemId, step.targetSystemId]
-          }, [])
-
-          const pathLabel = orderedSystemIds
-            .map((systemId) => systemById.get(systemId)?.name ?? systemId)
-            .join(' → ')
-
-          return {
-            transaction,
-            pathLabel,
-            relationSteps: relationSteps.filter((step) => step.transactionId === transactionId),
-          }
-        })
-        .filter(
-          (
-            item,
-          ): item is {
-            transaction: (typeof systemTransactions)[number]
-            pathLabel: string
-            relationSteps: typeof systemTransactionSteps
-          } => Boolean(item),
-        )
-
-      return {
-        relation,
-        system: relatedSystem,
-        transactions,
-      }
-    })
+    return buildRelationTransactionGroups(
+      relatedSystems,
+      systemTransactions,
+      systemTransactionSteps,
+      systemById,
+    )
   }, [relatedSystems, system, systemById, systemTransactionSteps, systemTransactions])
 
   const transactionEntries = useMemo(() => {
@@ -207,63 +153,16 @@ export function SystemDetailPage() {
       return []
     }
 
-    const relevantTransactionIds = [
-      ...new Set(
-        systemTransactionSteps
-          .filter((step) => step.sourceSystemId === system.id || step.targetSystemId === system.id)
-          .map((step) => step.transactionId),
-      ),
-    ]
-
-    return relevantTransactionIds
-      .map((transactionId) => {
-        const transaction = systemTransactions.find((item) => item.id === transactionId)
-
-        if (!transaction) {
-          return null
-        }
-
-        const steps = systemTransactionSteps
-          .filter((step) => step.transactionId === transactionId)
-          .sort((left, right) => left.stepOrder - right.stepOrder)
-
-        const orderedSystemIds = steps.reduce<string[]>((ids, step) => {
-          if (ids.length === 0) {
-            return [step.sourceSystemId, step.targetSystemId]
-          }
-
-          return ids.at(-1) === step.sourceSystemId ? [...ids, step.targetSystemId] : [...ids, step.sourceSystemId, step.targetSystemId]
-        }, [])
-
-        return {
-          transaction,
-          pathLabel: orderedSystemIds.map((systemId) => systemById.get(systemId)?.name ?? systemId).join(' → '),
-          steps,
-        }
-      })
-      .filter(
-        (
-          item,
-        ): item is {
-          transaction: (typeof systemTransactions)[number]
-          pathLabel: string
-          steps: typeof systemTransactionSteps
-        } => Boolean(item),
-      )
+    return buildTransactionEntries(
+      system.id,
+      systemTransactions,
+      systemTransactionSteps,
+      systemById,
+    )
   }, [system, systemById, systemTransactionSteps, systemTransactions])
 
   const relationOptions = useMemo(
-    () =>
-      systemRelations
-        .map((relation) => ({
-          value: relation.id,
-          label: `${systemById.get(relation.sourceSystemId)?.name ?? relation.sourceSystemId} → ${
-            systemById.get(relation.targetSystemId)?.name ?? relation.targetSystemId
-          }`,
-          sourceSystemId: relation.sourceSystemId,
-          targetSystemId: relation.targetSystemId,
-        }))
-        .sort((left, right) => left.label.localeCompare(right.label, 'ja')),
+    () => buildRelationOptions(systemRelations, systemById),
     [systemById, systemRelations],
   )
 
@@ -396,44 +295,16 @@ export function SystemDetailPage() {
   }
 
   function handleStructureConnect(connection: Connection) {
-    const nextManagerId = connection.source
-    const memberId = connection.target
-
     setStructureError(null)
     setStructureMessage(null)
-
-    if (!nextManagerId || !memberId) {
-      setStructureError('接続元と接続先を正しく指定してください。')
-      return
-    }
 
     if (!system) {
       setStructureError('システム情報を取得できませんでした。')
       return
     }
 
-    if (memberId === structureOwnerMemberId) {
+    if (connection.target === structureOwnerMemberId) {
       setStructureError('オーナーの報告先は変更できません。')
-      return
-    }
-
-    if (nextManagerId === memberId) {
-      setStructureError('自分自身を報告先には設定できません。')
-      return
-    }
-
-    const currentDraft = structureDrafts.find((assignment) => assignment.memberId === memberId)
-    if (!currentDraft) {
-      setStructureError('接続対象のメンバーが見つかりません。')
-      return
-    }
-
-    if (currentDraft.reportsToMemberId === nextManagerId) {
-      const member = members.find((item) => item.id === memberId)
-      const manager = members.find((item) => item.id === nextManagerId)
-      setStructureMessage(
-        `${member?.name ?? memberId} はすでに ${manager?.name ?? nextManagerId} 配下です。`,
-      )
       return
     }
 
@@ -441,29 +312,51 @@ export function SystemDetailPage() {
       structureOwnerMemberId,
       ...structureDrafts.map((assignment) => assignment.memberId),
     ])
+    const validation = validateHierarchyConnection({
+      memberId: connection.target,
+      managerId: connection.source,
+      availableIds,
+      entityExists: (id) => memberById.has(id),
+      getEntityLabel: (id) => memberById.get(id)?.name ?? id,
+      getCurrentManagerId: (memberId) =>
+        structureDrafts.find((assignment) => assignment.memberId === memberId)?.reportsToMemberId,
+      createsCycle: (memberId, managerId) =>
+        createsStructureCycle(structureDrafts, memberId, managerId, structureOwnerMemberId),
+      messages: {
+        missingConnection: '接続元と接続先を正しく指定してください。',
+        selfReference: '自分自身を報告先には設定できません。',
+        unavailableConnection: 'システム体制に含まれるメンバー同士だけ接続できます。',
+        entityNotFound: '接続対象のメンバーが見つかりません。',
+        cycleDetected: '循環する報告ラインになるため、この接続はできません。',
+        duplicateConnection: (memberLabel, managerLabel) =>
+          `${memberLabel} はすでに ${managerLabel} 配下です。`,
+      },
+    })
 
-    if (!availableIds.has(nextManagerId) || !availableIds.has(memberId)) {
-      setStructureError('システム体制に含まれるメンバー同士だけ接続できます。')
+    if (validation.kind === 'error') {
+      setStructureError(validation.message)
       return
     }
 
-    if (createsStructureCycle(structureDrafts, memberId, nextManagerId, structureOwnerMemberId)) {
-      setStructureError('循環する報告ラインになるため、この接続はできません。')
+    if (validation.kind === 'noop') {
+      setStructureMessage(validation.message)
       return
     }
 
     setStructureDrafts((current) =>
       current.map((assignment) =>
-        assignment.memberId === memberId
-          ? { ...assignment, reportsToMemberId: nextManagerId }
+        assignment.memberId === validation.memberId
+          ? { ...assignment, reportsToMemberId: validation.managerId }
           : assignment,
       ),
     )
 
-    const member = members.find((item) => item.id === memberId)
-    const manager = members.find((item) => item.id === nextManagerId)
+    const member = memberById.get(validation.memberId)
+    const manager = memberById.get(validation.managerId)
     setStructureMessage(
-      `${member?.name ?? memberId} の報告先を ${manager?.name ?? nextManagerId} に変更しました。`,
+      `${member?.name ?? validation.memberId} の報告先を ${
+        manager?.name ?? validation.managerId
+      } に変更しました。`,
     )
   }
 
@@ -542,36 +435,35 @@ export function SystemDetailPage() {
 
   if (isLoading) {
     return (
-      <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>システム詳細を読み込み中です</h1>
-        <p className={pageStyles.emptyStateText}>システム情報を取得しています。</p>
-      </Panel>
+      <PageStatePanel description="システム情報を取得しています。" title="システム詳細を読み込み中です" />
     )
   }
 
   if (error) {
     return (
-      <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>システム詳細を表示できませんでした</h1>
-        <p className={pageStyles.emptyStateText}>{error}</p>
-        <Button size="small" to="/systems" variant="secondary">
-          システム一覧へ戻る
-        </Button>
-      </Panel>
+      <PageStatePanel
+        action={
+          <Button size="small" to="/systems" variant="secondary">
+            システム一覧へ戻る
+          </Button>
+        }
+        description={error}
+        title="システム詳細を表示できませんでした"
+      />
     )
   }
 
   if (!system) {
     return (
-      <Panel>
-        <h1 className={pageStyles.emptyStateTitle}>システムが見つかりません</h1>
-        <p className={pageStyles.emptyStateText}>
-          指定したシステムは存在しないか、削除されています。
-        </p>
-        <Button size="small" to="/systems" variant="secondary">
-          システム一覧へ戻る
-        </Button>
-      </Panel>
+      <PageStatePanel
+        action={
+          <Button size="small" to="/systems" variant="secondary">
+            システム一覧へ戻る
+          </Button>
+        }
+        description="指定したシステムは存在しないか、削除されています。"
+        title="システムが見つかりません"
+      />
     )
   }
 

@@ -1,4 +1,7 @@
+import { useCallback } from "react";
+import { FilterVisibilityToggleButton } from "../../components/FilterVisibilityToggleButton";
 import { ListPageContentSection } from "../../components/ListPageContentSection";
+import { useVirtualWindow } from "../../components/useVirtualWindow";
 import { Button } from "../../components/ui/Button";
 import type {
   Member,
@@ -65,19 +68,45 @@ export function CrossProjectTimelineSection({
   timeScale,
   timelineSlots,
 }: CrossProjectTimelineSectionProps) {
+  const getRowSize = useCallback(
+    (index: number) => {
+      const row = rows[index];
+
+      if (!row) {
+        return 0;
+      }
+
+      if (row.type === "group") {
+        return 44;
+      }
+
+      if (isStructureVisible) {
+        return isCompactMode ? 220 : 260;
+      }
+
+      return isCompactMode ? 96 : 144;
+    },
+    [isCompactMode, isStructureVisible, rows],
+  );
+  const { startIndex, endIndex, paddingTop, paddingBottom } = useVirtualWindow({
+    containerRef: tableWrapRef,
+    itemCount: rows.length,
+    getItemSize: getRowSize,
+    overscan: 6,
+  });
+  const visibleRows = endIndex >= startIndex ? rows.slice(startIndex, endIndex + 1) : [];
+  const columnCount = timelineSlots.length + 1;
+
   return (
     <ListPageContentSection
       actions={
         <div className={styles.timelineToolbar}>
           <div className={styles.timelineToolbarGroup}>
-            <Button
-              aria-expanded={isFilterVisible}
-              onClick={() => setIsFilterVisible((current) => !current)}
-              size="small"
-              variant="secondary"
-            >
-              {isFilterVisible ? "絞り込みを閉じる" : "絞り込みを表示"}
-            </Button>
+            <FilterVisibilityToggleButton
+              hideLabel="絞り込みを閉じる"
+              isVisible={isFilterVisible}
+              onToggle={() => setIsFilterVisible((current) => !current)}
+            />
           </div>
           <div className={styles.timelineToolbarGroup}>
             <Button
@@ -186,7 +215,12 @@ export function CrossProjectTimelineSection({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {paddingTop > 0 ? (
+              <tr aria-hidden="true" className={styles.spacerRow}>
+                <td colSpan={columnCount} style={{ height: `${paddingTop}px`, padding: 0 }} />
+              </tr>
+            ) : null}
+            {visibleRows.map((row) => {
               if (row.type === "group") {
                 return (
                   <tr
@@ -222,6 +256,11 @@ export function CrossProjectTimelineSection({
                 />
               );
             })}
+            {paddingBottom > 0 ? (
+              <tr aria-hidden="true" className={styles.spacerRow}>
+                <td colSpan={columnCount} style={{ height: `${paddingBottom}px`, padding: 0 }} />
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
