@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import type { Connection } from "@xyflow/react";
-import { MemberHierarchyFlow } from "../../components/MemberHierarchyFlow";
+import { MemberHierarchyFlowFallback } from "../../components/MemberHierarchyFlowFallback";
 import { MemberHierarchyTree } from "../../components/MemberHierarchyTree";
 import { ListPageHero } from "../../components/ListPageHero";
 import { Button } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
+import { SearchSelect } from "../../components/ui/SearchSelect";
 import { useProjectData } from "../../store/useProjectData";
 import type { Member, UpdateMemberInput } from "../../types/project";
 import { validateHierarchyConnection } from "../../utils/hierarchyConnectionUtils";
@@ -18,7 +19,14 @@ import formStyles from "../../styles/form.module.css";
 import pageStyles from "../../styles/page.module.css";
 import styles from "./MemberHierarchyPage.module.css";
 
+const MemberHierarchyFlow = lazy(() =>
+  import("../../components/MemberHierarchyFlow").then((module) => ({
+    default: module.MemberHierarchyFlow,
+  })),
+);
+
 type HierarchyViewMode = "tree" | "flow" | "pyramid";
+const flowMemberLimit = 1000;
 
 interface MemberLevelCardProps {
   member: Member;
@@ -55,6 +63,9 @@ function renderMemberLevelCard({
           <span>{member.role}</span>
         </div>
       </div>
+      <Link className={styles.levelCardLink} to={`/members/${member.id}`}>
+        個人ページへ
+      </Link>
     </article>
   );
 }
@@ -105,7 +116,10 @@ function buildUpdateMemberInput(
 export function MemberHierarchyPage() {
   const { members, isLoading, error, updateMember } = useProjectData();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<HierarchyViewMode>("flow");
+  const requestedDepartmentName = searchParams.get("departmentName") ?? "";
+  const [viewMode, setViewMode] = useState<HierarchyViewMode>(
+    requestedDepartmentName ? "flow" : "tree",
+  );
   const [relationshipMessage, setRelationshipMessage] = useState<string | null>(
     null,
   );
@@ -134,11 +148,15 @@ export function MemberHierarchyPage() {
             .map((member) => member.departmentName.trim())
             .filter(Boolean),
         ),
-      ].sort((left, right) => left.localeCompare(right, "ja")),
+      ]
+        .sort((left, right) => left.localeCompare(right, "ja"))
+        .map((departmentName) => ({
+          value: departmentName,
+          label: departmentName,
+        })),
     [sortedMembers],
   );
 
-  const requestedDepartmentName = searchParams.get("departmentName") ?? "";
   const requestedMemberId = searchParams.get("memberId") ?? "";
 
   const visibleMembers = useMemo(
@@ -179,6 +197,14 @@ export function MemberHierarchyPage() {
       ).size,
     [visibleMembers],
   );
+  const isDepartmentSelected = requestedDepartmentName.trim().length > 0;
+  const canRenderFlow = isDepartmentSelected && visibleMembers.length <= flowMemberLimit;
+
+  useEffect(() => {
+    if (!canRenderFlow && viewMode === "flow") {
+      setViewMode("tree");
+    }
+  }, [canRenderFlow, viewMode]);
 
   function updateHierarchyParams(next: {
     departmentName?: string;
@@ -319,26 +345,22 @@ export function MemberHierarchyPage() {
           <div className={styles.filterGrid}>
             <label className={formStyles.field}>
               <span className={formStyles.label}>部署名</span>
-              <select
+              <SearchSelect
+                ariaLabel="部署名で絞り込み"
                 className={formStyles.control}
-                data-testid="member-hierarchy-department-select"
-                onChange={(event) => {
-                  const departmentName = event.target.value;
+                dataTestId="member-hierarchy-department-select"
+                emptyMessage="該当する部署はありません"
+                onChange={(departmentName) => {
                   updateHierarchyParams({
                     departmentName,
                   });
                   setRelationshipMessage(null);
                   setRelationshipError(null);
                 }}
+                options={departmentOptions}
+                placeholder="部署を検索して選択"
                 value={requestedDepartmentName}
-              >
-                <option value="">全部署</option>
-                {departmentOptions.map((departmentName) => (
-                  <option key={departmentName} value={departmentName}>
-                    {departmentName}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
 
           </div>
@@ -367,11 +389,20 @@ export function MemberHierarchyPage() {
               className={[
                 styles.viewToggleButton,
                 viewMode === "flow" ? styles.viewToggleButtonActive : "",
+                !canRenderFlow ? styles.viewToggleButtonDisabled : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
               data-testid="member-hierarchy-view-flow"
+              disabled={!canRenderFlow}
               onClick={() => setViewMode("flow")}
+              title={
+                canRenderFlow
+                  ? undefined
+                  : isDepartmentSelected
+                    ? `表示件数が多いため、フロー表示は ${flowMemberLimit} 名以下で利用してください。`
+                    : "フロー表示は部署を選択してから利用してください。"
+              }
               type="button"
             >
               フロー
@@ -392,6 +423,17 @@ export function MemberHierarchyPage() {
             </button>
           </div>
 
+          {isDepartmentSelected && !canRenderFlow ? (
+            <div className={styles.flowGuard}>
+              <p className={styles.flowGuardTitle}>
+                {"表示件数が多いため、フロー表示を停止しました。"}
+              </p>
+              <p className={styles.flowGuardText}>
+                {`現在 ${visibleMembers.length} 名を表示しています。部署をさらに絞るか、ツリー表示・階層図で確認してください。`}
+              </p>
+            </div>
+          ) : null}
+
           {viewMode === "flow" ? (
             <div className={styles.flowAssist}>
               <p className={styles.flowAssistText}>
@@ -409,7 +451,11 @@ export function MemberHierarchyPage() {
             </div>
           ) : null}
 
-          {visibleMembers.length === 0 ? (
+          {!isDepartmentSelected ? (
+            <p className={styles.emptyText}>
+              部署を選択すると、その部署のメンバー体制を表示できます。
+            </p>
+          ) : visibleMembers.length === 0 ? (
             <p className={styles.emptyText}>
               指定した部署に表示対象のメンバーがいません。
             </p>
@@ -419,12 +465,18 @@ export function MemberHierarchyPage() {
               selectedMemberId={activeMemberId}
             />
           ) : viewMode === "flow" ? (
-            <MemberHierarchyFlow
-              isEditable={!isSavingRelation}
-              members={visibleMembers}
-              onManagerConnect={handleManagerConnect}
-              selectedMemberId={activeMemberId}
-            />
+            <Suspense
+              fallback={
+                <MemberHierarchyFlowFallback message="フロー表示を準備しています..." />
+              }
+            >
+              <MemberHierarchyFlow
+                isEditable={!isSavingRelation}
+                members={visibleMembers}
+                onManagerConnect={handleManagerConnect}
+                selectedMemberId={activeMemberId}
+              />
+            </Suspense>
           ) : hierarchyLevels ? (
             <div
               className={styles.pyramidWrap}

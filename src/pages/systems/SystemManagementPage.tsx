@@ -8,6 +8,115 @@ import { useProjectData } from '../../store/useProjectData'
 import formStyles from '../../styles/form.module.css'
 import styles from './SystemManagementPage.module.css'
 
+const systemSkeletonRows = Array.from({ length: 6 }, (_, index) => index)
+
+function SystemManagementSkeleton() {
+  return (
+    <ListPageScaffold
+      contentProps={{
+        actions: (
+          <div className={styles.toolbarActions}>
+            <span className={`${styles.skeletonBox} ${styles.skeletonButton}`} />
+            <span className={`${styles.skeletonBox} ${styles.skeletonButtonWide}`} />
+          </div>
+        ),
+        description: 'システム情報を準備しています。',
+        title: '一覧を読み込み中です',
+      }}
+      filterProps={{
+        className: styles.controls,
+        summary: (
+          <div className={styles.filterSummary}>
+            <span className={styles.filterSummaryLabel}>表示条件</span>
+            <span className={`${styles.skeletonBox} ${styles.skeletonSummary}`} />
+          </div>
+        ),
+        topRow: (
+          <div className={styles.headerActions}>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>システムID</span>
+              <span className={`${styles.skeletonBox} ${styles.skeletonField}`} />
+            </label>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>所管部署</span>
+              <span className={`${styles.skeletonBox} ${styles.skeletonField}`} />
+            </label>
+          </div>
+        ),
+        visible: true,
+      }}
+      hero={{
+        action: <span className={`${styles.skeletonBox} ${styles.skeletonHeroAction}`} />,
+        className: styles.hero,
+        collapsible: true,
+        description:
+          '利用中のシステムを一覧で整理します。カテゴリ、責任者、関連案件、メモを並べて比較しながら確認できます。',
+        eyebrow: 'System Directory',
+        iconKind: 'system',
+        storageKey: 'project-master:hero-collapsed:systems',
+        stats: [
+          { label: '登録システム', value: <span className={`${styles.skeletonBox} ${styles.skeletonHeroStat}`} /> },
+          { label: '関連案件あり', value: <span className={`${styles.skeletonBox} ${styles.skeletonHeroStat}`} /> },
+          { label: '責任者設定済み', value: <span className={`${styles.skeletonBox} ${styles.skeletonHeroStat}`} /> },
+        ],
+        title: 'システム一覧を読み込み中',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        className={styles.tableWrap}
+        data-testid="system-management-skeleton"
+      >
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>システムID</th>
+              <th>名称</th>
+              <th>カテゴリ</th>
+              <th>オーナー</th>
+              <th>所管部署</th>
+              <th>対象案件</th>
+              <th>メモ</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {systemSkeletonRows.map((rowIndex) => (
+              <tr className={styles.systemRow} key={`skeleton-${rowIndex}`}>
+                <td><span className={`${styles.skeletonBox} ${styles.skeletonTextShort}`} /></td>
+                <td><span className={`${styles.skeletonBox} ${styles.skeletonTextMedium}`} /></td>
+                <td><span className={`${styles.skeletonBox} ${styles.skeletonTextShort}`} /></td>
+                <td><span className={`${styles.skeletonBox} ${styles.skeletonTextMedium}`} /></td>
+                <td>
+                  <div className={styles.departmentList}>
+                    <span className={`${styles.skeletonBox} ${styles.skeletonChip}`} />
+                    <span className={`${styles.skeletonBox} ${styles.skeletonChip}`} />
+                  </div>
+                </td>
+                <td>
+                  <div className={styles.projectSummary}>
+                    <span className={`${styles.skeletonBox} ${styles.skeletonTextShort}`} />
+                    <div className={styles.projectList}>
+                      <span className={`${styles.skeletonBox} ${styles.skeletonChipWide}`} />
+                    </div>
+                  </div>
+                </td>
+                <td><span className={`${styles.skeletonBox} ${styles.skeletonTextLong}`} /></td>
+                <td>
+                  <div className={styles.rowActions}>
+                    <span className={`${styles.skeletonBox} ${styles.skeletonAction}`} />
+                    <span className={`${styles.skeletonBox} ${styles.skeletonAction}`} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ListPageScaffold>
+  )
+}
+
 export function SystemManagementPage() {
   const { systems, members, projects, isLoading, error } = useProjectData()
   const [isFilterVisible, setIsFilterVisible] = useState(false)
@@ -95,9 +204,7 @@ export function SystemManagementPage() {
   )
 
   if (isLoading) {
-    return (
-      <PageStatePanel description="システム情報を準備しています。" title="システム一覧を読み込み中です" />
-    )
+    return <SystemManagementSkeleton />
   }
 
   if (error) {

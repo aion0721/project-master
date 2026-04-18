@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { Member } from '../types/project'
 import {
   buildMemberHierarchyForest,
@@ -85,6 +86,9 @@ function MemberHierarchyNodeView({ node, depth = 0 }: { node: MemberHierarchyNod
               ? '選択メンバーまでの経路に含まれています。'
               : '選択メンバー配下のメンバーです。'}
         </div>
+        <Link className={styles.detailLink} to={`/members/${node.member.id}`}>
+          個人ページへ
+        </Link>
       </div>
 
       {node.children.length > 0 ? (

@@ -60,6 +60,86 @@
   gap: 8px;
 }
 
+.skeletonBox {
+  display: inline-flex;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(226, 232, 240, 0.72) 0%,
+      rgba(241, 245, 249, 0.96) 50%,
+      rgba(226, 232, 240, 0.72) 100%
+    );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonButton {
+  width: 112px;
+  min-height: 38px;
+}
+
+.skeletonButtonWide {
+  width: 136px;
+  min-height: 38px;
+}
+
+.skeletonSummary {
+  width: 220px;
+  min-height: 18px;
+  border-radius: 8px;
+}
+
+.skeletonField {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+.skeletonHeroAction {
+  width: 120px;
+  min-height: 44px;
+}
+
+.skeletonHeroStat {
+  width: 72px;
+  min-height: 36px;
+  border-radius: 10px;
+}
+
+.skeletonTextShort {
+  width: 72px;
+  min-height: 18px;
+  border-radius: 8px;
+}
+
+.skeletonTextMedium {
+  width: 128px;
+  min-height: 18px;
+  border-radius: 8px;
+}
+
+.skeletonTextLong {
+  width: 180px;
+  min-height: 18px;
+  border-radius: 8px;
+}
+
+.skeletonChip {
+  width: 96px;
+  min-height: 28px;
+}
+
+.skeletonChipWide {
+  width: 156px;
+  min-height: 28px;
+}
+
+.skeletonAction {
+  width: 72px;
+  min-height: 32px;
+}
+
 .toggleStateButton {
   border-color: rgba(71, 85, 105, 0.22);
   background: rgba(255, 255, 255, 0.92);
@@ -202,6 +282,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 @media (max-width: 960px) {

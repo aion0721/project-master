@@ -1,5 +1,6 @@
 import dagre from "@dagrejs/dagre";
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   Background,
   type Connection,
@@ -50,9 +51,9 @@ type BranchBandNodeType = Node<BranchBandData, "branchBand">;
 type HierarchyFlowNode = MemberFlowNodeType | BranchBandNodeType;
 
 const nodeWidth = 288;
-const nodeHeight = 136;
-const branchPaddingX = 28;
-const branchPaddingY = 26;
+const nodeHeight = 168;
+const branchPaddingX = 40;
+const branchPaddingY = 44;
 const topLevelBranchGap = 44;
 const branchTones = [
   { stroke: "#38bdf8", fill: "rgba(56, 189, 248, 0.08)" },
@@ -357,7 +358,7 @@ function buildBranchBandNodes(
       return [];
     }
 
-    const topPadding = 48;
+    const topPadding = 64;
 
     return [
       {
@@ -449,6 +450,9 @@ function MemberFlowNode({ data }: NodeProps<MemberFlowNodeType>) {
           <div className={styles.memberName}>{data.member.name}</div>
           <div className={styles.memberRole}>{data.member.role}</div>
         </div>
+        <Link className={styles.detailLink} to={`/members/${data.member.id}`}>
+          個人ページへ
+        </Link>
       </div>
     </div>
   );

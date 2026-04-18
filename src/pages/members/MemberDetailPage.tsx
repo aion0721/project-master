@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { MemberHierarchyFlow } from '../../components/MemberHierarchyFlow'
 import { ListPageContentSection } from '../../components/ListPageContentSection'
 import { ListPageHero } from '../../components/ListPageHero'
+import { MemberHierarchyFlowFallback } from '../../components/MemberHierarchyFlowFallback'
 import { PageStatePanel } from '../../components/PageStatePanel'
 import { Button } from '../../components/ui/Button'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -18,6 +18,12 @@ import {
   type MemberFormState,
 } from './memberFormUtils'
 import styles from './MemberDetailPage.module.css'
+
+const MemberHierarchyFlow = lazy(() =>
+  import('../../components/MemberHierarchyFlow').then((module) => ({
+    default: module.MemberHierarchyFlow,
+  })),
+)
 
 interface RelatedProjectItem {
   projectNumber: string
@@ -457,7 +463,13 @@ export function MemberDetailPage() {
             </Button>
           </div>
           <div className={styles.hierarchyCanvas} data-testid="member-detail-hierarchy">
-            <MemberHierarchyFlow members={departmentMembers} selectedMemberId={member.id} />
+            <Suspense
+              fallback={
+                <MemberHierarchyFlowFallback message="所属部署の体制図を読み込み中です..." />
+              }
+            >
+              <MemberHierarchyFlow members={departmentMembers} selectedMemberId={member.id} />
+            </Suspense>
           </div>
         </div>
       </ListPageContentSection>

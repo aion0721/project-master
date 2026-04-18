@@ -1,0 +1,54 @@
+.root {
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  min-height: 520px;
+  padding: 24px;
+}
+
+.preview {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.node {
+  display: block;
+  width: min(100%, 240px);
+  min-width: 200px;
+  height: 88px;
+  border-radius: 24px;
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.9), rgba(241, 245, 249, 0.98), rgba(226, 232, 240, 0.9));
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+.connector {
+  width: 2px;
+  height: 48px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.message {
+  margin: 0;
+  color: var(--text-subtle);
+  line-height: 1.6;
+  text-align: center;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node {
+    animation: none;
+  }
+}

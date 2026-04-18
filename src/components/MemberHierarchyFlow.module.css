@@ -13,6 +13,10 @@
   cursor: grab;
 }
 
+.flowWrap :global(.react-flow__node-memberNode) {
+  pointer-events: all;
+}
+
 .flowWrap :global(.react-flow__controls) {
   box-shadow: var(--shadow-soft);
   border-radius: 16px;
@@ -50,6 +54,7 @@
   border: 2px solid var(--tone-border);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: var(--tone-shadow);
+  overflow: visible;
 }
 
 .nodeInner {
@@ -58,7 +63,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  min-height: 136px;
+  min-height: 168px;
   padding: 20px 20px 18px;
   text-align: center;
 }
@@ -162,6 +167,26 @@
   font-weight: 700;
 }
 
+.detailLink {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.detailLink:hover {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+}
+
 .branchBand {
   position: relative;
   width: 100%;
@@ -169,6 +194,7 @@
   border-radius: 32px;
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.36);
+  overflow: visible;
 }
 
 .branchBand::before {

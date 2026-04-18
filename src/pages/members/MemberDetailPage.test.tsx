@@ -52,6 +52,9 @@ describe('MemberDetailPage', () => {
       '/members/hierarchy?departmentName=%E3%82%A4%E3%83%B3%E3%83%95%E3%83%A9%E5%9F%BA%E7%9B%A4%E9%83%A8&memberId=m4',
     )
     const hierarchyCanvas = within(hierarchySection as HTMLElement).getByTestId('member-detail-hierarchy')
+    await waitFor(() => {
+      expect(within(hierarchyCanvas).getByText('高橋')).toBeInTheDocument()
+    }, { timeout: 5000 })
     expect(within(hierarchyCanvas).getByText('高橋')).toBeInTheDocument()
     expect(within(hierarchyCanvas).getByText('小林')).toBeInTheDocument()
     expect(within(hierarchyCanvas).queryByText('伊藤')).not.toBeInTheDocument()
