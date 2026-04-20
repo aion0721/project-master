@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { LinkTargetEditorList } from '../../components/LinkTargetEditorList'
+import { LinkTargetList } from '../../components/LinkTargetList'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import pageStyles from '../../styles/page.module.css'
@@ -81,7 +83,9 @@ export function SystemLinksSection({ onSave, system }: SystemLinksSectionProps) 
       <div className={pageStyles.sectionHeader}>
         <div>
           <h2 className={pageStyles.sectionTitle}>関連リンク</h2>
-          <p className={pageStyles.sectionDescription}>運用Wikiや設計資料への導線です。</p>
+          <p className={pageStyles.sectionDescription}>
+            運用Wiki、設計資料、共有フォルダへの導線です。
+          </p>
         </div>
         {isLinksEditing ? (
           <div className={styles.headerActions}>
@@ -104,53 +108,35 @@ export function SystemLinksSection({ onSave, system }: SystemLinksSectionProps) 
 
       {isLinksEditing ? (
         <div className={styles.linkEditorList}>
-          {linkDrafts.map((link, index) => (
-            <div className={styles.linkEditorRow} key={`system-link-${index}`}>
-              <input
-                aria-label={`関連リンク名 ${index + 1}`}
-                className={styles.input}
-                data-testid={`system-link-label-${index}`}
-                onChange={(event) => updateLinkDraft(index, { label: event.target.value })}
-                placeholder="リンク名"
-                value={link.label}
-              />
-              <input
-                aria-label={`関連リンクURL ${index + 1}`}
-                className={styles.input}
-                data-testid={`system-link-url-${index}`}
-                onChange={(event) => updateLinkDraft(index, { url: event.target.value })}
-                placeholder="https://example.com"
-                type="url"
-                value={link.url}
-              />
-              <Button
-                data-testid={`system-link-remove-${index}`}
-                onClick={() => removeLinkDraft(index)}
-                size="small"
-                variant="danger"
-              >
-                削除
-              </Button>
-            </div>
-          ))}
+          <LinkTargetEditorList
+            labelFieldAriaLabel={(index) => `関連リンク名 ${index + 1}`}
+            labelInputClassName={styles.input}
+            labelInputPlaceholder="リンク名"
+            labelTestIdPrefix="system-link-label"
+            links={linkDrafts}
+            listClassName={styles.linkEditorList}
+            onChange={updateLinkDraft}
+            onRemove={removeLinkDraft}
+            removeButtonTestIdPrefix="system-link-remove"
+            rowClassName={styles.linkEditorRow}
+            urlFieldAriaLabel={(index) => `関連リンクURL ${index + 1}`}
+            urlInputClassName={styles.input}
+            urlInputPlaceholder="https://example.com または \\\\sample-server\\share"
+            urlTestIdPrefix="system-link-url"
+          />
           {linkDrafts.length === 0 ? <p className={styles.emptyText}>関連リンクは未設定です。</p> : null}
           {linkError ? <p className={styles.errorText}>{linkError}</p> : null}
         </div>
       ) : system.systemLinks && system.systemLinks.length > 0 ? (
-        <div className={styles.linkList}>
-          {system.systemLinks.map((link, index) => (
-            <a
-              className={styles.externalLink}
-              data-testid={`system-link-anchor-${index}`}
-              href={link.url}
-              key={`${link.label}-${link.url}`}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
+        <LinkTargetList
+          emptyContent={<p className={styles.emptyText}>関連リンクは未設定です。</p>}
+          linkClassName={styles.externalLink}
+          links={system.systemLinks}
+          listClassName={styles.linkList}
+          rowClassName={styles.linkDisplayRow}
+          testIdPrefix="system-link"
+          valueClassName={styles.linkValue}
+        />
       ) : (
         <p className={styles.emptyText}>関連リンクは未設定です。</p>
       )}

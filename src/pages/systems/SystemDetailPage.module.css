@@ -154,6 +154,18 @@
   gap: 12px;
 }
 
+.linkDisplayRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.linkValue {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
 .externalLink,
 .projectLink {
   color: var(--accent);
@@ -458,6 +470,7 @@
   .metaGrid,
   .contentGrid,
   .linkEditorRow,
+  .linkDisplayRow,
   .assignmentRow,
   .relationFormGrid,
   .systemFormGrid,

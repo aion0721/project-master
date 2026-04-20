@@ -77,6 +77,56 @@ describe('SystemDetailPage', () => {
     })
   })
 
+  it('UNC の関連リンクはパス表示とコピーができる', async () => {
+    const fetchSpy = mockProjectApi()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    })
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: '会計基盤' })
+
+    const linksSection = screen.getByRole('heading', { name: '関連リンク' }).closest('section')
+    expect(linksSection).not.toBeNull()
+    fireEvent.click(within(linksSection!).getByRole('button', { name: '編集' }))
+    fireEvent.change(await screen.findByTestId('system-link-label-0'), {
+      target: { value: '共有フォルダ' },
+    })
+    fireEvent.change(screen.getByTestId('system-link-url-0'), {
+      target: { value: '\\\\sample-server\\sys-accounting' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      const systemCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/systems/sys-accounting') && init?.method === 'PATCH'
+      })
+
+      expect(systemCall).toBeDefined()
+      const body = JSON.parse(String(systemCall?.[1]?.body))
+      expect(body.systemLinks).toEqual([
+        {
+          label: '共有フォルダ',
+          url: '\\\\sample-server\\sys-accounting',
+        },
+      ])
+    })
+
+    expect(screen.queryByTestId('system-link-anchor-0')).not.toBeInTheDocument()
+    expect(await screen.findByTestId('system-link-path-0')).toHaveTextContent('共有フォルダ')
+
+    fireEvent.click(screen.getByTestId('system-link-copy-0'))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('\\\\sample-server\\sys-accounting')
+    })
+  })
+
   it('システム基本情報を編集保存できる', async () => {
     const fetchSpy = mockProjectApi()
 

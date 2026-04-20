@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
+import { LinkTargetEditorList } from '../../components/LinkTargetEditorList'
 import { PageStatePanel } from '../../components/PageStatePanel'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
@@ -321,50 +322,35 @@ export function ProjectCreatePage() {
             <div className={styles.linkSectionHeader}>
               <div>
                 <p className={styles.noteTitle}>案件リンク</p>
-                <p className={styles.noteText}>リンク名と URL をセットで登録できます。</p>
+                <p className={styles.noteText}>
+                  リンク名と URL またはネットワークパスをセットで登録できます。
+                </p>
               </div>
               <Button onClick={addProjectLink} size="small" type="button" variant="secondary">
                 リンク追加
               </Button>
             </div>
 
-            <div className={styles.linkList}>
-              {formData.projectLinks.map((link, index) => (
-                <div key={`project-link-${index}`} className={styles.linkRow}>
-                  <label className={styles.field}>
-                    <span className={styles.label}>案件リンク名 {index + 1}</span>
-                    <input
-                      aria-label={`案件リンク名 ${index + 1}`}
-                      className={styles.input}
-                      onChange={(event) => updateProjectLink(index, { label: event.target.value })}
-                      placeholder="例: Backlog"
-                      value={link.label}
-                    />
-                  </label>
-
-                  <label className={styles.field}>
-                    <span className={styles.label}>案件リンクURL {index + 1}</span>
-                    <input
-                      aria-label={`案件リンクURL ${index + 1}`}
-                      className={styles.input}
-                      onChange={(event) => updateProjectLink(index, { url: event.target.value })}
-                      placeholder="https://example.com/projects/PRJ-006"
-                      type="url"
-                      value={link.url}
-                    />
-                  </label>
-
-                  <Button
-                    onClick={() => removeProjectLink(index)}
-                    size="small"
-                    type="button"
-                    variant="danger"
-                  >
-                    削除
-                  </Button>
-                </div>
-              ))}
-            </div>
+            <LinkTargetEditorList
+              fieldWrapperClassName={styles.field}
+              labelFieldAriaLabel={(index) => `案件リンク名 ${index + 1}`}
+              labelFieldLabel={(index) => `案件リンク名 ${index + 1}`}
+              labelInputClassName={styles.input}
+              labelInputPlaceholder="例: Backlog"
+              labelTestIdPrefix="project-link-label"
+              links={formData.projectLinks}
+              listClassName={styles.linkList}
+              onChange={updateProjectLink}
+              onRemove={removeProjectLink}
+              removeButtonTestIdPrefix="project-link-remove"
+              rowClassName={styles.linkRow}
+              showVisibleLabels
+              urlFieldAriaLabel={(index) => `案件リンクURLまたはネットワークパス ${index + 1}`}
+              urlFieldLabel={(index) => `案件リンクURLまたはネットワークパス ${index + 1}`}
+              urlInputClassName={styles.input}
+              urlInputPlaceholder="https://example.com/projects/PRJ-006 または \\\\sample-server\\share"
+              urlTestIdPrefix="project-link-url"
+            />
           </div>
 
           <div className={styles.noteCard}>

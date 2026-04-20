@@ -181,6 +181,9 @@ describe("CrossProjectViewPage", () => {
         screen.getByTestId("cross-project-group-sys-accounting / 会計基盤"),
       ).toBeInTheDocument();
     });
+    expect(
+      screen.getByTestId("cross-project-group-sys-accounting / 会計基盤"),
+    ).toHaveClass(styles.stickyColumn);
   });
 
   it("主システムのクエリで案件を絞り込める", async () => {

@@ -1,11 +1,17 @@
 import type { ProjectLink } from '../types/project'
 
-export function isValidUrl(value: string) {
+const uncPathPattern = /^\\\\[^\\/:*?"<>|\r\n]+\\[^\\/:*?"<>|\r\n]+(?:\\[^\\/:*?"<>|\r\n]+)*\\?$/
+
+export function isNetworkPath(value: string) {
+  return uncPathPattern.test(value)
+}
+
+export function isValidProjectLinkTarget(value: string) {
   try {
     new URL(value)
     return true
   } catch {
-    return false
+    return isNetworkPath(value)
   }
 }
 
@@ -25,14 +31,14 @@ export function validateProjectLinks(links: ProjectLink[]) {
     if (!link.label || !link.url) {
       return {
         links: normalizedLinks,
-        error: '案件リンクは名称と URL を両方入力してください。',
+        error: '案件リンクは名称と URL またはネットワークパスを両方入力してください。',
       }
     }
 
-    if (!isValidUrl(link.url)) {
+    if (!isValidProjectLinkTarget(link.url)) {
       return {
         links: normalizedLinks,
-        error: '案件リンクは有効な URL を入力してください。',
+        error: '案件リンクは有効な URL またはネットワークパスを入力してください。',
       }
     }
   }

@@ -42,8 +42,8 @@ describe('ProjectCreatePage', () => {
     fireEvent.change(screen.getByLabelText('案件リンク名 1'), {
       target: { value: 'Backlog' },
     })
-    fireEvent.change(screen.getByLabelText('案件リンクURL 1'), {
-      target: { value: 'https://example.com/projects/PRJ-006' },
+    fireEvent.change(screen.getByLabelText('案件リンクURLまたはネットワークパス 1'), {
+      target: { value: '\\\\sample-server\\sss' },
     })
     fireEvent.click(screen.getByRole('button', { name: '案件を登録' }))
 
@@ -69,7 +69,7 @@ describe('ProjectCreatePage', () => {
         projectLinks: [
           {
             label: 'Backlog',
-            url: 'https://example.com/projects/PRJ-006',
+            url: '\\\\sample-server\\sss',
           },
         ],
       })

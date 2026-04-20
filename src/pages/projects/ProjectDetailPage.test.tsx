@@ -179,6 +179,39 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('案件リンクでネットワークパスを保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-links-edit-button'))
+    fireEvent.change(screen.getByTestId('project-link-label-0'), {
+      target: { value: '共有フォルダ' },
+    })
+    fireEvent.change(screen.getByTestId('project-link-url-0'), {
+      target: { value: '\\\\sample-server\\sss' },
+    })
+    fireEvent.click(screen.getByTestId('project-links-save-button'))
+
+    await waitFor(() => {
+      const linkCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/links') && init?.method === 'PATCH'
+      })
+
+      expect(linkCall).toBeDefined()
+      const body = JSON.parse(String(linkCall?.[1]?.body))
+      expect(body.projectLinks[0]).toEqual({
+        label: '共有フォルダ',
+        url: '\\\\sample-server\\sss',
+      })
+    })
+
+    expect(screen.queryByTestId('project-link-anchor-0')).not.toBeInTheDocument()
+    expect(await screen.findByTestId('project-link-path-0')).toHaveTextContent('共有フォルダ')
+  })
+
   it('案件リンクをクリップボードへコピーできる', async () => {
     mockProjectApi()
     const writeText = vi.fn().mockResolvedValue(undefined)

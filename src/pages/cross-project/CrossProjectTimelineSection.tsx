@@ -229,11 +229,14 @@ export function CrossProjectTimelineSection({
                   >
                     <td
                       className={getGroupCellClassName(row.toneIndex, styles)}
-                      colSpan={timelineSlots.length + 1}
                       data-testid={`cross-project-group-${row.label}`}
                     >
                       {`主システム: ${row.label}`}
                     </td>
+                    <td
+                      className={styles.groupFillCell}
+                      colSpan={timelineSlots.length}
+                    />
                   </tr>
                 );
               }
