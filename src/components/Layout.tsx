@@ -80,6 +80,7 @@ const navigationSections: NavigationSection[] = [
 ];
 
 const sidebarPinnedStorageKey = "project-master:sidebar-pinned";
+const usageGuideDismissedStorageKey = "project-master:usage-guide-dismissed";
 const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
 
 export function Layout() {
@@ -87,9 +88,19 @@ export function Layout() {
   const { currentUser, isLoading, error, login, logout } = useUserSession();
   const memberIdExample =
     import.meta.env.VITE_MEMBER_ID_EXAMPLE?.trim() || "m1";
+  const issueUrl = import.meta.env.VITE_FEEDBACK_ISSUE_URL?.trim() || "";
   const memberLoginPlaceholder = `例: ${memberIdExample}`;
   const [memberKey, setMemberKey] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isUsageGuideOpen, setIsUsageGuideOpen] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return (
+      window.localStorage.getItem(usageGuideDismissedStorageKey) !== "true"
+    );
+  });
   const [isSidebarPinned, setIsSidebarPinned] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -106,6 +117,23 @@ export function Layout() {
       String(isSidebarPinned),
     );
   }, [isSidebarPinned]);
+
+  function closeUsageGuide() {
+    setIsUsageGuideOpen(false);
+    window.localStorage.setItem(usageGuideDismissedStorageKey, "true");
+  }
+
+  function openUsageGuide() {
+    setIsUsageGuideOpen(true);
+  }
+
+  function openIssueUrl() {
+    if (!issueUrl) {
+      return;
+    }
+
+    window.open(issueUrl, "_blank", "noopener,noreferrer");
+  }
 
   async function handleLogin() {
     if (!memberKey.trim()) {
@@ -225,6 +253,18 @@ export function Layout() {
               </div>
             ))}
           </nav>
+
+          <button
+            aria-label="利用方針"
+            className={styles.sidebarUtilityButton}
+            onClick={openUsageGuide}
+            type="button"
+          >
+            <span className={styles.sidebarUtilityIcon} aria-hidden="true">
+              ?
+            </span>
+            <span className={styles.sidebarUtilityLabel}>利用方針</span>
+          </button>
         </div>
 
         <div className={styles.userCard}>
@@ -283,6 +323,45 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+
+      {isUsageGuideOpen ? (
+        <div
+          aria-labelledby="usage-guide-title"
+          aria-modal="true"
+          className={styles.modalOverlay}
+          role="dialog"
+        >
+          <div className={styles.modalCard}>
+            <p className={styles.modalEyebrow}>利用方針</p>
+            <h2 className={styles.modalTitle} id="usage-guide-title">
+              利用前にご確認ください
+            </h2>
+            <div className={styles.modalBody}>
+              <p>このアプリで扱う情報は公開情報です。</p>
+              <p>不具合、修正依頼、要望は Issue を作成してください。</p>
+            </div>
+            <div className={styles.modalActions}>
+              {issueUrl ? (
+                <Button
+                  className={styles.modalAction}
+                  onClick={openIssueUrl}
+                  size="small"
+                  variant="secondary"
+                >
+                  Issue を作成
+                </Button>
+              ) : null}
+              <Button
+                className={styles.modalAction}
+                onClick={closeUsageGuide}
+                size="small"
+              >
+                閉じる
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

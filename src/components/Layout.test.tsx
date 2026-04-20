@@ -54,6 +54,7 @@ describe('Layout', () => {
     expect(screen.getByText('システム管理')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'システム一覧' })).toHaveAttribute('href', '/systems')
     expect(screen.getByRole('link', { name: '関連図' })).toHaveAttribute('href', '/systems/diagram')
+    expect(screen.getByRole('button', { name: '利用方針' })).toBeInTheDocument()
   })
 
   it('keeps project list active on project detail routes', () => {
@@ -105,5 +106,43 @@ describe('Layout', () => {
     renderLayout(['/projects'])
 
     expect(screen.getByPlaceholderText('例: EMP0001')).toBeInTheDocument()
+  })
+
+  it('shows the usage guide on first visit and hides it after closing', () => {
+    renderLayout(['/projects'])
+
+    expect(screen.getByRole('dialog', { name: '利用前にご確認ください' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '閉じる' }))
+
+    expect(screen.queryByRole('dialog', { name: '利用前にご確認ください' })).not.toBeInTheDocument()
+    expect(window.localStorage.getItem('project-master:usage-guide-dismissed')).toBe('true')
+  })
+
+  it('can reopen the usage guide from the sidebar utility button', () => {
+    window.localStorage.setItem('project-master:usage-guide-dismissed', 'true')
+
+    renderLayout(['/projects'])
+
+    expect(screen.queryByRole('dialog', { name: '利用前にご確認ください' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '利用方針' }))
+
+    expect(screen.getByRole('dialog', { name: '利用前にご確認ください' })).toBeInTheDocument()
+  })
+
+  it('opens the issue url when configured', () => {
+    vi.stubEnv('VITE_FEEDBACK_ISSUE_URL', 'https://example.com/issues/new')
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    renderLayout(['/projects'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Issue を作成' }))
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://example.com/issues/new',
+      '_blank',
+      'noopener,noreferrer',
+    )
   })
 })
