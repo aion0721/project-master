@@ -284,6 +284,8 @@
   position: sticky;
   left: 0;
   z-index: 2;
+  width: 280px;
+  max-width: 280px;
   min-width: 280px;
   background: var(--surface);
 }
@@ -321,6 +323,8 @@
 
 .groupCell {
   z-index: 1;
+  width: 280px;
+  max-width: 280px;
   min-width: 280px;
   padding: 10px 12px;
   background: linear-gradient(180deg, rgba(226, 232, 240, 0.95), rgba(248, 250, 252, 0.98));
@@ -402,6 +406,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .projectInfoCompact {
@@ -409,6 +415,11 @@
 }
 
 .projectLink {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 800;
   color: var(--text-strong);
 }

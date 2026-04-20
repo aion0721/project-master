@@ -31,6 +31,7 @@ interface PhaseRowProps {
   onConfirm?: (phaseId: string) => void
   onCancel?: (phaseId: string) => void
   onMove?: (phaseId: string, direction: 'up' | 'down') => void
+  onMoveStart?: (phaseId: string, week: number) => void
   onResizeStart?: (phaseId: string, edge: 'start' | 'end') => void
   onResizeHover?: (phaseId: string, week: number) => void
   onStatusChange?: (phaseId: string, status: WorkStatus) => void
@@ -51,6 +52,7 @@ export function PhaseRow({
   onConfirm,
   onCancel,
   onMove,
+  onMoveStart,
   onResizeStart,
   onResizeHover,
   onStatusChange,
@@ -95,7 +97,7 @@ export function PhaseRow({
             <span className={styles.editHint}>
               {isDragging
                 ? 'ドラッグ中: 週セル上で期間を調整'
-                : '右端をドラッグで終了週調整。必要なら左端で開始週も調整できます。'}
+                : 'バー本体のドラッグで期間移動。右端で終了週、左端で開始週も調整できます。'}
             </span>
             <label className={styles.statusField}>
               <span className={styles.statusLabel}>状態</span>
@@ -203,6 +205,11 @@ export function PhaseRow({
             data-testid={`timeline-phase-cell-${phase.id}-${slot.index}`}
             key={`${phase.id}-${slot.index}`}
             onClick={() => onSelect?.(phase.id)}
+            onMouseDown={() => {
+              if (editable && isSelected && active) {
+                onMoveStart?.(phase.id, slot.index)
+              }
+            }}
             onMouseEnter={() => onResizeHover?.(phase.id, slot.index)}
           >
             {showStartHandle ? (
@@ -210,7 +217,10 @@ export function PhaseRow({
                 aria-label={`${phase.name} 開始週を調整`}
                 className={`${styles.resizeHandle} ${styles.startHandle}`}
                 data-testid={`timeline-resize-start-${phase.id}`}
-                onMouseDown={() => onResizeStart?.(phase.id, 'start')}
+                onMouseDown={(event) => {
+                  event.stopPropagation()
+                  onResizeStart?.(phase.id, 'start')
+                }}
                 type="button"
               />
             ) : null}
@@ -219,7 +229,10 @@ export function PhaseRow({
                 aria-label={`${phase.name} 終了週を調整`}
                 className={`${styles.resizeHandle} ${styles.endHandle}`}
                 data-testid={`timeline-resize-end-${phase.id}`}
-                onMouseDown={() => onResizeStart?.(phase.id, 'end')}
+                onMouseDown={(event) => {
+                  event.stopPropagation()
+                  onResizeStart?.(phase.id, 'end')
+                }}
                 type="button"
               />
             ) : null}

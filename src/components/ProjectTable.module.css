@@ -48,28 +48,28 @@
 .projectCell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
-.projectName {
+.projectTitle {
   font-weight: 700;
   color: var(--text-strong);
-}
-
-.projectId {
-  font-size: 12px;
-  color: var(--text-subtle);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .systemChipList {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .systemChip {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   min-height: 26px;
   padding: 0 10px;
   border-radius: 999px;

@@ -5,6 +5,15 @@ import { PhaseRow } from './PhaseRow'
 import styles from './PhaseTimeline.module.css'
 
 type ResizeEdge = 'start' | 'end'
+type DragMode =
+  | {
+      type: 'resize'
+      edge: ResizeEdge
+    }
+  | {
+      type: 'move'
+      anchorOffset: number
+    }
 
 interface PhaseTimelineProps {
   project: Project
@@ -48,7 +57,7 @@ export function PhaseTimeline({
   const orderedEvents = [...events].sort((left, right) => left.week - right.week)
   const [dragState, setDragState] = useState<{
     phaseId: string
-    edge: ResizeEdge
+    mode: DragMode
   } | null>(null)
 
   useEffect(() => {
@@ -73,7 +82,34 @@ export function PhaseTimeline({
     }
 
     onPhaseSelect?.(phaseId)
-    setDragState({ phaseId, edge })
+    setDragState({
+      phaseId,
+      mode: {
+        type: 'resize',
+        edge,
+      },
+    })
+  }
+
+  function handleMoveStart(phaseId: string, week: number) {
+    if (!editable) {
+      return
+    }
+
+    const phase = phases.find((item) => item.id === phaseId)
+
+    if (!phase || week < phase.startWeek || week > phase.endWeek) {
+      return
+    }
+
+    onPhaseSelect?.(phaseId)
+    setDragState({
+      phaseId,
+      mode: {
+        type: 'move',
+        anchorOffset: week - phase.startWeek,
+      },
+    })
   }
 
   function handleResizeHover(phaseId: string, week: number) {
@@ -87,7 +123,22 @@ export function PhaseTimeline({
       return
     }
 
-    if (dragState.edge === 'start') {
+    if (dragState.mode.type === 'move') {
+      const duration = phase.endWeek - phase.startWeek
+      const maxStartWeek = Math.max(1, weekSlots.length - duration)
+      const nextStartWeek = Math.min(
+        Math.max(week - dragState.mode.anchorOffset, 1),
+        maxStartWeek,
+      )
+
+      onPhaseResize(phaseId, {
+        startWeek: nextStartWeek,
+        endWeek: nextStartWeek + duration,
+      })
+      return
+    }
+
+    if (dragState.mode.edge === 'start') {
       onPhaseResize(phaseId, {
         startWeek: Math.max(1, Math.min(week, phase.endWeek)),
         endWeek: phase.endWeek,
@@ -194,6 +245,7 @@ export function PhaseTimeline({
               onCancel={onPhaseCancel}
               onConfirm={onPhaseConfirm}
               onMove={onPhaseMove}
+              onMoveStart={handleMoveStart}
               onResizeHover={handleResizeHover}
               onResizeStart={handleResizeStart}
               onRemove={onPhaseRemove}

@@ -10,6 +10,9 @@
 }
 
 .wrapperVisible {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
   opacity: 1;
   transform: translateY(0);
 }

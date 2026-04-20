@@ -59,28 +59,25 @@ export function ProjectTable({
           ) : null}
           {visibleRows.map(({ project, currentPhaseName, pmName, primarySystemName, departmentNames }) => {
             const isBookmarked = bookmarkedSet.has(project.projectNumber)
+            const projectTitle = `${project.projectNumber}: ${project.name}`
+            const detailItems = [
+              primarySystemName ? `システム: ${primarySystemName}` : null,
+              departmentNames.length > 0 ? `部署: ${departmentNames.join(' / ')}` : null,
+            ].filter(Boolean)
 
             return (
               <tr key={project.projectNumber}>
                 <td>
                   <div className={styles.projectCell}>
-                    <span className={styles.projectName}>{project.name}</span>
-                    <span className={styles.projectId}>{project.projectNumber}</span>
-                    {primarySystemName ? (
+                    <span className={styles.projectTitle}>{projectTitle}</span>
+                    {detailItems.length > 0 ? (
                       <div className={styles.systemChipList}>
-                        <span className={styles.systemChip} key={`${project.projectNumber}-${primarySystemName}`}>
-                          主システム: {primarySystemName}
-                        </span>
-                      </div>
-                    ) : null}
-                    {departmentNames.length > 0 ? (
-                      <div className={styles.systemChipList}>
-                        {departmentNames.map((departmentName) => (
+                        {detailItems.map((detailItem) => (
                           <span
                             className={`${styles.systemChip} ${styles.departmentChip}`}
-                            key={`${project.projectNumber}-${departmentName}`}
+                            key={`${project.projectNumber}-${detailItem}`}
                           >
-                            部署: {departmentName}
+                            {detailItem}
                           </span>
                         ))}
                       </div>

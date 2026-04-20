@@ -104,6 +104,7 @@ function CrossProjectProjectRowComponent({
         >
           <Link
             className={styles.projectLink}
+            title={project.name}
             to={`/projects/${project.projectNumber}`}
           >
             {project.name}

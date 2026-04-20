@@ -19,9 +19,9 @@ describe('ProjectListPage', () => {
     })
 
     expect(await screen.findByRole('heading', { name: '案件一覧' })).toBeInTheDocument()
-    expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-    expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
-    expect(screen.getByText('主システム: 会計基盤')).toBeInTheDocument()
+    expect(screen.getByText('PRJ-001: 基幹会計刷新')).toBeInTheDocument()
+    expect(screen.getByText('PRJ-002: 物流統合ダッシュボード')).toBeInTheDocument()
+    expect(screen.getByText('システム: 会計基盤')).toBeInTheDocument()
     expect(screen.getByText('案件ステータス一覧')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '案件を追加' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: '詳細を見る' }).length).toBeGreaterThan(0)
@@ -46,8 +46,8 @@ describe('ProjectListPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('ブックマーク案件一覧')).toBeInTheDocument()
-      expect(screen.getAllByText('基幹会計刷新').length).toBeGreaterThan(0)
-      expect(screen.queryByText('物流統合ダッシュボード')).not.toBeInTheDocument()
+      expect(screen.getByText('PRJ-001: 基幹会計刷新')).toBeInTheDocument()
+      expect(screen.queryByText('PRJ-002: 物流統合ダッシュボード')).not.toBeInTheDocument()
     })
   })
 
@@ -64,18 +64,18 @@ describe('ProjectListPage', () => {
     fireEvent.click(screen.getByLabelText('完了'))
 
     await waitFor(() => {
-      expect(screen.queryByText('営業管理BI改善')).not.toBeInTheDocument()
-      expect(screen.getByText('基幹会計刷新')).toBeInTheDocument()
-      expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
+      expect(screen.queryByText('PRJ-003: 営業管理BI改善')).not.toBeInTheDocument()
+      expect(screen.getByText('PRJ-001: 基幹会計刷新')).toBeInTheDocument()
+      expect(screen.getByText('PRJ-002: 物流統合ダッシュボード')).toBeInTheDocument()
     })
 
     fireEvent.click(screen.getByLabelText('未着手'))
     fireEvent.click(screen.getByLabelText('進行中'))
 
     await waitFor(() => {
-      expect(screen.getByText('物流統合ダッシュボード')).toBeInTheDocument()
-      expect(screen.queryByText('基幹会計刷新')).not.toBeInTheDocument()
-      expect(screen.queryByText('販売促進モバイル連携')).not.toBeInTheDocument()
+      expect(screen.getByText('PRJ-002: 物流統合ダッシュボード')).toBeInTheDocument()
+      expect(screen.queryByText('PRJ-001: 基幹会計刷新')).not.toBeInTheDocument()
+      expect(screen.queryByText('PRJ-005: 販売促進モバイル連携')).not.toBeInTheDocument()
     })
   })
 

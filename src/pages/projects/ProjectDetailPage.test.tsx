@@ -947,6 +947,36 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('タイムライン上でフェーズ全体をドラッグ移動して保存できる', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('phase-editor-toggle'))
+    fireEvent.click(await screen.findByTestId('timeline-phase-cell-ph-p1-2-3'))
+    fireEvent.mouseDown(await screen.findByTestId('timeline-phase-cell-ph-p1-2-4'))
+    fireEvent.mouseEnter(await screen.findByTestId('timeline-phase-cell-ph-p1-2-5'))
+    fireEvent.mouseUp(window)
+    fireEvent.click(screen.getByTestId('timeline-confirm-ph-p1-2'))
+
+    await waitFor(() => {
+      const phaseCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/phases/ph-p1-2') && init?.method === 'PATCH'
+      })
+
+      expect(phaseCall).toBeDefined()
+      const body = JSON.parse(String(phaseCall?.[1]?.body))
+      expect(body).toEqual({
+        startWeek: 4,
+        endWeek: 6,
+        status: '進行中',
+        progress: 70,
+      })
+    })
+  })
+
   it('タイムライン変更をキャンセルすると編集前に戻せる', async () => {
     mockProjectApi()
 
