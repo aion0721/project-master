@@ -84,6 +84,10 @@ describe('MemberDetailPage', () => {
     fireEvent.change(within(basicSection as HTMLElement).getByLabelText('ライン名'), {
       target: { value: 'テスト統括ライン' },
     })
+    fireEvent.change(within(basicSection as HTMLElement).getByLabelText('タグを追加'), {
+      target: { value: '保守担当' },
+    })
+    fireEvent.click(within(basicSection as HTMLElement).getByRole('button', { name: '追加' }))
     fireEvent.change(within(basicSection as HTMLElement).getByLabelText('上司'), {
       target: { value: 'm2' },
     })
@@ -93,6 +97,7 @@ describe('MemberDetailPage', () => {
       expect(within(basicSection as HTMLElement).getByText('DEP-TEST')).toBeInTheDocument()
       expect(within(basicSection as HTMLElement).getByText('テスト推進部')).toBeInTheDocument()
       expect(within(basicSection as HTMLElement).getByText('テスト統括ライン')).toBeInTheDocument()
+      expect(within(basicSection as HTMLElement).getByText('保守担当')).toBeInTheDocument()
       expect(within(basicSection as HTMLElement).getByRole('link', { name: '山本' })).toHaveAttribute(
         'href',
         '/members/m2',

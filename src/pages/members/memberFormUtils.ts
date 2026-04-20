@@ -6,8 +6,30 @@ export interface MemberFormState {
   departmentCode: string
   departmentName: string
   role: string
+  tags: string[]
   lineLabel: string
   managerId: string
+}
+
+export function normalizeMemberTags(tags: string[]) {
+  const seen = new Set<string>()
+
+  return tags
+    .map((tag) => tag.trim())
+    .filter((tag) => {
+      if (!tag) {
+        return false
+      }
+
+      const normalizedTag = tag.toLocaleLowerCase('ja')
+
+      if (seen.has(normalizedTag)) {
+        return false
+      }
+
+      seen.add(normalizedTag)
+      return true
+    })
 }
 
 export function buildInitialMemberForm(): MemberFormState {
@@ -17,6 +39,7 @@ export function buildInitialMemberForm(): MemberFormState {
     departmentCode: '',
     departmentName: '',
     role: '',
+    tags: [],
     lineLabel: '',
     managerId: '',
   }
@@ -41,6 +64,7 @@ export function buildEditForm(member: Member): MemberFormState {
     departmentCode: member.departmentCode,
     departmentName: member.departmentName,
     role: member.role,
+    tags: [...member.tags],
     lineLabel: member.lineLabel ?? '',
     managerId: member.managerId ?? '',
   }

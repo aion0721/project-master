@@ -108,6 +108,7 @@ function buildUpdateMemberInput(
     departmentCode: member.departmentCode,
     departmentName: member.departmentName,
     role: member.role,
+    tags: member.tags,
     lineLabel: member.lineLabel,
     managerId,
   };

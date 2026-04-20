@@ -23,6 +23,7 @@
 .roleBadge,
 .departmentBadge,
 .lineBadge,
+.tagBadge,
 .roleChip {
   display: inline-flex;
   align-items: center;
@@ -47,6 +48,11 @@
 .lineBadge {
   background: rgba(52, 211, 153, 0.12);
   color: #0f766e;
+}
+
+.tagBadge {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
 }
 
 .infoGrid {
@@ -103,6 +109,22 @@
   font-size: 18px;
   font-weight: 700;
   color: var(--accent);
+}
+
+.tagCard {
+  grid-column: span 2;
+}
+
+.tagField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .errorText {
@@ -249,6 +271,10 @@
 @media (max-width: 720px) {
   .infoGrid {
     grid-template-columns: 1fr;
+  }
+
+  .tagCard {
+    grid-column: span 1;
   }
 
   .hierarchyHeader,

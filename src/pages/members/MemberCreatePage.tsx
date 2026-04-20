@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
 import { PageStatePanel } from '../../components/PageStatePanel'
+import { TagEditorField } from '../../components/TagEditorField'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -25,6 +26,11 @@ export function MemberCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const sortedMembers = [...members].sort((left, right) => left.name.localeCompare(right.name, 'ja'))
+  const availableTags = Array.from(
+    new Set(
+      members.flatMap((member) => member.tags).map((tag) => tag.trim()).filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right, 'ja'))
 
   function updateField<Key extends keyof typeof formData>(key: Key, value: (typeof formData)[Key]) {
     setFormData((current) => ({
@@ -57,6 +63,7 @@ export function MemberCreatePage() {
         departmentCode: formData.departmentCode.trim(),
         departmentName: formData.departmentName.trim(),
         role: formData.role.trim(),
+        tags: formData.tags,
         managerId: toNullableManagerId(formData.managerId),
       }
 
@@ -165,6 +172,22 @@ export function MemberCreatePage() {
               value={formData.role}
             />
           </label>
+
+          <div className={styles.field}>
+            <span className={styles.label}>タグ</span>
+            <TagEditorField
+              fieldClassName={styles.field}
+              helperText="例: 保守担当。既存タグを候補表示しつつ、自由入力でも追加できます。"
+              inputAriaLabel="タグを追加"
+              inputClassName={styles.input}
+              inputPlaceholder="タグを入力"
+              onChange={(tags) => updateField('tags', tags)}
+              removeButtonTestIdPrefix="member-create-tag-remove"
+              suggestions={availableTags}
+              tagTestIdPrefix="member-create-tag"
+              tags={formData.tags}
+            />
+          </div>
 
           <label className={styles.field}>
             <span className={styles.label}>上司</span>

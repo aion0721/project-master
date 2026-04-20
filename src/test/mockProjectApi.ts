@@ -53,6 +53,7 @@ function cloneFixtures() {
       ...member,
       departmentCode: member.departmentCode,
       departmentName: member.departmentName,
+      tags: [...member.tags],
       lineLabel: member.lineLabel,
       bookmarkedProjectIds: [...member.bookmarkedProjectIds],
       defaultProjectStatusFilters: [...(member.defaultProjectStatusFilters ?? allWorkStatuses)],
@@ -361,6 +362,7 @@ export function mockProjectApi() {
         departmentCode: body.departmentCode.trim(),
         departmentName: body.departmentName.trim(),
         role: body.role.trim(),
+        tags: [...new Set((body.tags ?? []).map((tag) => tag.trim()).filter(Boolean))],
         lineLabel: body.lineLabel?.trim() || undefined,
         managerId: body.managerId ?? null,
         bookmarkedProjectIds: [],
@@ -1339,6 +1341,7 @@ export function mockProjectApi() {
       member.departmentCode = body.departmentCode.trim()
       member.departmentName = body.departmentName.trim()
       member.role = body.role.trim()
+      member.tags = [...new Set((body.tags ?? []).map((tag) => tag.trim()).filter(Boolean))]
       member.lineLabel = body.lineLabel?.trim() || undefined
       member.managerId = body.managerId ?? null
 

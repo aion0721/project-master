@@ -22,6 +22,7 @@ export function MemberManagementPage() {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [filterKeyword, setFilterKeyword] = useState("");
   const [filterRole, setFilterRole] = useState("");
+  const [filterTag, setFilterTag] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const tableWrapRef = useRef<HTMLDivElement | null>(null);
@@ -71,6 +72,13 @@ export function MemberManagementPage() {
       ].sort((left, right) => left.localeCompare(right, "ja")),
     [members],
   );
+  const tagOptions = useMemo(
+    () =>
+      [
+        ...new Set(members.flatMap((member) => member.tags.map((tag) => tag.trim())).filter(Boolean)),
+      ].sort((left, right) => left.localeCompare(right, "ja")),
+    [members],
+  );
 
   const keywordOptions = useMemo(() => {
     const values = new Map<string, { value: string; label: string }>();
@@ -83,6 +91,12 @@ export function MemberManagementPage() {
       values.set(`department:${member.departmentName}`, {
         value: member.departmentName,
         label: member.departmentName,
+      });
+      member.tags.forEach((tag) => {
+        values.set(`tag:${tag}`, {
+          value: tag,
+          label: `タグ: ${tag}`,
+        });
       });
     });
 
@@ -97,20 +111,29 @@ export function MemberManagementPage() {
       })),
     [roleOptions],
   );
+  const tagSearchOptions = useMemo(
+    () =>
+      tagOptions.map((tag) => ({
+        value: tag,
+        label: tag,
+      })),
+    [tagOptions],
+  );
 
   const filteredMembers = useMemo(() => {
     const normalizedKeyword = filterKeyword.trim().toLowerCase();
 
     return sortedMembers.filter((member) => {
       const searchableText =
-        `${member.id} ${member.departmentName}`.toLowerCase();
+        `${member.id} ${member.departmentName} ${member.tags.join(" ")}`.toLowerCase();
       const matchesKeyword =
         !normalizedKeyword || searchableText.includes(normalizedKeyword);
       const matchesRole = !filterRole || member.role === filterRole;
+      const matchesTag = !filterTag || member.tags.includes(filterTag);
 
-      return matchesKeyword && matchesRole;
+      return matchesKeyword && matchesRole && matchesTag;
     });
-  }, [filterKeyword, filterRole, sortedMembers]);
+  }, [filterKeyword, filterRole, filterTag, sortedMembers]);
 
   const memberSummary = useMemo(
     () => ({
@@ -182,7 +205,8 @@ export function MemberManagementPage() {
     ? ` / "${filterKeyword.trim()}"`
     : "";
   const roleSummary = filterRole ? ` / ${filterRole}` : "";
-  const filterSummaryText = `${filteredMembers.length} 件表示${roleSummary}${keywordSummary}`;
+  const tagSummary = filterTag ? ` / ${filterTag}` : "";
+  const filterSummaryText = `${filteredMembers.length} 件表示${roleSummary}${tagSummary}${keywordSummary}`;
 
   return (
     <ListPageScaffold
@@ -240,6 +264,17 @@ export function MemberManagementPage() {
                 value={filterRole}
               />
             </label>
+            <label className={`${formStyles.field} ${styles.filterField}`}>
+              <span className={formStyles.label}>タグ</span>
+              <SearchSelect
+                ariaLabel="タグで絞り込み"
+                className={formStyles.control}
+                onChange={setFilterTag}
+                options={tagSearchOptions}
+                placeholder="タグを検索"
+                value={filterTag}
+              />
+            </label>
           </div>
         ),
         visible: isFilterVisible,
@@ -272,6 +307,7 @@ export function MemberManagementPage() {
               <th>部署コード</th>
               <th>部署名</th>
               <th>ロール</th>
+              <th>タグ</th>
               <th>上長</th>
               <th>関連案件数</th>
               <th>操作</th>
@@ -280,7 +316,7 @@ export function MemberManagementPage() {
           <tbody>
             {paddingTop > 0 ? (
               <tr aria-hidden="true" className={styles.spacerRow}>
-                <td colSpan={8} style={{ height: `${paddingTop}px`, padding: 0 }} />
+                <td colSpan={9} style={{ height: `${paddingTop}px`, padding: 0 }} />
               </tr>
             ) : null}
             {visibleMembers.map((member) => {
@@ -295,6 +331,7 @@ export function MemberManagementPage() {
                   <td>{member.departmentCode}</td>
                   <td>{member.departmentName}</td>
                   <td>{member.role}</td>
+                  <td>{member.tags.length > 0 ? member.tags.join(' / ') : '未設定'}</td>
                   <td>{manager ? formatMemberShortLabel(manager) : "未設定"}</td>
                   <td>{projectCountByMemberId.get(member.id) ?? 0}</td>
                   <td>
@@ -322,7 +359,7 @@ export function MemberManagementPage() {
             })}
             {paddingBottom > 0 ? (
               <tr aria-hidden="true" className={styles.spacerRow}>
-                <td colSpan={8} style={{ height: `${paddingBottom}px`, padding: 0 }} />
+                <td colSpan={9} style={{ height: `${paddingBottom}px`, padding: 0 }} />
               </tr>
             ) : null}
           </tbody>

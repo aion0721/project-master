@@ -74,6 +74,7 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 function normalizeUser(user: Member): Member {
   return {
     ...user,
+    tags: [...(user.tags ?? [])],
     bookmarkedProjectIds: [...(user.bookmarkedProjectIds ?? [])],
     defaultProjectStatusFilters: normalizeDefaultProjectStatusFilters(user.defaultProjectStatusFilters),
   }

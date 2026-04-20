@@ -36,6 +36,10 @@ describe('MemberCreatePage', () => {
     fireEvent.change(screen.getByLabelText('ロール'), {
       target: { value: 'アプリエンジニア' },
     })
+    fireEvent.change(screen.getByLabelText('タグを追加'), {
+      target: { value: '保守担当' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '追加' }))
     fireEvent.change(screen.getByLabelText('上司'), {
       target: { value: 'm1' },
     })
@@ -53,6 +57,7 @@ describe('MemberCreatePage', () => {
             departmentCode: 'DEP-APP',
             departmentName: 'アプリ開発部',
             role: 'アプリエンジニア',
+            tags: ['保守担当'],
             managerId: 'm1',
           }),
         }),

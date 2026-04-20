@@ -4,6 +4,7 @@ import { ListPageContentSection } from '../../components/ListPageContentSection'
 import { ListPageHero } from '../../components/ListPageHero'
 import { MemberHierarchyFlowFallback } from '../../components/MemberHierarchyFlowFallback'
 import { PageStatePanel } from '../../components/PageStatePanel'
+import { TagEditorField } from '../../components/TagEditorField'
 import { Button } from '../../components/ui/Button'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useProjectData } from '../../store/useProjectData'
@@ -84,6 +85,13 @@ export function MemberDetailPage() {
             .sort((left, right) => left.name.localeCompare(right.name, 'ja'))
         : [],
     [member, members],
+  )
+  const availableTags = useMemo(
+    () =>
+      Array.from(
+        new Set(members.flatMap((item) => item.tags).map((tag) => tag.trim()).filter(Boolean)),
+      ).sort((left, right) => left.localeCompare(right, 'ja')),
+    [members],
   )
 
   const relatedProjects = useMemo<RelatedProjectItem[]>(() => {
@@ -214,6 +222,7 @@ export function MemberDetailPage() {
         departmentCode: editForm.departmentCode.trim(),
         departmentName: editForm.departmentName.trim(),
         role: editForm.role.trim(),
+        tags: editForm.tags,
         lineLabel: editForm.lineLabel.trim() || undefined,
         managerId: toNullableManagerId(editForm.managerId),
       }
@@ -296,6 +305,11 @@ export function MemberDetailPage() {
           <span className={styles.roleBadge}>{member.role}</span>
           <span className={styles.departmentBadge}>{member.departmentCode}</span>
           {member.lineLabel ? <span className={styles.lineBadge}>{member.lineLabel}</span> : null}
+          {member.tags.map((tag) => (
+            <span className={styles.tagBadge} key={tag}>
+              {tag}
+            </span>
+          ))}
         </div>
       </ListPageHero>
 
@@ -407,6 +421,33 @@ export function MemberDetailPage() {
               </Link>
             ) : (
               <strong className={styles.infoValue}>{formatManagerLabel(undefined)}</strong>
+            )}
+          </div>
+          <div className={`${styles.infoCard} ${styles.tagCard}`}>
+            <span className={styles.infoLabel}>タグ</span>
+            {isEditing && editForm ? (
+              <TagEditorField
+                fieldClassName={styles.tagField}
+                helperText="既存タグを候補表示しつつ、自由入力でも追加できます。"
+                inputAriaLabel="タグを追加"
+                inputClassName={styles.infoInput}
+                inputPlaceholder="タグを入力"
+                onChange={(tags) => updateEditField('tags', tags)}
+                removeButtonTestIdPrefix="member-detail-tag-remove"
+                suggestions={availableTags}
+                tagTestIdPrefix="member-detail-tag"
+                tags={editForm.tags}
+              />
+            ) : member.tags.length > 0 ? (
+              <div className={styles.tagList}>
+                {member.tags.map((tag) => (
+                  <span className={styles.tagBadge} key={tag}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <strong className={styles.infoValue}>未設定</strong>
             )}
           </div>
         </div>

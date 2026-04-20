@@ -152,4 +152,26 @@ describe('MemberManagementPage', () => {
     expect(screen.queryByTestId('member-row-m10')).not.toBeInTheDocument()
     expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
   })
+
+  it('タグでも絞り込める', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<MemberManagementPage />, {
+      initialEntries: ['/members'],
+    })
+
+    await screen.findByTestId('member-row-m1')
+    await openFilterPanel()
+
+    const tagFilter = screen.getByRole('combobox', { name: 'タグで絞り込み' })
+
+    fireEvent.change(tagFilter, {
+      target: { value: '保守担当' },
+    })
+
+    expect(screen.getByTestId('member-row-m4')).toBeInTheDocument()
+    expect(screen.getByTestId('member-row-m7')).toBeInTheDocument()
+    expect(screen.getByTestId('member-row-m10')).toBeInTheDocument()
+    expect(screen.queryByTestId('member-row-m1')).not.toBeInTheDocument()
+  })
 })
