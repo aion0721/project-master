@@ -1,6 +1,7 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { Connection } from "@xyflow/react";
+import type { MemberHierarchyFlowHandle } from "../../components/MemberHierarchyFlow";
 import { MemberHierarchyFlowFallback } from "../../components/MemberHierarchyFlowFallback";
 import { MemberHierarchyTree } from "../../components/MemberHierarchyTree";
 import { ListPageHero } from "../../components/ListPageHero";
@@ -129,6 +130,9 @@ export function MemberHierarchyPage() {
     null,
   );
   const [isSavingRelation, setIsSavingRelation] = useState(false);
+  const [isExportingFlowPdf, setIsExportingFlowPdf] = useState(false);
+  const [flowExportError, setFlowExportError] = useState<string | null>(null);
+  const flowRef = useRef<MemberHierarchyFlowHandle | null>(null);
   const memberById = useMemo(
     () => new Map(members.map((member) => [member.id, member])),
     [members],
@@ -242,6 +246,27 @@ export function MemberHierarchyPage() {
     }
 
     setSearchParams(params);
+  }
+
+  async function handleExportFlowPdf() {
+    if (!flowRef.current || isExportingFlowPdf) {
+      return;
+    }
+
+    setFlowExportError(null);
+    setIsExportingFlowPdf(true);
+
+    try {
+      await flowRef.current.exportPdf();
+    } catch (caughtError) {
+      setFlowExportError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "PDF の出力に失敗しました。",
+      );
+    } finally {
+      setIsExportingFlowPdf(false);
+    }
   }
 
   async function handleManagerConnect(connection: Connection) {
@@ -477,17 +502,37 @@ export function MemberHierarchyPage() {
 
           {viewMode === "flow" ? (
             <div className={styles.flowAssist}>
-              <p className={styles.flowAssistText}>
-                ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。部署やタグで絞ると、その条件に合うメンバーをまとめて編集できます。
-              </p>
+              <div className={styles.flowAssistHeader}>
+                <p className={styles.flowAssistText}>
+                  ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。部署やタグで絞ると、その条件に合うメンバーをまとめて編集できます。
+                </p>
+                <Button
+                  className={styles.flowExportButton}
+                  data-testid="member-hierarchy-export-pdf"
+                  disabled={isSavingRelation || isExportingFlowPdf}
+                  onClick={handleExportFlowPdf}
+                  size="small"
+                  variant="secondary"
+                >
+                  {isExportingFlowPdf ? "PDF 出力中..." : "PDF 出力"}
+                </Button>
+              </div>
               {isSavingRelation ? (
                 <p className={styles.flowPending}>上下関係を保存中です...</p>
+              ) : null}
+              {isExportingFlowPdf ? (
+                <p className={styles.flowPending}>
+                  表示中の体制図を PDF に変換しています...
+                </p>
               ) : null}
               {relationshipMessage ? (
                 <p className={styles.flowSuccess}>{relationshipMessage}</p>
               ) : null}
               {relationshipError ? (
                 <p className={styles.flowError}>{relationshipError}</p>
+              ) : null}
+              {flowExportError ? (
+                <p className={styles.flowError}>{flowExportError}</p>
               ) : null}
             </div>
           ) : null}
@@ -512,6 +557,7 @@ export function MemberHierarchyPage() {
               }
             >
               <MemberHierarchyFlow
+                ref={flowRef}
                 isEditable={!isSavingRelation}
                 members={visibleMembers}
                 onManagerConnect={handleManagerConnect}

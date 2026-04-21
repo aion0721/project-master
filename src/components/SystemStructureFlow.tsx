@@ -1,5 +1,5 @@
 import dagre from '@dagrejs/dagre'
-import { useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import {
   Background,
   Controls,
@@ -16,6 +16,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { Member, SystemAssignment } from '../types/project'
+import { exportReactFlowToPdf } from '../utils/reactFlowPdfExport'
 import styles from './SystemStructureFlow.module.css'
 
 interface StructureNodeData extends Record<string, unknown> {
@@ -37,6 +38,7 @@ interface StructureTreeNode {
 
 const nodeWidth = 304
 const nodeHeight = 164
+const exportHandleAllowance = 20
 
 const responsibilityPriority = [
   'オーナー',
@@ -311,13 +313,21 @@ interface SystemStructureFlowProps {
   rootMemberId: string
 }
 
-export function SystemStructureFlow({
+export interface SystemStructureFlowHandle {
+  exportPdf: () => Promise<void>
+}
+
+export const SystemStructureFlow = forwardRef<
+  SystemStructureFlowHandle,
+  SystemStructureFlowProps
+>(function SystemStructureFlow({
   assignments,
   isEditable = false,
   members,
   onConnect,
   rootMemberId,
-}: SystemStructureFlowProps) {
+}, ref) {
+  const flowWrapRef = useRef<HTMLDivElement | null>(null)
   const rootTree = useMemo(
     () => buildStructureTree(members, assignments, rootMemberId),
     [assignments, members, rootMemberId],
@@ -338,6 +348,26 @@ export function SystemStructureFlow({
     }
   }, [isEditable, rootMemberId, rootTree])
 
+  const exportBounds = useMemo(() => {
+    if (nodes.length === 0) {
+      return null
+    }
+
+    const minX = Math.min(...nodes.map((node) => node.position.x))
+    const minY = Math.min(...nodes.map((node) => node.position.y - exportHandleAllowance))
+    const maxX = Math.max(...nodes.map((node) => node.position.x + nodeWidth))
+    const maxY = Math.max(
+      ...nodes.map((node) => node.position.y + nodeHeight + exportHandleAllowance),
+    )
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    }
+  }, [nodes])
+
   const handleConnect = useMemo<OnConnect | undefined>(() => {
     if (!isEditable || !onConnect) {
       return undefined
@@ -348,6 +378,27 @@ export function SystemStructureFlow({
     }
   }, [isEditable, onConnect])
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      async exportPdf() {
+        const flowWrapElement = flowWrapRef.current
+
+        if (!flowWrapElement || nodes.length === 0) {
+          throw new Error('PDF 出力の準備ができていません。')
+        }
+
+        await exportReactFlowToPdf({
+          bounds: exportBounds ?? undefined,
+          fileName: 'system-structure.pdf',
+          flowContainer: flowWrapElement,
+          nodes,
+        })
+      },
+    }),
+    [exportBounds, nodes],
+  )
+
   if (!rootTree) {
     return (
       <p className={styles.emptyText}>
@@ -357,7 +408,7 @@ export function SystemStructureFlow({
   }
 
   return (
-    <div className={styles.flowWrap} data-testid="system-structure-flow">
+    <div className={styles.flowWrap} data-testid="system-structure-flow" ref={flowWrapRef}>
       <ReactFlow
         defaultEdgeOptions={{ type: 'smoothstep' }}
         edges={edges}
@@ -379,4 +430,4 @@ export function SystemStructureFlow({
       </ReactFlow>
     </div>
   )
-}
+})

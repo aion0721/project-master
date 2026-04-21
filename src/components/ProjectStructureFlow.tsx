@@ -1,6 +1,6 @@
 import type { Connection } from '@xyflow/react'
 import dagre from '@dagrejs/dagre'
-import { useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import {
   Background,
   Controls,
@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { Member, ProjectAssignment } from '../types/project'
+import { exportReactFlowToPdf } from '../utils/reactFlowPdfExport'
 import styles from './ProjectStructureFlow.module.css'
 
 interface StructureNodeData extends Record<string, unknown> {
@@ -41,6 +42,7 @@ const responsibilityPriority = [
 
 const nodeWidth = 260
 const nodeHeight = 128
+const exportHandleAllowance = 20
 
 function sortResponsibilities(values: string[]) {
   return [...values].sort((left, right) => {
@@ -103,7 +105,14 @@ interface ProjectStructureFlowProps {
   selectedMemberId?: string | null
 }
 
-export function ProjectStructureFlow({
+export interface ProjectStructureFlowHandle {
+  exportPdf: () => Promise<void>
+}
+
+export const ProjectStructureFlow = forwardRef<
+  ProjectStructureFlowHandle,
+  ProjectStructureFlowProps
+>(function ProjectStructureFlow({
   assignments,
   isEditable = false,
   members,
@@ -111,7 +120,8 @@ export function ProjectStructureFlow({
   onSelectMember,
   rootMemberId,
   selectedMemberId = null,
-}: ProjectStructureFlowProps) {
+}, ref) {
+  const flowWrapRef = useRef<HTMLDivElement | null>(null)
   const { nodes, edges } = useMemo(() => {
     const memberIds = new Set(
       assignments
@@ -213,12 +223,53 @@ export function ProjectStructureFlow({
     }
   }, [assignments, isEditable, members, onSelectMember, rootMemberId, selectedMemberId])
 
+  const exportBounds = useMemo(() => {
+    if (nodes.length === 0) {
+      return null
+    }
+
+    const minX = Math.min(...nodes.map((node) => node.position.x))
+    const minY = Math.min(...nodes.map((node) => node.position.y - exportHandleAllowance))
+    const maxX = Math.max(...nodes.map((node) => node.position.x + nodeWidth))
+    const maxY = Math.max(
+      ...nodes.map((node) => node.position.y + nodeHeight + exportHandleAllowance),
+    )
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    }
+  }, [nodes])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      async exportPdf() {
+        const flowWrapElement = flowWrapRef.current
+
+        if (!flowWrapElement || nodes.length === 0) {
+          throw new Error('PDF 出力の準備ができていません。')
+        }
+
+        await exportReactFlowToPdf({
+          bounds: exportBounds ?? undefined,
+          fileName: 'project-structure.pdf',
+          flowContainer: flowWrapElement,
+          nodes,
+        })
+      },
+    }),
+    [exportBounds, nodes],
+  )
+
   if (nodes.length === 0) {
     return <p className={styles.emptyText}>体制メンバーが設定されていません。</p>
   }
 
   return (
-    <div className={styles.flowWrap} data-testid="project-structure-flow">
+    <div className={styles.flowWrap} data-testid="project-structure-flow" ref={flowWrapRef}>
       <ReactFlow
         defaultEdgeOptions={{ type: 'smoothstep' }}
         edges={edges}
@@ -240,4 +291,4 @@ export function ProjectStructureFlow({
       </ReactFlow>
     </div>
   )
-}
+})

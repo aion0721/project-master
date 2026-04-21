@@ -1,5 +1,10 @@
 import dagre from "@dagrejs/dagre";
-import { useMemo } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   Background,
@@ -22,6 +27,7 @@ import {
   getMemberRoleTone,
   type MemberHierarchyNode,
 } from "../utils/memberHierarchyUtils";
+import { exportReactFlowToPdf } from "../utils/reactFlowPdfExport";
 import styles from "./MemberHierarchyFlow.module.css";
 
 interface HierarchyNodeData extends Record<string, unknown> {
@@ -480,12 +486,20 @@ interface MemberHierarchyFlowProps {
   onManagerConnect?: (connection: Connection) => void;
 }
 
-export function MemberHierarchyFlow({
+export interface MemberHierarchyFlowHandle {
+  exportPdf: () => Promise<void>;
+}
+
+export const MemberHierarchyFlow = forwardRef<
+  MemberHierarchyFlowHandle,
+  MemberHierarchyFlowProps
+>(function MemberHierarchyFlow({
   members,
   selectedMemberId,
   isEditable = false,
   onManagerConnect,
-}: MemberHierarchyFlowProps) {
+}, ref) {
+  const flowWrapRef = useRef<HTMLDivElement | null>(null);
   const forest = useMemo(
     () => buildMemberHierarchyForest(members, selectedMemberId),
     [members, selectedMemberId],
@@ -535,6 +549,30 @@ export function MemberHierarchyFlow({
     };
   }, [isEditable, onManagerConnect]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      async exportPdf() {
+        const flowWrapElement = flowWrapRef.current;
+        const exportableNodes = nodes.filter(
+          (node): node is MemberFlowNodeType => node.type === "memberNode",
+        );
+
+        if (!flowWrapElement || exportableNodes.length === 0) {
+          throw new Error("PDF 出力の準備ができていません。");
+        }
+
+        await exportReactFlowToPdf({
+          extraBoundsSelector: ".react-flow__node-branchBand",
+          fileName: "member-hierarchy.pdf",
+          flowContainer: flowWrapElement,
+          nodes: exportableNodes,
+        });
+      },
+    }),
+    [nodes],
+  );
+
   if (forest.length === 0) {
     return (
       <p className={styles.emptyText}>
@@ -544,7 +582,11 @@ export function MemberHierarchyFlow({
   }
 
   return (
-    <div className={styles.flowWrap} data-testid="member-hierarchy-tree">
+    <div
+      className={styles.flowWrap}
+      data-testid="member-hierarchy-tree"
+      ref={flowWrapRef}
+    >
       <ReactFlow
         defaultEdgeOptions={{ type: "smoothstep" }}
         edges={edges}
@@ -566,4 +608,4 @@ export function MemberHierarchyFlow({
       </ReactFlow>
     </div>
   );
-}
+});

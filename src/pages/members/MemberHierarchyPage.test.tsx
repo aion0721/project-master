@@ -120,6 +120,7 @@ describe('MemberHierarchyPage', () => {
     }, { timeout: 10000 })
 
     const hierarchyFlow = screen.getByTestId('member-hierarchy-tree')
+    expect(screen.getByTestId('member-hierarchy-export-pdf')).toBeInTheDocument()
     expect(within(hierarchyFlow).getByText('中村')).toBeInTheDocument()
     expect(within(hierarchyFlow).getByText('PMO')).toBeInTheDocument()
   })

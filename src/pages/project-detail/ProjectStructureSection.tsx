@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Connection } from '@xyflow/react'
 import { MemberTree } from '../../components/MemberTree'
-import { ProjectStructureFlow } from '../../components/ProjectStructureFlow'
+import {
+  ProjectStructureFlow,
+  type ProjectStructureFlowHandle,
+} from '../../components/ProjectStructureFlow'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import type { Member, ProjectAssignment } from '../../types/project'
@@ -67,6 +70,9 @@ export function ProjectStructureSection({
   const [viewMode, setViewMode] = useState<'tree' | 'flow'>('tree')
   const [selectedFlowMemberId, setSelectedFlowMemberId] = useState<string | null>(null)
   const [pendingMemberId, setPendingMemberId] = useState('')
+  const [isExportingFlowPdf, setIsExportingFlowPdf] = useState(false)
+  const [flowExportError, setFlowExportError] = useState<string | null>(null)
+  const flowRef = useRef<ProjectStructureFlowHandle | null>(null)
   const flowAssignments: ProjectAssignment[] = isEditing
     ? [
         {
@@ -130,6 +136,25 @@ export function ProjectStructureSection({
 
     onRemoveAssignmentByMemberId(selectedFlowMemberId)
     setSelectedFlowMemberId(null)
+  }
+
+  async function handleExportFlowPdf() {
+    if (!flowRef.current || isExportingFlowPdf) {
+      return
+    }
+
+    setFlowExportError(null)
+    setIsExportingFlowPdf(true)
+
+    try {
+      await flowRef.current.exportPdf()
+    } catch (caughtError) {
+      setFlowExportError(
+        caughtError instanceof Error ? caughtError.message : 'PDF の出力に失敗しました。',
+      )
+    } finally {
+      setIsExportingFlowPdf(false)
+    }
   }
 
   return (
@@ -210,6 +235,26 @@ export function ProjectStructureSection({
           <MemberTree members={members} rootMemberId={pmMemberId} assignments={projectAssignments} />
         ) : (
           <>
+            <div className={styles.flowAssistHeader}>
+              <p className={styles.emptyText}>
+                {isEditing
+                  ? 'ノード間をドラッグ接続すると報告先を変更できます。必要なら表示中の体制図を PDF として保存できます。'
+                  : 'プロジェクト体制をフローで確認できます。表示中の体制図を PDF として保存できます。'}
+              </p>
+              <Button
+                data-testid="project-structure-export-pdf"
+                disabled={isExportingFlowPdf}
+                onClick={() => void handleExportFlowPdf()}
+                size="small"
+                variant="secondary"
+              >
+                {isExportingFlowPdf ? 'PDF 出力中...' : 'PDF 出力'}
+              </Button>
+            </div>
+            {isExportingFlowPdf ? (
+              <p className={styles.emptyText}>表示中の体制図を PDF に変換しています...</p>
+            ) : null}
+            {flowExportError ? <p className={styles.sectionError}>{flowExportError}</p> : null}
             {isEditing ? (
               <div className={styles.flowToolbar}>
                 <label className={styles.formField}>
@@ -256,6 +301,7 @@ export function ProjectStructureSection({
               members={members}
               onConnect={handleFlowConnect}
               onSelectMember={setSelectedFlowMemberId}
+              ref={flowRef}
               rootMemberId={pmMemberId}
               selectedMemberId={selectedFlowMemberId}
             />

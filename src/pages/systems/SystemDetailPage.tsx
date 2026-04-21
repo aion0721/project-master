@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Connection } from '@xyflow/react'
 import { Link, useParams } from 'react-router-dom'
 import { ListPageHero } from '../../components/ListPageHero'
 import { PageStatePanel } from '../../components/PageStatePanel'
-import { SystemStructureFlow } from '../../components/SystemStructureFlow'
+import {
+  SystemStructureFlow,
+  type SystemStructureFlowHandle,
+} from '../../components/SystemStructureFlow'
 import { Button } from '../../components/ui/Button'
 import { Panel } from '../../components/ui/Panel'
 import { useProjectData } from '../../store/useProjectData'
@@ -73,6 +76,9 @@ export function SystemDetailPage() {
   const [structureError, setStructureError] = useState<string | null>(null)
   const [structureMessage, setStructureMessage] = useState<string | null>(null)
   const [isSavingStructure, setIsSavingStructure] = useState(false)
+  const [isExportingStructurePdf, setIsExportingStructurePdf] = useState(false)
+  const [structureExportError, setStructureExportError] = useState<string | null>(null)
+  const structureFlowRef = useRef<SystemStructureFlowHandle | null>(null)
 
   const system = systemId ? getSystemById(systemId) : undefined
   const structureAssignments = useMemo(
@@ -400,6 +406,25 @@ export function SystemDetailPage() {
     }
   }
 
+  async function handleExportStructurePdf() {
+    if (!structureFlowRef.current || isExportingStructurePdf) {
+      return
+    }
+
+    setStructureExportError(null)
+    setIsExportingStructurePdf(true)
+
+    try {
+      await structureFlowRef.current.exportPdf()
+    } catch (caughtError) {
+      setStructureExportError(
+        caughtError instanceof Error ? caughtError.message : 'PDF の出力に失敗しました。',
+      )
+    } finally {
+      setIsExportingStructurePdf(false)
+    }
+  }
+
   async function handleCreateRelation(input: {
     sourceSystemId: string
     targetSystemId: string
@@ -592,13 +617,29 @@ export function SystemDetailPage() {
         {structureRootId ? (
           <div className={styles.treeSection}>
             <div className={styles.structureFlowAssist}>
-              <p className={styles.structureFlowAssistText}>
-                {isStructureEditing
-                  ? 'ノード下部から別ノード上部へドラッグすると、体制メンバーの報告先を変更できます。保存するまでは下書き状態です。'
-                  : 'システムのオーナー配下の報告ラインをフローで表示しています。編集モードではドラッグ接続で報告先も変更できます。'}
-              </p>
+              <div className={styles.structureFlowAssistHeader}>
+                <p className={styles.structureFlowAssistText}>
+                  {isStructureEditing
+                    ? 'ノード下部から別ノード上部へドラッグすると、体制メンバーの報告先を変更できます。保存するまでは下書き状態です。'
+                    : 'システムのオーナー配下の報告ラインをフローで表示しています。編集モードではドラッグ接続で報告先も変更できます。'}
+                </p>
+                <Button
+                  data-testid="system-structure-export-pdf"
+                  disabled={isSavingStructure || isExportingStructurePdf}
+                  onClick={() => void handleExportStructurePdf()}
+                  size="small"
+                  variant="secondary"
+                >
+                  {isExportingStructurePdf ? 'PDF 出力中...' : 'PDF 出力'}
+                </Button>
+              </div>
               {isSavingStructure ? (
                 <p className={styles.structureFlowPending}>システム体制を保存中です...</p>
+              ) : null}
+              {isExportingStructurePdf ? (
+                <p className={styles.structureFlowPending}>
+                  表示中の体制図を PDF に変換しています...
+                </p>
               ) : null}
               {structureMessage ? (
                 <p className={styles.structureFlowSuccess}>{structureMessage}</p>
@@ -606,12 +647,16 @@ export function SystemDetailPage() {
               {structureError ? (
                 <p className={styles.structureFlowError}>{structureError}</p>
               ) : null}
+              {structureExportError ? (
+                <p className={styles.structureFlowError}>{structureExportError}</p>
+              ) : null}
             </div>
             <SystemStructureFlow
               assignments={visibleStructureAssignments}
               isEditable={isStructureEditing && !isSavingStructure}
               members={members}
               onConnect={handleStructureConnect}
+              ref={structureFlowRef}
               rootMemberId={isStructureEditing ? structureOwnerMemberId || structureRootId : structureRootId}
             />
           </div>

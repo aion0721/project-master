@@ -30,6 +30,7 @@ describe('SystemDetailPage', () => {
     expect(screen.getAllByText('申請データ分析連携').length).toBeGreaterThan(0)
     expect(screen.getAllByText('社内ポータル → 会計基盤 → 営業管理BI').length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: '関連図を開く' })).toHaveAttribute('href', '/systems/diagram')
+    expect(screen.getByTestId('system-structure-export-pdf')).toBeInTheDocument()
   })
 
   it('関連リンクを編集保存できる', async () => {

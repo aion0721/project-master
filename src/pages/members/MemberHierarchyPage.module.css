@@ -19,6 +19,17 @@
   gap: 8px;
 }
 
+.flowAssistHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flowExportButton {
+  flex-shrink: 0;
+}
+
 .flowGuard {
   display: grid;
   gap: 6px;
@@ -317,6 +328,11 @@
 @media (max-width: 960px) {
   .filterGrid {
     grid-template-columns: 1fr;
+  }
+
+  .flowAssistHeader {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .viewToggle {

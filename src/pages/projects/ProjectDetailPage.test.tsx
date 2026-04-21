@@ -755,6 +755,7 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByTestId('member-tree')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('structure-view-flow'))
     expect(await screen.findByTestId('project-structure-flow')).toBeInTheDocument()
+    expect(screen.getByTestId('project-structure-export-pdf')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('structure-view-tree'))
     expect(await screen.findByTestId('member-tree')).toBeInTheDocument()
   })
