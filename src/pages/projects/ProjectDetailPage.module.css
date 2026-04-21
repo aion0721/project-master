@@ -28,12 +28,18 @@
 
 .heroActions {
   display: flex;
-  align-items: flex-start;
-  align-content: flex-start;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.heroTopActions {
+  display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 12px;
-  min-width: 0;
+  gap: 8px;
 }
 
 .heroBadgeGroup {
@@ -41,32 +47,22 @@
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
-}
-
-.backLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.systemChipList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  max-width: 100%;
 }
 
 .systemChip {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  min-height: 30px;
   padding: 0 12px;
   border-radius: 999px;
+  border: 1px solid rgba(14, 116, 144, 0.18);
   background: rgba(14, 116, 144, 0.08);
   color: #0f4c5c;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .phaseSummaryBadge {

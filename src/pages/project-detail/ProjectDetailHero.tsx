@@ -407,15 +407,23 @@ export function ProjectDetailHero({
     <ListPageHero
       action={
         <div className={styles.heroActions}>
-          {currentUser ? (
-            <Button
-              onClick={onToggleBookmark}
-              size="small"
-              variant={isBookmarked ? 'primary' : 'secondary'}
-            >
-              {isBookmarked ? 'ブックマーク解除' : 'ブックマーク'}
+          <div className={styles.heroTopActions}>
+            <Button size="small" to="/projects" variant="secondary">
+              案件一覧へ戻る
             </Button>
-          ) : null}
+            <Button size="small" to="/cross-project" variant="secondary">
+              横断ビューへ戻る
+            </Button>
+            {currentUser ? (
+              <Button
+                onClick={onToggleBookmark}
+                size="small"
+                variant={isBookmarked ? 'primary' : 'secondary'}
+              >
+                {isBookmarked ? 'ブックマーク解除' : 'ブックマーク'}
+              </Button>
+            ) : null}
+          </div>
           <div className={styles.heroBadgeGroup}>
             <StatusBadge status={project.status} />
             <span
@@ -434,6 +442,11 @@ export function ProjectDetailHero({
             >
               報告事項: {project.hasReportItems ? 'あり' : 'なし'}
             </span>
+            {relatedSystems.map((system) => (
+              <span className={styles.systemChip} key={system.id}>
+                主システム: {system.id} / {system.name}
+              </span>
+            ))}
           </div>
         </div>
       }
@@ -441,29 +454,8 @@ export function ProjectDetailHero({
       collapsible
       collapseToggleTestId="project-hero-toggle-button"
       description={`プロジェクト番号: ${project.projectNumber}。基本情報、PM、進捗、体制、主システムをまとめて確認できる案件詳細です。`}
-      descriptionSupplement={
-        relatedSystems.length > 0 ? (
-          <div className={styles.systemChipList}>
-            {relatedSystems.map((system) => (
-              <span className={styles.systemChip} key={system.id}>
-                主システム: {system.id} / {system.name}
-              </span>
-            ))}
-          </div>
-        ) : null
-      }
       eyebrow="Project Detail"
       iconKind="project"
-      leadingContent={
-        <div className={styles.backLinks}>
-          <Button size="small" to="/projects" variant="secondary">
-            案件一覧へ戻る
-          </Button>
-          <Button size="small" to="/cross-project" variant="secondary">
-            横断ビューへ戻る
-          </Button>
-        </div>
-      }
       stats={[]}
       storageKey="project-master:hero-collapsed:project-detail"
       title={project.name}

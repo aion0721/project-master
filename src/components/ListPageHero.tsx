@@ -67,29 +67,28 @@ export function ListPageHero({
         {leadingContent ? <div className={styles.leadingContent}>{leadingContent}</div> : null}
 
         <div className={styles.header}>
-          <div className={styles.heading}>
-            <EntityIcon alt={iconAlt} className={styles.icon} kind={iconKind} />
-            <div className={styles.headingBody}>
-              <p className={styles.eyebrow}>{eyebrow}</p>
-              <h1 className={styles.title}>{title}</h1>
-              {!isCollapsed ? <p className={styles.description}>{description}</p> : null}
-              {!isCollapsed && descriptionSupplement ? (
-                <div className={styles.descriptionSupplement}>{descriptionSupplement}</div>
-              ) : null}
-            </div>
+          <EntityIcon alt={iconAlt} className={styles.icon} kind={iconKind} />
+          <div className={styles.headingBody}>
+            <p className={styles.eyebrow}>{eyebrow}</p>
+            <h1 className={styles.title}>{title}</h1>
           </div>
 
           {action || collapsible ? (
             <div className={styles.actions}>
               {action}
               {collapsible ? (
-              <HeroCollapseToggleButton
-                dataTestId={collapseToggleTestId}
-                expanded={!isCollapsed}
-                onToggle={() => setIsCollapsed((current) => !current)}
-              />
-            ) : null}
-          </div>
+                <HeroCollapseToggleButton
+                  dataTestId={collapseToggleTestId}
+                  expanded={!isCollapsed}
+                  onToggle={() => setIsCollapsed((current) => !current)}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {!isCollapsed ? <p className={styles.description}>{description}</p> : null}
+          {!isCollapsed && descriptionSupplement ? (
+            <div className={styles.descriptionSupplement}>{descriptionSupplement}</div>
           ) : null}
         </div>
       </div>

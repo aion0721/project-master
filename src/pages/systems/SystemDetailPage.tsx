@@ -495,13 +495,8 @@ export function SystemDetailPage() {
   return (
     <div className={styles.page}>
       <ListPageHero
-        className={styles.hero}
-        collapsible
-        description={`システムID: ${system.id}。カテゴリ: ${system.category}。関連案件、所管部署、周辺システムとの接続をまとめて確認できます。`}
-        eyebrow="System Detail"
-        iconKind="system"
-        leadingContent={
-          <div className={styles.backLinks}>
+        action={
+          <div className={styles.heroActions}>
             <Button size="small" to="/systems" variant="secondary">
               システム一覧へ戻る
             </Button>
@@ -510,6 +505,11 @@ export function SystemDetailPage() {
             </Button>
           </div>
         }
+        className={styles.hero}
+        collapsible
+        description={`システムID: ${system.id}。カテゴリ: ${system.category}。関連案件、所管部署、周辺システムとの接続をまとめて確認できます。`}
+        eyebrow="System Detail"
+        iconKind="system"
         stats={[
           { label: 'オーナー', value: owner ? `${owner.id} / ${owner.name}` : '未設定' },
           { label: '対象プロジェクト', value: `${relatedProjects.length} 件` },
