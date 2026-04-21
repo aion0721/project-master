@@ -260,6 +260,43 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('状況の内容表示で改行を維持する', async () => {
+    const fetchSpy = mockProjectApi()
+
+    renderPage()
+
+    await screen.findByRole('heading', { name: project.name })
+
+    fireEvent.click(screen.getByTestId('project-status-entries-edit-button'))
+    fireEvent.change(screen.getByTestId('project-status-entry-content-0'), {
+      target: { value: '基本設計レビュー待ち\n会計基盤IFを確認中' },
+    })
+    fireEvent.click(screen.getByTestId('project-status-entries-save-button'))
+
+    await waitFor(() => {
+      const statusEntriesCall = fetchSpy.mock.calls.find(([url, init]) => {
+        return String(url).includes('/api/projects/PRJ-001/status-entries') && init?.method === 'PATCH'
+      })
+
+      expect(statusEntriesCall).toBeDefined()
+      const body = JSON.parse(String(statusEntriesCall?.[1]?.body))
+      expect(body.statusEntries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            content: '基本設計レビュー待ち\n会計基盤IFを確認中',
+          }),
+        ]),
+      )
+    })
+
+    const statusEntryValue = (await screen.findAllByText((_, element) => {
+      return element?.textContent === '基本設計レビュー待ち\n会計基盤IFを確認中'
+    }))[0]
+
+    expect(statusEntryValue.textContent).toBe('基本設計レビュー待ち\n会計基盤IFを確認中')
+    expect(statusEntryValue).toHaveStyle({ whiteSpace: 'pre-wrap' })
+  })
+
   it('報告事項の有無を更新できる', async () => {
     const fetchSpy = mockProjectApi()
 

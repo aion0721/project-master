@@ -57,30 +57,6 @@ export function useVirtualWindow({
 }: UseVirtualWindowParams): VirtualWindowResult {
   const [viewport, setViewport] = useState({ height: 0, scrollTop: 0 });
 
-  useEffect(() => {
-    const container = containerRef.current;
-
-    if (!container) {
-      return;
-    }
-
-    const updateViewport = () => {
-      setViewport({
-        height: container.clientHeight,
-        scrollTop: container.scrollTop,
-      });
-    };
-
-    updateViewport();
-    container.addEventListener("scroll", updateViewport, { passive: true });
-    window.addEventListener("resize", updateViewport);
-
-    return () => {
-      container.removeEventListener("scroll", updateViewport);
-      window.removeEventListener("resize", updateViewport);
-    };
-  }, [containerRef]);
-
   const { offsets, sizes, totalSize } = useMemo(() => {
     const nextSizes = Array.from({ length: itemCount }, (_, index) =>
       getItemSize(index),
@@ -99,6 +75,37 @@ export function useVirtualWindow({
       totalSize: runningOffset,
     };
   }, [getItemSize, itemCount]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const updateViewport = () => {
+      const maxScrollTop = Math.max(0, totalSize - container.clientHeight);
+      const nextScrollTop = Math.min(container.scrollTop, maxScrollTop);
+
+      if (container.scrollTop !== nextScrollTop) {
+        container.scrollTop = nextScrollTop;
+      }
+
+      setViewport({
+        height: container.clientHeight,
+        scrollTop: nextScrollTop,
+      });
+    };
+
+    updateViewport();
+    container.addEventListener("scroll", updateViewport, { passive: true });
+    window.addEventListener("resize", updateViewport);
+
+    return () => {
+      container.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
+    };
+  }, [containerRef, totalSize]);
 
   if (itemCount === 0) {
     return {

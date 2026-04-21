@@ -14,7 +14,7 @@ describe('MemberHierarchyPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'メンバー体制図' })).toBeInTheDocument()
     expect(screen.getByTestId('member-hierarchy-view-tree')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('部署を選択すると、その部署のメンバー体制を表示できます。')).toBeInTheDocument()
+    expect(screen.getByText('部署またはタグを選択すると、該当メンバーの体制を表示できます。')).toBeInTheDocument()
   })
 
   it('全部署ではフロー表示を停止する', async () => {
@@ -28,7 +28,7 @@ describe('MemberHierarchyPage', () => {
 
     expect(screen.getByTestId('member-hierarchy-view-flow')).toBeDisabled()
     expect(screen.getByTestId('member-hierarchy-view-tree')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('部署を選択すると、その部署のメンバー体制を表示できます。')).toBeInTheDocument()
+    expect(screen.getByText('部署またはタグを選択すると、該当メンバーの体制を表示できます。')).toBeInTheDocument()
   })
 
   it('部署指定がない場合は選択を促す', async () => {
@@ -39,7 +39,7 @@ describe('MemberHierarchyPage', () => {
     })
 
     await screen.findByRole('heading', { name: 'メンバー体制図' })
-    expect(screen.getByText('部署を選択すると、その部署のメンバー体制を表示できます。')).toBeInTheDocument()
+    expect(screen.getByText('部署またはタグを選択すると、該当メンバーの体制を表示できます。')).toBeInTheDocument()
   })
 
   it('階層図ビューに切り替えると配下グループを表示できる', async () => {
@@ -122,5 +122,28 @@ describe('MemberHierarchyPage', () => {
     const hierarchyFlow = screen.getByTestId('member-hierarchy-tree')
     expect(within(hierarchyFlow).getByText('中村')).toBeInTheDocument()
     expect(within(hierarchyFlow).getByText('PMO')).toBeInTheDocument()
+  })
+
+  it('タグを指定すると該当タグのメンバーだけを表示する', async () => {
+    mockProjectApi()
+
+    renderWithProviders(<MemberHierarchyPage />, {
+      initialEntries: ['/members/hierarchy'],
+    })
+
+    await screen.findByRole('heading', { name: 'メンバー体制図' })
+
+    fireEvent.focus(screen.getByTestId('member-hierarchy-tag-select'))
+    fireEvent.change(screen.getByTestId('member-hierarchy-tag-select'), {
+      target: { value: '保守担当' },
+    })
+    fireEvent.keyDown(screen.getByTestId('member-hierarchy-tag-select'), {
+      key: 'Enter',
+    })
+
+    const hierarchyTree = await screen.findByTestId('member-hierarchy-tree', {}, { timeout: 5000 })
+    expect(within(hierarchyTree).getAllByText('高橋').length).toBeGreaterThan(0)
+    expect(within(hierarchyTree).getAllByText('小林').length).toBeGreaterThan(0)
+    expect(within(hierarchyTree).queryByText('山本')).not.toBeInTheDocument()
   })
 })

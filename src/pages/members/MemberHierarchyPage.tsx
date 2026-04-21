@@ -118,8 +118,9 @@ export function MemberHierarchyPage() {
   const { members, isLoading, error, updateMember } = useProjectData();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedDepartmentName = searchParams.get("departmentName") ?? "";
+  const requestedTag = searchParams.get("tag") ?? "";
   const [viewMode, setViewMode] = useState<HierarchyViewMode>(
-    requestedDepartmentName ? "flow" : "tree",
+    requestedDepartmentName || requestedTag ? "flow" : "tree",
   );
   const [relationshipMessage, setRelationshipMessage] = useState<string | null>(
     null,
@@ -158,16 +159,29 @@ export function MemberHierarchyPage() {
     [sortedMembers],
   );
 
+  const tagOptions = useMemo(
+    () =>
+      [...new Set(sortedMembers.flatMap((member) => member.tags.map((tag) => tag.trim())).filter(Boolean))]
+        .sort((left, right) => left.localeCompare(right, "ja"))
+        .map((tag) => ({
+          value: tag,
+          label: tag,
+        })),
+    [sortedMembers],
+  );
+
   const requestedMemberId = searchParams.get("memberId") ?? "";
 
   const visibleMembers = useMemo(
     () =>
-      requestedDepartmentName
-        ? sortedMembers.filter(
-            (member) => member.departmentName === requestedDepartmentName,
-          )
-        : sortedMembers,
-    [requestedDepartmentName, sortedMembers],
+      sortedMembers.filter((member) => {
+        const matchesDepartment =
+          !requestedDepartmentName || member.departmentName === requestedDepartmentName;
+        const matchesTag = !requestedTag || member.tags.includes(requestedTag);
+
+        return matchesDepartment && matchesTag;
+      }),
+    [requestedDepartmentName, requestedTag, sortedMembers],
   );
 
   const activeMemberId =
@@ -198,8 +212,9 @@ export function MemberHierarchyPage() {
       ).size,
     [visibleMembers],
   );
-  const isDepartmentSelected = requestedDepartmentName.trim().length > 0;
-  const canRenderFlow = isDepartmentSelected && visibleMembers.length <= flowMemberLimit;
+  const isFilterSelected =
+    requestedDepartmentName.trim().length > 0 || requestedTag.trim().length > 0;
+  const canRenderFlow = isFilterSelected && visibleMembers.length <= flowMemberLimit;
 
   useEffect(() => {
     if (!canRenderFlow && viewMode === "flow") {
@@ -209,12 +224,17 @@ export function MemberHierarchyPage() {
 
   function updateHierarchyParams(next: {
     departmentName?: string;
+    tag?: string;
     memberId?: string;
   }) {
     const params = new URLSearchParams();
 
     if (next.departmentName) {
       params.set("departmentName", next.departmentName);
+    }
+
+    if (next.tag) {
+      params.set("tag", next.tag);
     }
 
     if (next.memberId) {
@@ -238,7 +258,7 @@ export function MemberHierarchyPage() {
       messages: {
         missingConnection: "接続元と接続先を正しく指定してください。",
         selfReference: "自分自身を上司には設定できません。",
-        unavailableConnection: "表示中の部署メンバー同士だけ接続できます。",
+        unavailableConnection: "表示中のメンバー同士だけ接続できます。",
         entityNotFound: "接続対象のメンバーが見つかりません。",
         cycleDetected: "循環する上下関係になるため、この接続はできません。",
         duplicateConnection: (memberLabel, managerLabel) =>
@@ -316,13 +336,13 @@ export function MemberHierarchyPage() {
         action={<Button to="/members">メンバー一覧</Button>}
         className={styles.hero}
         collapsible
-        description="メンバーを起点に上下関係を表示できます。部署を絞ってから、関係表示、フロー表示、階層図を切り替えながら確認できます。"
+        description="メンバーを起点に上下関係を表示できます。部署やタグで絞ってから、関係表示、フロー表示、階層図を切り替えながら確認できます。"
         eyebrow="Organization View"
         iconKind="member"
         storageKey="project-master:hero-collapsed:member-hierarchy"
         stats={[
           {
-            label: requestedDepartmentName ? "表示メンバー" : "登録メンバー",
+            label: isFilterSelected ? "表示メンバー" : "登録メンバー",
             value: visibleMembers.length,
           },
           { label: "最上位ノード", value: topLevelCount },
@@ -354,6 +374,7 @@ export function MemberHierarchyPage() {
                 onChange={(departmentName) => {
                   updateHierarchyParams({
                     departmentName,
+                    tag: requestedTag,
                   });
                   setRelationshipMessage(null);
                   setRelationshipError(null);
@@ -363,7 +384,26 @@ export function MemberHierarchyPage() {
                 value={requestedDepartmentName}
               />
             </label>
-
+            <label className={formStyles.field}>
+              <span className={formStyles.label}>タグ</span>
+              <SearchSelect
+                ariaLabel="タグで絞り込み"
+                className={formStyles.control}
+                dataTestId="member-hierarchy-tag-select"
+                emptyMessage="該当するタグはありません"
+                onChange={(tag) => {
+                  updateHierarchyParams({
+                    departmentName: requestedDepartmentName,
+                    tag,
+                  });
+                  setRelationshipMessage(null);
+                  setRelationshipError(null);
+                }}
+                options={tagOptions}
+                placeholder="タグを検索して選択"
+                value={requestedTag}
+              />
+            </label>
           </div>
 
           <div
@@ -400,9 +440,9 @@ export function MemberHierarchyPage() {
               title={
                 canRenderFlow
                   ? undefined
-                  : isDepartmentSelected
+                  : isFilterSelected
                     ? `表示件数が多いため、フロー表示は ${flowMemberLimit} 名以下で利用してください。`
-                    : "フロー表示は部署を選択してから利用してください。"
+                    : "フロー表示は部署またはタグを選択してから利用してください。"
               }
               type="button"
             >
@@ -424,13 +464,13 @@ export function MemberHierarchyPage() {
             </button>
           </div>
 
-          {isDepartmentSelected && !canRenderFlow ? (
+          {isFilterSelected && !canRenderFlow ? (
             <div className={styles.flowGuard}>
               <p className={styles.flowGuardTitle}>
                 {"表示件数が多いため、フロー表示を停止しました。"}
               </p>
               <p className={styles.flowGuardText}>
-                {`現在 ${visibleMembers.length} 名を表示しています。部署をさらに絞るか、ツリー表示・階層図で確認してください。`}
+                {`現在 ${visibleMembers.length} 名を表示しています。条件をさらに絞るか、ツリー表示・階層図で確認してください。`}
               </p>
             </div>
           ) : null}
@@ -438,7 +478,7 @@ export function MemberHierarchyPage() {
           {viewMode === "flow" ? (
             <div className={styles.flowAssist}>
               <p className={styles.flowAssistText}>
-                ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。部署を絞ると、その部署のメンバー全員をまとめて編集できます。
+                ノード下部の丸から別ノード上部の丸へドラッグすると、表示中のメンバー同士で上下関係を変更できます。部署やタグで絞ると、その条件に合うメンバーをまとめて編集できます。
               </p>
               {isSavingRelation ? (
                 <p className={styles.flowPending}>上下関係を保存中です...</p>
@@ -452,13 +492,13 @@ export function MemberHierarchyPage() {
             </div>
           ) : null}
 
-          {!isDepartmentSelected ? (
+          {!isFilterSelected ? (
             <p className={styles.emptyText}>
-              部署を選択すると、その部署のメンバー体制を表示できます。
+              部署またはタグを選択すると、該当メンバーの体制を表示できます。
             </p>
           ) : visibleMembers.length === 0 ? (
             <p className={styles.emptyText}>
-              指定した部署に表示対象のメンバーがいません。
+              指定した条件に一致する表示対象のメンバーがいません。
             </p>
           ) : viewMode === "tree" ? (
             <MemberHierarchyTree

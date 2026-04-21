@@ -806,6 +806,10 @@
   background: rgba(255, 255, 255, 0.82);
 }
 
+.statusEntryCard .metaValue {
+  white-space: pre-wrap;
+}
+
 .statusEntryDate {
   font-size: 12px;
   font-weight: 700;
